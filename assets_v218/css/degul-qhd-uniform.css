@@ -1,0 +1,396 @@
+/* FHD 기준 반응형 PC UI: 실제 viewport 위치 + 제한형 확대/축소 */
+:root {
+  --ui-stage-width: 100vw;
+  --ui-stage-height: 100vh;
+  --ui-stage-left: 0px;
+  --ui-stage-top: 0px;
+  --ui-ad-height: 90px;
+  --ui-ad-gap: 14px;
+  --ui-score-top: 112px;
+  --ui-lobby-bottom-reserve: 124px;
+  --lobby-ui-scale: 1;
+  --tablet-ui-scale: 1;
+  --tablet-message-hidden-scale: 0.96;
+}
+
+body:not(.mobile-device) #lobby {
+  box-sizing: border-box !important;
+  padding:
+    max(18px, var(--ui-ad-top))
+    max(18px, var(--ui-ad-side-edge))
+    var(--ui-lobby-bottom-reserve) !important;
+}
+
+body:not(.mobile-device) #lobby .lobbyCard {
+  width: 680px !important;
+  max-width: calc(100vw - 40px) !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 42px 38px 34px !important;
+  transform: scale(var(--lobby-ui-scale)) !important;
+  transform-origin: center center !important;
+}
+
+body:not(.mobile-device):not(.tablet-device) #lobby .pcLobbyAd,
+body.device-layout-forced-pc #lobby .pcLobbyAd {
+  display: flex !important;
+}
+
+body:not(.mobile-device) #lobby .pcLobbyAdBottom.is-hidden {
+  display: none !important;
+}
+
+body:not(.mobile-device) #lobby .pcLobbyAdSide {
+  top: var(--ui-stage-center-y) !important;
+  width: 160px !important;
+  height: 600px !important;
+  min-height: 0 !important;
+}
+
+body:not(.mobile-device) #lobby .pcLobbyAdLeft {
+  left: calc(var(--ui-stage-left) + var(--ui-ad-side-edge)) !important;
+  transform: translateY(-50%) !important;
+  transform-origin: left center !important;
+}
+
+body:not(.mobile-device) #lobby .pcLobbyAdRight {
+  right: calc(var(--ui-stage-left) + var(--ui-ad-side-edge)) !important;
+  transform: translateY(-50%) !important;
+  transform-origin: right center !important;
+}
+
+body:not(.mobile-device) #lobby .pcLobbyAdBottom {
+  left: 50% !important;
+  bottom: calc(var(--ui-stage-top) + var(--ui-ad-bottom)) !important;
+  width: 728px !important;
+  min-width: 0 !important;
+  height: 90px !important;
+  transform: translateX(-50%) !important;
+  transform-origin: bottom center !important;
+}
+
+body:not(.mobile-device) #gameAdBanner {
+  top: calc(var(--ui-stage-top) + var(--ui-ad-top)) !important;
+  width: 970px !important;
+  min-width: 0 !important;
+  height: var(--ui-ad-height) !important;
+  box-sizing: border-box !important;
+  transform: translateX(-50%) !important;
+  transform-origin: top center !important;
+}
+
+body:not(.mobile-device) #scoreUI.scoreGaugeUI,
+body:not(.mobile-device) #scoreUI {
+  top: calc(var(--ui-stage-top) + var(--ui-score-top)) !important;
+  width: 720px !important;
+  max-width: calc(100vw - 32px) !important;
+  transform: translateX(-50%) scale(var(--ui-scale)) !important;
+  transform-origin: top center !important;
+}
+
+body:not(.mobile-device) #pauseMenuButton {
+  left: calc(var(--ui-stage-left) + var(--ui-edge)) !important;
+  top: calc(var(--ui-stage-top) + var(--ui-edge)) !important;
+}
+
+body:not(.mobile-device) #ui {
+  left: calc(var(--ui-stage-left) + var(--ui-edge)) !important;
+  top: calc(var(--ui-stage-top) + var(--ui-edge)) !important;
+  transform: scale(var(--ui-scale)) !important;
+  transform-origin: top left !important;
+}
+
+body:not(.mobile-device) #themeToggle {
+  left: calc(var(--ui-stage-left) + var(--ui-edge)) !important;
+  bottom: calc(var(--ui-stage-top) + var(--ui-edge)) !important;
+}
+
+body:not(.mobile-device) #soundToggle {
+  left: calc(var(--ui-stage-left) + var(--ui-edge)) !important;
+  bottom: calc(var(--ui-stage-top) + var(--ui-bgm-bottom)) !important;
+}
+
+body:not(.mobile-device) #buffUI {
+  top: calc(var(--ui-stage-top) + var(--ui-edge)) !important;
+}
+
+body:not(.mobile-device) .settingsPopup,
+body:not(.mobile-device) .siteInfoPopup,
+body:not(.mobile-device) .helpPopup,
+body:not(.mobile-device) .privacyPopup,
+body:not(.mobile-device) .pausePanel {
+  transform: scale(var(--ui-scale)) !important;
+  transform-origin: center center !important;
+}
+
+/* 태블릿 로비: 상·하단 광고 배너를 동일 규격과 동일 외곽 간격으로 배치 */
+.tabletLobbyAd {
+  position: absolute;
+  left: 50%;
+  z-index: 4;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: min(728px, calc(100vw - 40px));
+  height: 90px;
+  box-sizing: border-box;
+  transform: translateX(-50%);
+  border: 1px dashed rgba(15, 23, 42, 0.22);
+  border-radius: 18px;
+  color: rgba(17, 24, 39, 0.56);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.74), rgba(248,250,252,0.54)),
+    repeating-linear-gradient(45deg, rgba(15,23,42,0.035) 0 8px, transparent 8px 16px);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.10), inset 0 0 0 1px rgba(255,255,255,0.62);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  pointer-events: none;
+  user-select: none;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.tabletLobbyAd span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border: 1px solid rgba(15,23,42,0.08);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.72);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.58);
+}
+
+.tabletLobbyAdTop {
+  top: max(14px, env(safe-area-inset-top));
+}
+
+.tabletLobbyAdBottom {
+  bottom: max(14px, env(safe-area-inset-bottom));
+}
+
+body.tablet-device #lobby .tabletLobbyAd,
+body.device-layout-forced-tablet #lobby .tabletLobbyAd {
+  display: flex;
+}
+
+body.tablet-device.mobile-landscape #lobby,
+body.device-layout-forced-tablet.mobile-landscape #lobby {
+  padding-top: max(118px, calc(env(safe-area-inset-top) + 104px)) !important;
+  padding-bottom: max(118px, calc(env(safe-area-inset-bottom) + 104px)) !important;
+}
+
+body.tablet-device.mobile-landscape #lobby .lobbyCard,
+body.device-layout-forced-tablet.mobile-landscape #lobby .lobbyCard {
+  max-height: calc(100vh - 236px) !important;
+}
+
+@media (max-width: 799px) {
+  .tabletLobbyAd {
+    width: 468px;
+    height: 60px;
+  }
+
+  body.tablet-device.mobile-landscape #lobby,
+  body.device-layout-forced-tablet.mobile-landscape #lobby {
+    padding-top: max(88px, calc(env(safe-area-inset-top) + 74px)) !important;
+    padding-bottom: max(88px, calc(env(safe-area-inset-bottom) + 74px)) !important;
+  }
+
+  body.tablet-device.mobile-landscape #lobby .lobbyCard,
+  body.device-layout-forced-tablet.mobile-landscape #lobby .lobbyCard {
+    max-height: calc(100vh - 176px) !important;
+  }
+}
+
+/* PC 광고는 실제 표준 픽셀 크기를 유지하고 화면 폭에 따라 표준 규격으로만 전환 */
+@media (min-width: 1281px) and (max-width: 1599px) {
+  body:not(.mobile-device) #lobby .pcLobbyAdSide {
+    width: 120px !important;
+    height: 600px !important;
+  }
+}
+
+@media (max-width: 1280px) {
+  body:not(.mobile-device) #lobby .pcLobbyAdSide {
+    display: none !important;
+  }
+}
+
+@media (max-width: 799px) {
+  body:not(.mobile-device) #lobby .pcLobbyAdBottom {
+    width: 468px !important;
+    height: 60px !important;
+  }
+}
+
+@media (max-width: 1099px) {
+  body:not(.mobile-device) #gameAdBanner {
+    width: 728px !important;
+    height: 90px !important;
+  }
+}
+
+@media (max-width: 799px) {
+  body:not(.mobile-device) #gameAdBanner {
+    width: 468px !important;
+    height: 60px !important;
+  }
+}
+
+body.dark-mode .tabletLobbyAd {
+  color: rgba(17,24,39,0.62);
+  border-color: rgba(15,23,42,0.20);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.72), rgba(248,250,252,0.50)),
+    repeating-linear-gradient(45deg, rgba(15,23,42,0.04) 0 8px, transparent 8px 16px);
+}
+
+/* 태블릿 인게임: 터치하기 쉬운 메뉴 버튼 크기 */
+body.tablet-device #pauseMenuButton,
+body.device-layout-forced-tablet #pauseMenuButton {
+  left: max(14px, env(safe-area-inset-left)) !important;
+  top: max(14px, env(safe-area-inset-top)) !important;
+  width: 64px !important;
+  height: 64px !important;
+  border-radius: 21px !important;
+  transform: none !important;
+}
+
+body.tablet-device #pauseMenuButton .pauseMenuIcon,
+body.device-layout-forced-tablet #pauseMenuButton .pauseMenuIcon {
+  width: 30px !important;
+  height: 22px !important;
+  gap: 5px !important;
+}
+
+body.tablet-device #pauseMenuButton .pauseMenuIcon span,
+body.device-layout-forced-tablet #pauseMenuButton .pauseMenuIcon span {
+  height: 4px !important;
+}
+
+.deviceLayoutChoiceCard {
+  width: 560px !important;
+  transform: scale(var(--tablet-ui-scale)) !important;
+  transform-origin: center center !important;
+}
+
+body.device-layout-forced-tablet .settingsPopup,
+body.device-layout-forced-tablet .siteInfoPopup,
+body.device-layout-forced-tablet .helpPopup,
+body.device-layout-forced-tablet .privacyPopup,
+body.device-layout-forced-tablet .pausePanel,
+body.tablet-device .settingsPopup,
+body.tablet-device .siteInfoPopup,
+body.tablet-device .helpPopup,
+body.tablet-device .privacyPopup,
+body.tablet-device .pausePanel {
+  transform: scale(var(--tablet-ui-scale)) !important;
+  transform-origin: center center !important;
+}
+
+body.device-layout-forced-tablet #countdownScaleRoot,
+body.tablet-device #countdownScaleRoot {
+  transform: scale(var(--tablet-ui-scale)) !important;
+  transform-origin: center center !important;
+}
+
+body.device-layout-forced-tablet #message,
+body.tablet-device #message {
+  transform: translate(-50%, -50%) scale(var(--tablet-message-hidden-scale)) !important;
+}
+
+body.device-layout-forced-tablet #message.show,
+body.tablet-device #message.show {
+  transform: translate(-50%, -50%) scale(var(--tablet-ui-scale)) !important;
+}
+
+/* 태블릿 로비: 대전/모드 카드 4개를 동일 규격으로 정렬 */
+body.tablet-device.mobile-landscape .matchSelectWrap,
+body.tablet-device.mobile-landscape .modeSelectWrap,
+body.device-layout-forced-tablet.mobile-landscape .matchSelectWrap,
+body.device-layout-forced-tablet.mobile-landscape .modeSelectWrap {
+  grid-template-columns: 1fr !important;
+  grid-template-rows: repeat(2, 51px) !important;
+  grid-auto-rows: 51px !important;
+  gap: 10px !important;
+  align-content: start !important;
+  align-self: start !important;
+}
+
+body.tablet-device.mobile-landscape .matchButton,
+body.tablet-device.mobile-landscape .modeButton,
+body.tablet-device.mobile-landscape #lobby .lobbyCard button.matchButton,
+body.tablet-device.mobile-landscape #lobby .lobbyCard button.modeButton,
+body.device-layout-forced-tablet.mobile-landscape .matchButton,
+body.device-layout-forced-tablet.mobile-landscape .modeButton,
+body.device-layout-forced-tablet.mobile-landscape #lobby .lobbyCard button.matchButton,
+body.device-layout-forced-tablet.mobile-landscape #lobby .lobbyCard button.modeButton {
+  width: 100% !important;
+  height: 51px !important;
+  min-height: 51px !important;
+  padding: 8px 12px !important;
+  box-sizing: border-box !important;
+}
+
+/* 태블릿 로비: 날개 탭과 온라인 탭을 패널 우측 외곽에 부착 */
+body.tablet-device.mobile-landscape #lobby .lobbyCard .lobbyWingStack,
+body.device-layout-forced-tablet.mobile-landscape #lobby .lobbyCard .lobbyWingStack {
+  left: auto !important;
+  right: -44px !important;
+  top: 88px !important;
+  bottom: auto !important;
+}
+
+body.tablet-device.mobile-landscape #lobby .lobbyCard .lobbyWingTab,
+body.tablet-device.mobile-landscape #lobby .lobbyCard button.lobbyWingTab,
+body.device-layout-forced-tablet.mobile-landscape #lobby .lobbyCard .lobbyWingTab,
+body.device-layout-forced-tablet.mobile-landscape #lobby .lobbyCard button.lobbyWingTab {
+  border-radius: 0 14px 14px 0 !important;
+  border-left: 0 !important;
+}
+
+body.tablet-device.mobile-landscape .lobbyOnlineArrow,
+body.tablet-device.mobile-landscape #lobby .lobbyCard button.lobbyOnlineArrow,
+body.device-layout-forced-tablet.mobile-landscape .lobbyOnlineArrow,
+body.device-layout-forced-tablet.mobile-landscape #lobby .lobbyCard button.lobbyOnlineArrow,
+body.tablet-device.mobile-landscape .lobbyCard.online-match-active .lobbyOnlineArrow,
+body.tablet-device.mobile-landscape #lobby .lobbyCard.online-match-active button.lobbyOnlineArrow,
+body.device-layout-forced-tablet.mobile-landscape .lobbyCard.online-match-active .lobbyOnlineArrow,
+body.device-layout-forced-tablet.mobile-landscape #lobby .lobbyCard.online-match-active button.lobbyOnlineArrow {
+  left: calc(100% - 5px) !important;
+  right: auto !important;
+  top: 50% !important;
+  bottom: auto !important;
+  justify-content: flex-start !important;
+  border-radius: 0 18px 18px 0 !important;
+  border-left: 0 !important;
+  border-right: 1px solid rgba(15,23,42,0.10) !important;
+  transform: translateY(-50%) !important;
+  transform-origin: left center !important;
+}
+
+body.tablet-device.mobile-landscape .lobbyOnlineArrow:hover,
+body.tablet-device.mobile-landscape .lobbyOnlineArrow:focus-visible,
+body.tablet-device.mobile-landscape .lobbyCard.online-match-active .lobbyOnlineArrow:hover,
+body.tablet-device.mobile-landscape .lobbyCard.online-match-active .lobbyOnlineArrow:focus-visible,
+body.device-layout-forced-tablet.mobile-landscape .lobbyOnlineArrow:hover,
+body.device-layout-forced-tablet.mobile-landscape .lobbyOnlineArrow:focus-visible,
+body.device-layout-forced-tablet.mobile-landscape .lobbyCard.online-match-active .lobbyOnlineArrow:hover,
+body.device-layout-forced-tablet.mobile-landscape .lobbyCard.online-match-active .lobbyOnlineArrow:focus-visible {
+  transform: translateY(-50%) translateX(2px) !important;
+}
+
+body:not(.mobile-device) #countdownScaleRoot {
+  transform: scale(var(--ui-scale)) !important;
+  transform-origin: center center !important;
+}
+
+body:not(.mobile-device) #message {
+  transform: translate(-50%, -50%) scale(var(--ui-message-hidden-scale)) !important;
+}
+
+body:not(.mobile-device) #message.show {
+  transform: translate(-50%, -50%) scale(var(--ui-scale)) !important;
+}

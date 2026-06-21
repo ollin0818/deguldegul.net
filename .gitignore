@@ -1,0 +1,8 @@
+# Local duplicate snapshot; the deployable copy lives at repository root.
+/ver1.0.0/
+
+# Local/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
