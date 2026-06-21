@@ -1,0 +1,2289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>데굴데굴</title>
+<meta name="description" content="블록을 굴려 영역을 차지하는 2P·AI 대전 게임 데굴데굴. 스피드, 아이템, 고스트 모드에서 더 많은 땅을 차지하세요." />
+<meta name="theme-color" content="#8fd0ff" />
+<link rel="canonical" href="https://deguldegul.net/" />
+
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://deguldegul.net/" />
+<meta property="og:site_name" content="데굴데굴" />
+<meta property="og:title" content="데굴데굴 | 블록 영역 점령 게임" />
+<meta property="og:description" content="굴리고, 빼앗고, 살아남아라! 친구 또는 AI와 대결해 더 많은 영역을 차지하세요." />
+<meta property="og:image" content="https://deguldegul.net/assets_v218/images/og-share.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="파란 블록과 분홍 블록이 영역을 차지하며 대결하는 데굴데굴 게임" />
+<meta property="og:locale" content="ko_KR" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="데굴데굴 | 블록 영역 점령 게임" />
+<meta name="twitter:description" content="친구 또는 AI와 대결해 더 많은 영역을 차지하세요." />
+<meta name="twitter:image" content="https://deguldegul.net/assets_v218/images/og-share.png" />
+<meta name="twitter:image:alt" content="데굴데굴 블록 영역 점령 게임" />
+
+<link rel="icon" type="image/png" sizes="512x512" href="assets_v218/images/favicon.png" />
+<link rel="apple-touch-icon" href="assets_v218/images/favicon.png" />
+<link rel="stylesheet" href="assets_v218/css/degul-legacy-ver210.css">
+<link rel="stylesheet" href="assets_v218/css/degul-volume-slider.css">
+<link rel="stylesheet" href="assets_v218/css/degul-qhd-uniform.css">
+</head>
+<body>
+<div id="dominanceEdgeOverlay" aria-hidden="true"></div>
+
+<audio id="lobbyBgm" src="audio_v218/Lobby BGM.mp3" preload="metadata" autoplay loop></audio>
+<audio id="ingameBgm" src="audio_v218/ingame_bgm(drumX).mp3" preload="metadata" loop></audio>
+<audio id="sfxCountdown" src="audio_v218/카운트다운 3,2,1.mp3" preload="none"></audio>
+<audio id="sfxStart" src="audio_v218/start.mp3" preload="none"></audio>
+<audio id="sfxRoll" src="audio_v218/블록 굴러가는 이동.mp3" preload="none" loop></audio>
+<audio id="sfxRollP1" src="audio_v218/1p 블럭 굴러가는 이동.mp3" preload="none" loop></audio>
+<audio id="sfxRollP2" src="audio_v218/2p 블럭 굴러가는 이동.mp3" preload="none" loop></audio>
+<audio id="sfxRollAI" src="audio_v218/ai블럭 굴러가는 이동.mp3" preload="none" loop></audio>
+<audio id="sfxTurn" src="audio_v218/방향 전환.mp3" preload="none"></audio>
+<audio id="sfxTurnP1" src="audio_v218/1p방향전환.mp3" preload="none"></audio>
+<audio id="sfxTurnP2" src="audio_v218/2p방향전환.mp3" preload="none"></audio>
+<audio id="sfxTurnAI" src="audio_v218/ai방향전환.mp3" preload="none"></audio>
+<audio id="sfxButton" src="audio_v218/버튼 클릭.mp3" preload="none"></audio>
+<audio id="sfxSpawn" src="audio_v218/아이템 생성.mp3" preload="none"></audio>
+<audio id="sfxPickup" src="audio_v218/영역 점령 아이템 획득.mp3" preload="none"></audio>
+<audio id="sfxPickupSpeed" src="audio_v218/스피드 아이템 획득.mp3" preload="none"></audio>
+<audio id="sfxPickupShield" src="audio_v218/보호막 아이템 획득.mp3" preload="none"></audio>
+<audio id="sfxPickupGiant" src="audio_v218/거대화 아이템 획득.mp3" preload="none"></audio>
+<audio id="sfxShieldWallHit" src="audio_v218/보호막 벽에 충돌.mp3" preload="none"></audio>
+<audio id="sfxCaptureP1" src="audio_v218/1p영역점령.mp3" preload="none"></audio>
+<audio id="sfxCaptureP2" src="audio_v218/2p영역점령.mp3" preload="none"></audio>
+<audio id="sfxCaptureAI" src="audio_v218/ai영역점령.mp3" preload="none"></audio>
+
+<!-- v214 신규 사운드 -->
+<audio id="sfxWingHover" src="audio_v218/날개 탭 호버.mp3" preload="none" playsinline></audio>
+<audio id="sfxTutorialHighlight" src="audio_v218/이용방법 튜토리얼 강조.mp3" preload="none" playsinline></audio>
+<audio id="sfxReadyComplete" src="audio_v218/준비완료.mp3" preload="none" playsinline></audio>
+  <audio id="victoryBgm" src="audio_v218/승리bgm.mp3" preload="metadata" playsinline loop></audio>
+  <audio id="aiDefeatBgm" src="audio_v218/ai_Defeat_bgm.mp3" preload="metadata" playsinline loop></audio>
+<audio id="sfxDominanceEdge" src="audio_v218/우세 외각라인.mp3" preload="none" playsinline></audio>
+<audio id="sfxVictoryResultUI" src="audio_v218/승리결과ui.mp3" preload="none" playsinline></audio>
+
+<!-- v217 추가 사운드 -->
+<audio id="sfxRobotCleanerActivate" src="audio_v218/로봇청소기 아이템 발동.mp3" preload="none" playsinline></audio>
+<audio id="sfxRobotCleanerPickup" src="audio_v218/로봇청소기 아이템 획득.mp3" preload="none" playsinline></audio>
+<audio id="sfxDeathMotion" src="audio_v218/죽는모션.mp3" preload="none" playsinline></audio>
+<audio id="sfxCarouselButton" src="audio_v218/캐러셀 버튼.mp3" preload="none" playsinline></audio>
+  <audio id="sfxBackButton" src="audio_v218/뒤로가기 버튼.mp3" preload="none" playsinline></audio>
+  <audio id="sfxChaosGlitch" src="audio_v218/ai_chaos_glitche.mp3" preload="none" playsinline></audio>
+  <audio id="sfxGhostLightOn" src="audio_v218/조명on.mp3" preload="none" playsinline></audio>
+  <audio id="sfxGhostLightOff" src="audio_v218/조명off.mp3" preload="none" playsinline></audio>
+
+
+<button id="pauseMenuButton" type="button" onclick="openPauseMenu()" aria-label="일시정지 메뉴 열기" title="일시정지 메뉴">
+  <span class="pauseMenuIcon" aria-hidden="true"><span></span><span></span><span></span></span>
+</button>
+<button id="soundToggle" type="button" onclick="toggleLobbyBgm()">🔊 BGM 켜기</button>
+<button id="themeToggle" type="button" onclick="toggleDarkMode()">🌙 다크모드</button>
+
+<div id="gameAdBanner" aria-label="Google AdSense 광고 배너">Google AdSense</div>
+
+<div id="scoreUI" class="scoreGaugeUI">
+  <div class="scoreTopRow">
+    <div class="scoreCard p1">
+      <div class="scoreName">1P</div>
+      <div class="scoreValue" id="p1Score">0점</div>
+      <div class="scorePercent" id="p1Percent">0%</div>
+    </div>
+
+    <div class="scoreGaugeWrap" aria-label="점령률 게이지">
+      <div class="scoreGaugeInfo">
+        <span id="p1GaugeText">1P 0%</span>
+        <strong id="leaderText">현재 우세: 동점</strong>
+        <span id="p2GaugeText">2P 0%</span>
+      </div>
+      <div class="territoryGauge">
+        <div class="gaugeFill p1Fill" id="p1GaugeFill"></div>
+        <div class="gaugeDivider" id="gaugeDivider"></div>
+        <div class="gaugeFill p2Fill" id="p2GaugeFill"></div>
+      </div>
+    </div>
+
+    <div class="scoreCard p2">
+      <div class="scoreName">2P</div>
+      <div class="scoreValue" id="p2Score">0점</div>
+      <div class="scorePercent" id="p2Percent">0%</div>
+    </div>
+  </div>
+</div>
+
+<div id="buffUI">
+  <div class="buffPill" id="p1BuffPill">1P 스피드 부스트</div>
+  <div class="buffPill" id="p2BuffPill">2P 스피드 부스트</div>
+  <div class="buffPill" id="p1ShieldPill">1P 보호막</div>
+  <div class="buffPill" id="p2ShieldPill">2P 보호막</div>
+</div>
+
+<div id="mobileControlLayer" aria-hidden="true">
+  <div class="mobilePad mobilePadP1" aria-label="1P 모바일 이동 패드">
+    <div class="mobilePadLabel">1P</div>
+    <button class="mobilePadBtn up" type="button" data-mobile-key="w" aria-label="1P 위"></button>
+    <button class="mobilePadBtn left" type="button" data-mobile-key="a" aria-label="1P 왼쪽"></button>
+    <button class="mobilePadBtn down" type="button" data-mobile-key="s" aria-label="1P 아래"></button>
+    <button class="mobilePadBtn right" type="button" data-mobile-key="d" aria-label="1P 오른쪽"></button>
+  </div>
+  <div class="mobileActionStack" aria-label="모바일 액션 버튼">
+    <button class="mobileActionBtn" type="button" data-mobile-ready="1">1P 준비<span>READY</span></button>
+    <button class="mobileActionBtn" type="button" data-mobile-ready="2">2P 준비<span>READY</span></button>
+    <button class="mobileActionBtn" type="button" data-mobile-key="shift">아이템<span>ITEM</span></button>
+  </div>
+  <div class="mobilePad mobilePadP2" aria-label="2P 모바일 이동 패드">
+    <div class="mobilePadLabel">2P</div>
+    <button class="mobilePadBtn up" type="button" data-mobile-key="ArrowUp" aria-label="2P 위"></button>
+    <button class="mobilePadBtn left" type="button" data-mobile-key="ArrowLeft" aria-label="2P 왼쪽"></button>
+    <button class="mobilePadBtn down" type="button" data-mobile-key="ArrowDown" aria-label="2P 아래"></button>
+    <button class="mobilePadBtn right" type="button" data-mobile-key="ArrowRight" aria-label="2P 오른쪽"></button>
+  </div>
+</div>
+
+<div id="mobileOrientationOverlay" aria-hidden="true">
+  <div class="mobileRotateCard">
+    <div class="mobileRotateIcon" aria-hidden="true"></div>
+    <strong id="mobileRotateTitle">가로모드로 돌려주세요</strong>
+    <span id="mobileRotateText">모바일에서는 가로 화면에 맞춰 로비 UI가 최적화됩니다.</span>
+  </div>
+</div>
+
+
+<div id="mobilePhoneBlockOverlay" aria-hidden="true">
+  <div class="mobilePhoneBlockCard">
+    <div class="mobilePhoneBlockIcon" aria-hidden="true"></div>
+    <strong id="mobilePhoneBlockText">PC 또는 태블릿 환경을 권장합니다.</strong>
+  </div>
+</div>
+
+<div id="lobby">
+  <div class="lobbyRollingPattern" aria-hidden="true">
+  <span class="bgRollingBlock " style="--y:5.3%; --size:44px; --duration:11.5s; --delay:-0.00s; --alpha:0.32; --scale:0.82;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock pink" style="--y:6.7%; --size:52px; --duration:13.5s; --delay:-3.38s; --alpha:0.42; --scale:1;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock yellow" style="--y:5.3%; --size:62px; --duration:15.5s; --delay:-7.75s; --alpha:0.5; --scale:0.94;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock mint" style="--y:6.7%; --size:38px; --duration:17.0s; --delay:-12.75s; --alpha:0.6; --scale:1.12;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock pink" style="--y:15.3%; --size:52px; --duration:13.5s; --delay:-1.37s; --alpha:0.42; --scale:1;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock yellow" style="--y:16.7%; --size:62px; --duration:15.5s; --delay:-4.47s; --alpha:0.5; --scale:0.94;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock mint" style="--y:15.3%; --size:38px; --duration:17.0s; --delay:-8.17s; --alpha:0.6; --scale:1.12;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock " style="--y:16.7%; --size:56px; --duration:19.0s; --delay:-12.77s; --alpha:0.38; --scale:0.72;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock pink" style="--y:15.3%; --size:44px; --duration:11.5s; --delay:-10.57s; --alpha:0.32; --scale:0.82;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock yellow" style="--y:26.3%; --size:62px; --duration:15.5s; --delay:-2.74s; --alpha:0.5; --scale:0.94;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock mint" style="--y:27.7%; --size:38px; --duration:17.0s; --delay:-6.99s; --alpha:0.6; --scale:1.12;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock " style="--y:26.3%; --size:56px; --duration:19.0s; --delay:-12.24s; --alpha:0.38; --scale:0.72;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock pink" style="--y:27.7%; --size:44px; --duration:11.5s; --delay:-11.37s; --alpha:0.32; --scale:0.82;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock mint" style="--y:37.3%; --size:38px; --duration:17.0s; --delay:-4.11s; --alpha:0.6; --scale:1.12;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock " style="--y:38.7%; --size:56px; --duration:19.0s; --delay:-7.91s; --alpha:0.38; --scale:0.72;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock pink" style="--y:37.3%; --size:44px; --duration:11.5s; --delay:-8.71s; --alpha:0.32; --scale:0.82;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock yellow" style="--y:38.7%; --size:52px; --duration:13.5s; --delay:-12.21s; --alpha:0.42; --scale:1;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock mint" style="--y:37.3%; --size:62px; --duration:15.5s; --delay:-16.51s; --alpha:0.5; --scale:0.94;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock " style="--y:48.3%; --size:56px; --duration:19.0s; --delay:-5.48s; --alpha:0.38; --scale:0.72;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock pink" style="--y:49.7%; --size:44px; --duration:11.5s; --delay:-8.36s; --alpha:0.32; --scale:0.82;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock yellow" style="--y:48.3%; --size:52px; --duration:13.5s; --delay:-12.23s; --alpha:0.42; --scale:1;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock mint" style="--y:49.7%; --size:62px; --duration:15.5s; --delay:-17.11s; --alpha:0.5; --scale:0.94;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock pink" style="--y:59.3%; --size:44px; --duration:11.5s; --delay:-6.85s; --alpha:0.32; --scale:0.82;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock yellow" style="--y:60.7%; --size:52px; --duration:13.5s; --delay:-9.55s; --alpha:0.42; --scale:1;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock mint" style="--y:59.3%; --size:62px; --duration:15.5s; --delay:-13.05s; --alpha:0.5; --scale:0.94;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock " style="--y:60.7%; --size:38px; --duration:17.0s; --delay:-17.05s; --alpha:0.6; --scale:1.12;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock pink" style="--y:59.3%; --size:56px; --duration:19.0s; --delay:-22.05s; --alpha:0.38; --scale:0.72;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock yellow" style="--y:70.3%; --size:52px; --duration:13.5s; --delay:-8.22s; --alpha:0.42; --scale:1;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock mint" style="--y:71.7%; --size:62px; --duration:15.5s; --delay:-12.10s; --alpha:0.5; --scale:0.94;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock " style="--y:70.3%; --size:38px; --duration:17.0s; --delay:-16.72s; --alpha:0.6; --scale:1.12;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock pink" style="--y:71.7%; --size:56px; --duration:19.0s; --delay:-22.47s; --alpha:0.38; --scale:0.72;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock mint" style="--y:81.3%; --size:62px; --duration:15.5s; --delay:-9.59s; --alpha:0.5; --scale:0.94;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock " style="--y:82.7%; --size:38px; --duration:17.0s; --delay:-12.99s; --alpha:0.6; --scale:1.12;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock pink" style="--y:81.3%; --size:56px; --duration:19.0s; --delay:-17.19s; --alpha:0.38; --scale:0.72;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock yellow" style="--y:82.7%; --size:44px; --duration:11.5s; --delay:-16.49s; --alpha:0.32; --scale:0.82;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock mint" style="--y:81.3%; --size:52px; --duration:13.5s; --delay:-20.39s; --alpha:0.42; --scale:1;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock " style="--y:91.3%; --size:38px; --duration:17.0s; --delay:-10.96s; --alpha:0.6; --scale:1.12;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock pink" style="--y:92.7%; --size:56px; --duration:19.0s; --delay:-15.71s; --alpha:0.38; --scale:0.72;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock yellow" style="--y:91.3%; --size:44px; --duration:11.5s; --delay:-16.71s; --alpha:0.32; --scale:0.82;"><i class="cubeBody"></i></span>
+  <span class="bgRollingBlock mint" style="--y:92.7%; --size:52px; --duration:13.5s; --delay:-21.09s; --alpha:0.42; --scale:1;"><i class="cubeBody"></i></span>
+</div>
+  <div class="tabletLobbyAd tabletLobbyAdTop" aria-label="태블릿 상단 Google AdSense 광고 배너"><span>Google AdSense</span></div>
+  <div class="tabletLobbyAd tabletLobbyAdBottom" aria-label="태블릿 하단 Google AdSense 광고 배너"><span>Google AdSense</span></div>
+    <div class="pcLobbyAd pcLobbyAdSide pcLobbyAdLeft" aria-label="좌측 광고 배너 자리"><span>Google AdSense</span></div>
+  <div class="pcLobbyAd pcLobbyAdSide pcLobbyAdRight" aria-label="우측 광고 배너 자리"><span>Google AdSense</span></div>
+  <div class="pcLobbyAd pcLobbyAdBottom" id="pcLobbyBottomAd" aria-label="하단 광고 배너 자리">
+    <span>Google AdSense</span>
+    <button class="pcLobbyAdClose" type="button" onclick="hidePcLobbyBottomAd()" aria-label="하단 광고 숨기기">×</button>
+  </div>
+<div class="lobbyCard">
+    <button class="lobbyHelpButton" type="button" onclick="openHelpPopup()" aria-label="게임 설명 열기" title="게임 설명">?</button>
+    <button class="lobbySiteInfoButton" id="siteInfoToggle" type="button" onclick="openSiteInfoPopup('home')" aria-label="사이트 정보 메뉴 열기" title="사이트 정보">📄</button>
+    <div class="languageSelectWrap" id="languageSelectWrap">
+      <button class="lobbyLangButton" id="languageToggle" type="button" onclick="toggleLanguageMenu(event)" aria-label="언어 선택" title="언어 선택">🌐</button>
+      <div class="languageDropdownMenu" id="languageDropdownMenu" role="menu" aria-label="언어 선택 메뉴">
+        <button type="button" data-lang="ko" onclick="selectLanguage('ko')" role="menuitem">한국어</button>
+        <button type="button" data-lang="en" onclick="selectLanguage('en')" role="menuitem">English</button>
+        <button type="button" data-lang="ja" onclick="selectLanguage('ja')" role="menuitem">日本語</button>
+        <button type="button" data-lang="zh" onclick="selectLanguage('zh')" role="menuitem">中文</button>
+      </div>
+    </div>
+    <button class="lobbyPrivacyButton" id="privacyToggle" type="button" onclick="openPrivacyPopup(false)" aria-label="개인정보 및 광고 안내 열기" title="개인정보 및 광고 안내">🛡</button>
+    <button class="lobbySettingsButton" id="lobbySettingsButton" type="button" onclick="openSettingsPopup()" aria-label="설정 열기" title="설정">⚙</button>
+    <div class="lobbyKicker">2인용 territory rolling game</div>
+    <div class="mobileRecommendNotice" id="mobileRecommendNotice">모바일 환경에서는 PC 또는 패드로 플레이하길 권장드립니다.</div>
+    <div class="titleLoop"><h1 class="titleRollText" aria-label="데굴데굴"><span class="titleRollChar">데</span><span class="titleRollChar">굴</span><span class="titleRollChar">데</span><span class="titleRollChar">굴</span></h1></div>
+    <p>각 플레이어가 원하는 색상을 고른 뒤 준비하면 게임이 시작됩니다.</p>
+
+    <div class="lobbyPanelSlider" id="lobbyPanelSlider" aria-label="로비 패널 슬라이드">
+      <div class="lobbyPanelTrack" id="lobbyPanelTrack">
+        <section class="lobbyPanelSlide mainLobbySlide" aria-label="로컬 대전 설정">
+    <div class="matchSelectWrap" id="matchSelectWrap" aria-label="대전 방식 선택">
+      <button class="matchButton selected" id="pvpModeBtn" type="button" onclick="setMatchMode('pvp')">
+        <strong>2P 대전</strong>
+        <span>두 명이 같은 화면에서 플레이</span>
+      </button>
+      <button class="matchButton" id="aiModeBtn" type="button" onclick="setMatchMode('ai')">
+        <strong>AI 대전</strong>
+        <span>1P가 AI와 혼자 대전</span>
+      </button>
+    </div>
+
+    <div class="aiDifficultyWrap aiDifficultyCarousel" id="aiDifficultyWrap" aria-label="AI 난이도 선택">
+      <button class="aiDifficultyArrow aiDifficultyPrev" id="aiDifficultyPrev" type="button" onclick="shiftAiDifficulty(-1)" aria-label="이전 AI 난이도">‹</button>
+      <div class="aiDifficultyViewport" aria-live="polite">
+        <div class="aiDifficultyTrack" id="aiDifficultyTrack">
+          <button class="aiDifficultyButton selected" id="aiDiffEasy" type="button" onclick="setAiDifficulty('easy')">이지</button>
+          <button class="aiDifficultyButton" id="aiDiffNormal" type="button" onclick="setAiDifficulty('normal')">노말</button>
+          <button class="aiDifficultyButton" id="aiDiffHard" type="button" onclick="setAiDifficulty('hard')">하드</button>
+          <button class="aiDifficultyButton" id="aiDiffSuperhard" type="button" onclick="setAiDifficulty('superhard')">슈퍼하드</button>
+          <button class="aiDifficultyButton" id="aiDiffExtreme" type="button" onclick="setAiDifficulty('extreme')">익스트림</button>
+          <button class="aiDifficultyButton" id="aiDiffHell" type="button" onclick="setAiDifficulty('hell')">지옥</button>
+          <button class="aiDifficultyButton" id="aiDiffChaos" type="button" onclick="setAiDifficulty('chaos')">카오스</button>
+        </div>
+      </div>
+      <button class="aiDifficultyArrow aiDifficultyNext" id="aiDifficultyNext" type="button" onclick="shiftAiDifficulty(1)" aria-label="다음 AI 난이도">›</button>
+      <div class="aiDifficultyDots" id="aiDifficultyDots" aria-hidden="true"></div>
+    </div>
+
+    <div class="modeSelectWrap" id="modeSelectWrap" aria-label="게임 모드 선택">
+      <label class="ghostToggleBox ghostMiniToggle" id="ghostToggleBox" title="고스트 모드: 흔적과 시야가 가려지는 혼란 모드" aria-label="고스트 모드">
+        <svg class="ghostLineIcon" viewBox="0 0 32 32" aria-hidden="true">
+          <path class="ghostBody" d="M7 25V13.8C7 8.9 11 5 16 5s9 3.9 9 8.8V25l-3.1-2.1L19.1 25 16 22.9 12.9 25l-2.8-2.1L7 25Z"/>
+          <circle class="ghostEye" cx="13" cy="14" r="1.25"/>
+          <circle class="ghostEye" cx="19" cy="14" r="1.25"/>
+        </svg>
+        <input id="ghostModeCheck" type="checkbox" onchange="toggleGhostMode(this.checked)">
+      </label>
+      <button class="modeButton selected" id="classicModeBtn" type="button" onclick="setGameMode('speed')">
+        <strong>스피드 모드</strong>
+        <span>스피드 부스트 속도가 기본인 빠른 모드</span>
+      </button>
+      <button class="modeButton" id="itemModeBtn" type="button" onclick="setGameMode('item')">
+        <strong>아이템 모드</strong>
+        <span>영역확장 / 스피드 부스트 / 보호막 아이템 등장</span>
+      </button>
+    </div>
+
+    <div class="playerSelectWrap">
+      <div class="playerSelectBox">
+        <div class="playerSelectTitle">1P COLOR</div>
+        <div class="selectedPreview" id="p1Preview"></div>
+        <div class="palette" id="p1Palette"></div>
+        <div class="readyBox readyTouchCard" id="p1ReadyBox" role="button" tabindex="0" aria-label="1P 준비 토글">1P 준비 전</div>
+        <div class="readyHint">준비 카드 터치 / Ctrl</div>
+      </div>
+
+      <div class="playerSelectBox">
+        <div class="playerSelectTitle">2P COLOR</div>
+        <div class="selectedPreview" id="p2Preview"></div>
+        <div class="palette" id="p2Palette"></div>
+        <div class="readyBox readyTouchCard" id="p2ReadyBox" role="button" tabindex="0" aria-label="2P 준비 토글">2P 준비 전</div>
+        <div class="readyHint">준비 카드 터치 / Enter</div>
+      </div>
+    </div>
+
+    <div id="startStatus">색상을 고르고 각자 준비하세요.</div>
+        </section>
+        <section class="lobbyPanelSlide onlineMatchSlide" aria-label="온라인 대전 준비 중">
+          <div class="onlineMatchPanel">
+            <div class="onlineMatchBadge">COMING SOON</div>
+            <h2>온라인 대전 준비 중</h2>
+            <p class="onlineMatchLead">안정적인 온라인 대전을 준비하고 있습니다.</p>
+            <div class="onlineColorSelectBox onlineMatchPreviewDisabled" aria-disabled="true">
+              <div class="onlineColorPreview" id="onlineColorPreview" aria-hidden="true"></div>
+              <div class="onlineColorInfo">
+                <strong>색상 선택 미리보기</strong>
+                <div class="onlineColorPalette" aria-label="온라인 대전 색상 미리보기">
+                  <button class="onlineColorChip selected" type="button" style="--chip-color:#64beff" aria-label="하늘색" disabled></button>
+                  <button class="onlineColorChip" type="button" style="--chip-color:#ff7fab" aria-label="분홍색" disabled></button>
+                  <button class="onlineColorChip" type="button" style="--chip-color:#ffd166" aria-label="노란색" disabled></button>
+                  <button class="onlineColorChip" type="button" style="--chip-color:#7ee0a6" aria-label="민트색" disabled></button>
+                  <button class="onlineColorChip" type="button" style="--chip-color:#b38cff" aria-label="보라색" disabled></button>
+                  <button class="onlineColorChip" type="button" style="--chip-color:#ff9f6e" aria-label="주황색" disabled></button>
+                </div>
+              </div>
+            </div>
+            <button class="onlineMatchStartButton" type="button" disabled aria-disabled="true">온라인 대전 준비 중</button>
+            <div class="onlineMatchStatus" id="onlineMatchStatus" aria-live="polite">정식 지원 전까지 로컬 대전과 AI 대전을 이용해주세요.</div>
+          </div>
+        </section>
+      </div>
+    </div>
+    <button class="lobbyOnlineArrow" id="lobbyOnlineArrow" type="button" onclick="toggleLobbyPanel()" aria-label="온라인 대전 준비 중 안내 보기" data-panel-target="online">
+      <span class="onlineArrowCube" aria-hidden="true"><span class="onlineArrowCubeFace"></span></span>
+      <span class="onlineArrowText onlineTextGo">온라인 대전 준비 중</span>
+      <span class="onlineArrowText onlineTextBack">로컬 대전 설정 돌아가기</span>
+    </button>
+
+    <div class="lobbyWingStack" aria-label="기록과 랭킹">
+      <button class="lobbyWingTab record" id="aiRecordWing" type="button" onclick="openAiRecordPopup()" aria-label="AI대전 기록 열기">
+        <span class="lobbyWingIcon" aria-hidden="true">📊</span>
+        <span class="lobbyWingLabel" id="aiRecordWingText">AI대전 기록</span>
+      </button>
+      <button class="lobbyWingTab ranking" id="aiRankingWing" type="button" onclick="openAiRankingPopup()" aria-label="랭킹 열기">
+        <span class="lobbyWingIcon" aria-hidden="true">🏆</span>
+        <span class="lobbyWingLabel" id="aiRankingWingText">랭킹</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="aiRecordOverlay" id="aiRecordOverlay" aria-hidden="true" onclick="closeAiRecordPopup(event)">
+    <div class="aiRecordPopup" role="dialog" aria-modal="true" aria-labelledby="aiRecordPopupTitle" onclick="event.stopPropagation()">
+      <button class="aiRecordCloseButton" type="button" onclick="closeAiRecordPopup()" aria-label="AI대전 기록 닫기">×</button>
+      <div class="aiRecordPopupHeader">
+        <div class="aiRecordPopupBadge">RECORD</div>
+        <h2 id="aiRecordPopupTitle">AI대전 기록</h2>
+      </div>
+      <div class="aiRecordTabs" role="tablist" aria-label="기록 메뉴">
+        <button class="aiRecordTab active" id="aiRecordLocalTab" type="button" role="tab" aria-selected="true" onclick="setAiRecordPopupTab('record')">내 기록</button>
+        <button class="aiRecordTab" id="aiRecordRankingTab" type="button" role="tab" aria-selected="false" onclick="setAiRecordPopupTab('ranking')">랭킹 준비 중</button>
+      </div>
+      <div class="aiRecordPanel" id="aiRecordPanel" aria-live="polite">
+        <div class="aiRecordDifficultyCarousel" role="group" aria-label="AI 난이도별 기록 선택">
+          <button class="aiRecordCarouselArrow prev" id="aiRecordDifficultyPrev" type="button" onclick="shiftAiRecordDifficulty(-1)" aria-label="이전 AI 난이도">‹</button>
+          <button class="aiRecordDifficultyCurrent" id="aiRecordDifficultyCurrent" type="button" onclick="shiftAiRecordDifficulty(1)" aria-label="다음 AI 난이도">
+            <small>DIFFICULTY</small>
+            <strong id="aiRecordDifficultyCarouselLabel">Easy</strong>
+          </button>
+          <button class="aiRecordCarouselArrow next" id="aiRecordDifficultyNext" type="button" onclick="shiftAiRecordDifficulty(1)" aria-label="다음 AI 난이도">›</button>
+        </div>
+        <div class="aiRecordDifficultyDots" id="aiRecordDifficultyDots" role="group" aria-label="AI 난이도 바로 선택"></div>
+        <div class="aiRecordHeader">
+          <strong id="aiRecordTitle">내 AI대전 기록</strong>
+          <span id="aiRecordDifficulty">Easy</span>
+        </div>
+        <div class="aiRecordGrid">
+          <div class="aiRecordItem" id="aiRecordBestTimeBox">
+            <b id="aiRecordBestTimeLabel">최고 클리어 타임</b>
+            <span id="aiRecordBestTime">미클리어</span>
+          </div>
+          <div class="aiRecordItem" id="aiRecordStreakBox">
+            <b id="aiRecordStreakLabel">최고 연승</b>
+            <span id="aiRecordStreak">0</span>
+          </div>
+          <div class="aiRecordItem" id="aiRecordWinTypeBox">
+            <b id="aiRecordWinTypeLabel">최근 승리 방식</b>
+            <span id="aiRecordWinType">-</span>
+          </div>
+          <div class="aiRecordItem" id="aiRecordWinModeBox">
+            <b id="aiRecordWinModeLabel">최근 승리 모드</b>
+            <span id="aiRecordWinMode">-</span>
+          </div>
+        </div>
+      </div>
+      <div class="aiRecordPanel aiRankingPanel" id="aiRankingPanel" aria-live="polite" hidden>
+        <div class="aiRecordHeader">
+          <strong id="aiRankingTitle">온라인 랭킹</strong>
+          <span id="aiRankingStatus">준비 중</span>
+        </div>
+        <div class="aiRecordItem empty">
+          <b id="aiRankingSoonLabel">Cloudflare D1 랭킹 시스템 예정</b>
+          <span id="aiRankingSoonText">배포 후 TOP 100 랭킹으로 연결됩니다.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lobbyFooterLinks" aria-label="사이트 정책 바로가기">
+    <span>© 2026 DegulDegul</span>
+    <button type="button" onclick="openSiteInfoPopup('privacy')">Privacy Policy</button>
+    <button type="button" onclick="openSiteInfoPopup('terms')">Terms</button>
+    <button type="button" onclick="openSiteInfoPopup('contact')">Contact</button>
+  </div>
+</div>
+
+
+<div id="siteInfoOverlay" aria-hidden="true" onclick="closeSiteInfoPopup(event)">
+  <div class="siteInfoPopup" role="dialog" aria-modal="true" aria-labelledby="siteInfoTitle" onclick="event.stopPropagation()">
+    <button class="siteInfoCloseButton" type="button" onclick="closeSiteInfoPopup()" aria-label="사이트 정보 닫기">×</button>
+    <aside class="siteInfoSide">
+      <div class="siteInfoBrand">
+        <strong>데굴데굴</strong>
+        <span>게임 소개, 조작법, 업데이트, 정책, 문의를 한곳에서 확인할 수 있습니다.</span>
+      </div>
+      <nav class="siteInfoTabs" aria-label="사이트 정보 메뉴">
+        <button class="siteInfoTab active" type="button" data-site-tab="home" onclick="setSiteInfoTab('home')">홈</button>
+        <button class="siteInfoTab" type="button" data-site-tab="about" onclick="setSiteInfoTab('about')">게임 소개</button>
+        <button class="siteInfoTab" type="button" data-site-tab="controls" onclick="setSiteInfoTab('controls')">조작법</button>
+        <button class="siteInfoTab" type="button" data-site-tab="updates" onclick="setSiteInfoTab('updates')">업데이트 내역</button>
+        <button class="siteInfoTab" type="button" data-site-tab="privacy" onclick="setSiteInfoTab('privacy')">개인정보처리방침</button>
+        <button class="siteInfoTab" type="button" data-site-tab="terms" onclick="setSiteInfoTab('terms')">이용약관</button>
+        <button class="siteInfoTab" type="button" data-site-tab="contact" onclick="setSiteInfoTab('contact')">문의하기</button>
+      </nav>
+    </aside>
+    <main class="siteInfoContent">
+      <section class="siteInfoPanel active" data-site-panel="home">
+        <h2 id="siteInfoTitle">홈</h2>
+        <p class="siteInfoLead">데굴데굴은 같은 화면에서 두 명이 영역을 차지하며 겨루는 2인용 액션 전략 게임입니다. 로비에서 모드와 색상을 선택하고 바로 플레이할 수 있습니다.</p>
+        <div class="siteInfoGrid">
+          <div class="siteInfoCard"><strong>게임하기</strong><span>현재 화면의 로비에서 2P 대전 또는 AI 대전을 선택하고 준비하면 게임이 시작됩니다.</span></div>
+          <div class="siteInfoCard"><strong>지원 모드</strong><span>스피드 모드, 아이템 모드, 고스트 모드, AI 대전을 제공합니다.</span></div>
+          <div class="siteInfoCard"><strong>목표</strong><span>라인을 그어 영역을 점령하고 상대보다 더 넓은 땅을 차지하세요.</span></div>
+          <div class="siteInfoCard"><strong>정책 안내</strong><span>광고, 쿠키, 브라우저 저장소 안내는 개인정보처리방침에서 확인할 수 있습니다.</span></div>
+        </div>
+      </section>
+
+      <section class="siteInfoPanel" data-site-panel="about">
+        <h2>게임 소개</h2>
+        <p class="siteInfoLead">블록을 굴려 자신의 영역 밖으로 나가면 이동 경로가 라인으로 남고, 다시 내 영역으로 돌아오면 둘러싼 공간이 내 색으로 채워집니다.</p>
+        <div class="siteInfoGrid">
+          <div class="siteInfoCard"><strong>기본 규칙</strong><span>자신의 영역 밖에서 만든 라인을 안전하게 닫으면 새로운 영역을 점령합니다.</span></div>
+          <div class="siteInfoCard"><strong>승리 조건</strong><span>더 많은 영역을 차지하거나, 상대의 라인을 끊어 승리할 수 있습니다.</span></div>
+          <div class="siteInfoCard"><strong>스피드 모드</strong><span>빠른 템포로 진행되는 기본 경쟁 모드입니다.</span></div>
+          <div class="siteInfoCard"><strong>아이템 모드</strong><span>영역확장, 스피드 부스트, 보호막, 거대화 등 다양한 변수를 활용합니다.</span></div>
+          <div class="siteInfoCard"><strong>고스트 모드</strong><span>서로의 흔적과 시야가 가려져 기억력과 심리전이 더 중요해집니다.</span></div>
+          <div class="siteInfoCard"><strong>AI 대전</strong><span>혼자서도 AI 난이도를 선택해 연습하거나 도전할 수 있습니다.</span></div>
+        </div>
+        <div class="siteInfoTutorialBox">
+          <strong id="siteInfoTutorialTitle">이용 방법 튜토리얼</strong>
+          <span id="siteInfoTutorialText">대전 방식, 게임 모드, 색상 선택과 준비 완료 순서를 로비에서 다시 안내합니다.</span>
+          <button class="siteInfoTutorialReplayButton" id="siteInfoTutorialReplayButton" type="button" onclick="replayDegulTutorialFromSiteInfo()">튜토리얼 다시 보기</button>
+        </div>
+      </section>
+
+      <section class="siteInfoPanel" data-site-panel="controls">
+        <h2>조작법</h2>
+
+        <div class="pcControlGuide">
+          <p class="siteInfoLead">PC 환경에서는 키보드로 조작합니다. 게임 시작 전 카운트다운 화면에서도 조작 키를 다시 확인할 수 있습니다.</p>
+          <div class="siteInfoGrid">
+            <div class="siteInfoCard"><strong>1P 이동</strong><span>W A S D</span></div>
+            <div class="siteInfoCard"><strong>2P 이동</strong><span>방향키 ↑ ← ↓ →</span></div>
+            <div class="siteInfoCard"><strong>1P 준비</strong><span>Ctrl 또는 1P 준비 카드 선택</span></div>
+            <div class="siteInfoCard"><strong>2P 준비</strong><span>Enter 또는 2P 준비 카드 선택</span></div>
+            <div class="siteInfoCard"><strong>일시정지</strong><span>ESC 또는 좌측 상단 메뉴 버튼</span></div>
+          </div>
+        </div>
+
+        <div class="tabletControlGuide">
+          <p class="siteInfoLead">태블릿 환경에서는 화면 양쪽의 가상 조이스틱으로 조작합니다. 왼쪽 조이스틱은 1P, 오른쪽 조이스틱은 2P 전용입니다.</p>
+          <div class="tabletControlVisual" aria-label="태블릿 조작 안내 그림">
+            <div class="tabletPlayArea"></div>
+            <div class="tabletPlayerLabel left">1P 조이스틱</div>
+            <div class="tabletPlayerLabel right">2P 조이스틱</div>
+            <div class="tabletJoystick left"></div>
+            <div class="tabletJoystick right"></div>
+          </div>
+          <div class="tabletControlHint">
+            <div class="siteInfoCard"><strong>1P 이동</strong><span>화면 왼쪽 조이스틱을 밀어서 이동합니다.</span></div>
+            <div class="siteInfoCard"><strong>2P 이동</strong><span>화면 오른쪽 조이스틱을 밀어서 이동합니다.</span></div>
+            <div class="siteInfoCard"><strong>준비</strong><span>로비에서 각 플레이어의 준비 카드를 터치합니다.</span></div>
+            <div class="siteInfoCard"><strong>일시정지</strong><span>좌측 상단 메뉴 버튼을 터치합니다.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="siteInfoPanel" data-site-panel="updates">
+        <h2>업데이트 내역</h2>
+        <p class="siteInfoLead">실제 배포 버전을 기준으로 주요 기능 추가와 수정 내역을 안내합니다.</p>
+        <div class="updateList">
+          <div class="updateItem"><b>ver218</b><ul><li>단색 블록과 로비 미리보기에 캐릭터 눈 디자인 적용</li><li>한국어·영어·일본어·중국어 UI 번역 누락 보완</li><li>배포용 개인정보처리방침과 실제 버전 업데이트 내역 정비</li></ul></div>
+          <div class="updateItem"><b>ver214–217</b><ul><li>준비 완료·결과 UI·우세 외곽선·사망 모션 사운드 추가</li><li>로봇청소기 아이템 획득 및 발동 사운드 추가</li><li>효과음 재생 시점과 중복 재생 방지 로직 개선</li></ul></div>
+          <div class="updateItem"><b>ver200–211</b><ul><li>온라인 대전 준비 패널과 로비 슬라이드 UI 추가</li><li>스킨·AI 난이도 잠금 표시와 캐러셀 UI 개선</li><li>설정창 블록형 볼륨 슬라이더와 PC·태블릿 레이아웃 개선</li></ul></div>
+        </div>
+      </section>
+
+      <section class="siteInfoPanel" data-site-panel="privacy">
+        <h2>개인정보처리방침</h2>
+        <p class="siteInfoLead">데굴데굴은 개인정보 보호법 등 관련 법령을 준수하며, 서비스 제공에 필요한 최소한의 정보만 처리합니다. 본 방침은 2026년 6월 21일부터 시행됩니다.</p>
+        <div class="siteInfoGrid">
+          <div class="siteInfoCard"><strong>처리하는 정보</strong><span>회원가입이나 직접 식별정보를 요구하지 않습니다. 언어, 음량, 화면 모드, 동의 기록, AI 진행도·해금 스킨·로컬 전적이 브라우저 저장소에 저장될 수 있습니다.</span></div>
+          <div class="siteInfoCard"><strong>처리 목적</strong><span>게임 설정 유지, 진행도와 로컬 기록 제공, 이용자 선택 기억, 서비스 오류 확인 및 안정적인 서비스 제공을 위해 사용합니다.</span></div>
+          <div class="siteInfoCard"><strong>보유 및 파기</strong><span>브라우저 저장 정보는 이용자가 브라우저 데이터를 삭제할 때까지 보관됩니다. 사이트 데이터 또는 쿠키를 삭제하면 언제든 직접 파기할 수 있습니다.</span></div>
+          <div class="siteInfoCard"><strong>광고·쿠키</strong><span>Google AdSense가 적용되면 Google 등 제3자 광고 사업자가 이전 방문 기록을 바탕으로 광고를 제공하기 위해 쿠키, IP 주소, 기기·브라우저 정보를 사용할 수 있습니다.</span></div>
+          <div class="siteInfoCard"><strong>제3자 제공·국외 처리</strong><span>현재 운영자가 개인정보를 판매하거나 자체 서버에서 제3자에게 제공하지 않습니다. 향후 광고로 국외 처리가 발생하면 적용 전에 대상·목적·항목·보유기간과 거부 방법을 본 방침에 추가합니다.</span></div>
+          <div class="siteInfoCard"><strong>이용자의 권리</strong><span>브라우저 설정에서 쿠키를 차단하거나 저장 데이터를 삭제할 수 있습니다. 광고 개인화 설정은 Google 광고 설정에서 관리할 수 있습니다.</span></div>
+          <div class="siteInfoCard"><strong>아동의 개인정보</strong><span>이 서비스는 아동의 개인정보를 의도적으로 수집하지 않습니다. 관련 정보가 수집된 사실을 알게 되면 확인 후 삭제 조치합니다.</span></div>
+          <div class="siteInfoCard"><strong>문의 및 책임자</strong><span>개인정보 관련 문의, 열람·삭제 요청 및 신고는 운영자 이메일 contact@deguldegul.net 으로 접수할 수 있습니다.</span></div>
+        </div>
+        <div class="siteInfoMutedNote">시행일: 2026년 6월 21일 · Google의 정보 이용 안내: policies.google.com/technologies/partner-sites · 광고 설정: adssettings.google.com · 광고 및 외부 서비스 범위가 변경되면 본 방침도 갱신합니다.</div>
+      </section>
+
+      <section class="siteInfoPanel" data-site-panel="terms">
+        <h2>이용약관</h2>
+        <p class="siteInfoLead">데굴데굴을 이용하기 전 아래 내용을 확인해 주세요.</p>
+        <div class="siteInfoGrid">
+          <div class="siteInfoCard"><strong>서비스 이용</strong><span>본 게임은 무료로 제공되며, 별도의 회원가입 없이 이용할 수 있습니다.</span></div>
+          <div class="siteInfoCard"><strong>저장 데이터</strong><span>일부 설정, 동의 여부, 플레이 기록은 사용자의 브라우저에 저장될 수 있습니다.</span></div>
+          <div class="siteInfoCard"><strong>서비스 변경</strong><span>운영자는 기능, 디자인, 정책, 제공 방식을 필요에 따라 변경하거나 종료할 수 있습니다.</span></div>
+          <div class="siteInfoCard"><strong>금지 행위</strong><span>서비스 방해, 코드 무단 악용, 광고 시스템 조작, 비정상적인 접근은 금지됩니다.</span></div>
+        </div>
+      </section>
+
+      <section class="siteInfoPanel" data-site-panel="contact">
+        <h2>문의하기</h2>
+        <p class="siteInfoLead">게임 오류 제보, 광고/정책 문의, 기타 의견은 아래 이메일로 보내주세요.</p>
+        <a class="siteInfoContactBox" href="mailto:contact@deguldegul.net">✉ contact@deguldegul.net</a>
+        <div class="siteInfoMutedNote">문의 시 사용 환경, 브라우저, 발생 상황을 함께 적어주면 확인에 도움이 됩니다.</div>
+      </section>
+    </main>
+  </div>
+</div>
+
+
+<div id="settingsOverlay" aria-hidden="true" onclick="closeSettingsPopup(event)">
+  <div class="settingsPopup" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" onclick="event.stopPropagation()">
+    <button class="settingsCloseButton" type="button" onclick="closeSettingsPopup()" aria-label="설정 닫기">×</button>
+    <div class="settingsHeader">
+      <div class="settingsBadge">SETTINGS</div>
+      <h2 id="settingsTitle">설정</h2>
+      <p>소리와 화면 모드를 조절할 수 있습니다.</p>
+    </div>
+    <div class="settingsBody">
+      <div class="settingsRow settingsAudioRow">
+        <label for="settingsBgmVolume">BGM <span id="settingsBgmValue">42%</span></label>
+        <div class="settingsVolumeControl">
+          <input id="settingsBgmVolume" type="range" min="0" max="100" value="42" oninput="setBgmVolumeFromSlider(this.value)">
+          <button id="settingsBgmMute" class="settingsMuteButton" type="button" onclick="toggleBgmMute()" aria-label="BGM 음소거">🔇</button>
+        </div>
+      </div>
+      <div class="settingsRow settingsAudioRow">
+        <label for="settingsSfxVolume">효과음 <span id="settingsSfxValue">80%</span></label>
+        <div class="settingsVolumeControl">
+          <input id="settingsSfxVolume" type="range" min="0" max="100" value="80" oninput="setSfxVolumeFromSlider(this.value)">
+          <button id="settingsSfxMute" class="settingsMuteButton" type="button" onclick="toggleSfxMute()" aria-label="효과음 음소거">🔇</button>
+        </div>
+      </div>
+      <button id="settingsThemeToggle" class="settingsThemeToggle" type="button" onclick="toggleDarkModeFromSettings()">🌙 다크모드</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="helpOverlay" aria-hidden="true" onclick="closeHelpPopup(event)">
+  <div class="helpPopup" role="dialog" aria-modal="true" aria-labelledby="helpTitle" onclick="event.stopPropagation()">
+    <button class="helpCloseButton" type="button" onclick="closeHelpPopup()" aria-label="게임 설명 닫기">×</button>
+    <div class="helpHeader">
+      <h2 id="helpTitle">한눈에 보는 데굴데굴 룰</h2>
+      <p>기본 규칙을 익힌 뒤, 스피드 모드와 아이템 모드 중 원하는 방식으로 플레이하세요.</p>
+    </div>
+
+    <div class="helpRuleGrid">
+      <div class="helpRuleCard">
+        <div class="helpVisual" aria-hidden="true">
+          <div class="helpLand" style="left:18px; top:74px; width:62px; height:38px;"></div>
+          <div class="helpBlock" style="left:36px; top:52px;"></div>
+          <div class="helpArrow" style="left:76px; top:65px; width:72px;"></div>
+          <div class="helpTrail" style="left:68px; top:64px; width:84px;"></div>
+          <div class="helpBlock" style="left:148px; top:52px;"></div>
+        </div>
+        <div>
+          <strong>1. 밖으로 나가면 흔적 생성</strong>
+          <span>내 영역 밖으로 굴러가면 지나간 길이 라인으로 남습니다.</span>
+        </div>
+      </div>
+
+      <div class="helpRuleCard">
+        <div class="helpVisual" aria-hidden="true">
+          <div class="helpClaimFill"></div>
+          <div class="helpLand" style="left:20px; top:78px; width:58px; height:36px;"></div>
+          <div class="helpTrail" style="left:62px; top:72px; width:94px;"></div>
+          <div class="helpTrail vertical" style="left:146px; top:43px; bottom:52px;"></div>
+          <div class="helpTrail" style="left:70px; top:42px; width:84px;"></div>
+          <div class="helpBlock" style="left:62px; top:32px;"></div>
+        </div>
+        <div>
+          <strong>2. 돌아오면 영역 점령</strong>
+          <span>흔적으로 둘러싼 공간이 내 색으로 채워집니다.</span>
+        </div>
+      </div>
+
+      <div class="helpRuleCard">
+        <div class="helpVisual" aria-hidden="true">
+          <div class="helpLand pink" style="right:18px; top:22px; width:58px; height:36px;"></div>
+          <div class="helpTrail" style="left:34px; top:65px; width:132px; background:rgba(255,146,184,0.78);"></div>
+          <div class="helpBlock" style="left:78px; top:50px;"></div>
+          <div class="helpDanger" style="left:120px; top:42px;"></div>
+        </div>
+        <div>
+          <strong>3. 자기 라인을 밟으면 위험</strong>
+          <span>자기 라인을 밟으면 바로 사망 판정입니다.</span>
+        </div>
+      </div>
+
+      <div class="helpRuleCard">
+        <div class="helpVisual" aria-hidden="true">
+          <div class="helpLand" style="left:18px; top:24px; width:86px; height:82px;"></div>
+          <div class="helpLand pink" style="right:18px; top:32px; width:58px; height:58px;"></div>
+          <div class="helpTrail" style="left:98px; top:64px; width:44px; background:rgba(255,146,184,0.78);"></div>
+          <div class="helpTrail" style="left:170px; top:64px; width:48px; background:rgba(255,146,184,0.78); opacity:.45;"></div>
+          <div class="helpBlock" style="left:78px; top:49px;"></div>
+          <div class="helpArrow" style="left:112px; top:67px; width:42px;"></div>
+          <div style="position:absolute; left:154px; top:43px; width:7px; height:52px; border-radius:999px; background:rgba(255,59,48,0.88); transform:rotate(25deg); box-shadow:0 0 16px rgba(255,59,48,0.34);"></div>
+          <div style="position:absolute; left:145px; top:50px; font-size:25px; font-weight:950; color:rgba(255,59,48,0.92); transform:rotate(-8deg);">✕</div>
+        </div>
+        <div>
+          <strong>4. 더 넓게 차지하거나 상대 라인을 끊으면 승리</strong>
+          <span>상단 게이지로 점령률을 확인하고, 상대 라인을 끊어도 승리할 수 있습니다.</span>
+        </div>
+      </div>
+
+      <div class="helpRuleCard">
+        <div class="helpVisual" aria-hidden="true">
+          <div class="helpLand" style="left:20px; top:78px; width:58px; height:36px;"></div>
+          <div class="helpBlock" style="left:44px; top:48px;"></div>
+          <div class="helpArrow" style="left:86px; top:63px; width:82px;"></div>
+          <div class="helpBlock" style="left:172px; top:48px;"></div>
+        </div>
+        <div>
+          <strong>스피드 모드</strong>
+          <span>아이템 없이 빠른 기본 속도로 겨루는 모드입니다. 순수한 경로 설계와 반응 속도가 중요합니다.</span>
+        </div>
+      </div>
+
+      <div class="helpRuleCard">
+        <div class="helpVisual" aria-hidden="true">
+          <div class="helpLand" style="left:18px; top:72px; width:56px; height:38px;"></div>
+          <div class="helpItemIcon plus" style="left:88px; top:44px;"></div>
+          <div class="helpBlock" style="left:150px; top:50px;"></div>
+          <div class="helpArrow" style="left:78px; top:63px; width:52px; transform: rotate(0deg);"></div>
+        </div>
+        <div>
+          <strong>아이템 모드</strong>
+          <span>영역확장, 스피드 부스트, 보호막, 거대화, 로봇청소기 아이템이 등장해 역전 변수가 생깁니다.</span>
+        </div>
+      </div>
+
+      <div class="helpRuleCard">
+        <div class="helpVisual" aria-hidden="true">
+          <svg class="helpGhostMini" viewBox="0 0 32 32">
+            <path d="M7 25V13.8C7 8.9 11 5 16 5s9 3.9 9 8.8V25l-3.1-2.1L19.1 25 16 22.9 12.9 25l-2.8-2.1L7 25Z"/>
+            <circle cx="13" cy="14" r="1.25"/>
+            <circle cx="19" cy="14" r="1.25"/>
+          </svg>
+          <div class="helpHiddenTrail"></div>
+          <div class="helpBlock" style="left:176px; top:50px;"></div>
+        </div>
+        <div>
+          <strong>고스트 모드 적용 시</strong>
+          <span>흔적 라인이 보이지 않습니다. 하지만 돌아오면 영역은 점령되고, 자기 라인을 밟으면 사망합니다.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="helpFooterTip">
+      조작: 1P는 WASD, AI 대전에서는 방향키도 사용 가능합니다. 2P 대전에서는 2P가 방향키를 사용합니다. 1P 준비는 Ctrl, 2P 준비는 Enter입니다.
+    </div>
+  </div>
+</div>
+
+
+<div id="privacyOverlay" aria-hidden="true">
+  <div class="privacyPopup" role="dialog" aria-modal="true" aria-labelledby="privacyTitle" onclick="event.stopPropagation()">
+    <button class="privacyCloseButton" type="button" onclick="privacyLaterChoice()" aria-label="개인정보 안내 나중에 하기">×</button>
+    <div class="privacyHeader">
+      <div class="privacyBadge" id="privacyBadge">🛡 개인정보 · 광고 안내</div>
+      <h2 id="privacyTitle">개인정보 및 광고 동의 안내</h2>
+      <p id="privacyIntro">이 게임은 서비스 제공과 광고 운영을 위해 최소한의 정보를 사용할 수 있습니다. 계속 이용하려면 아래 내용을 확인해 주세요.</p>
+    </div>
+
+    <div class="privacySectionGrid">
+      <div class="privacySection">
+        <strong id="privacySection1Title">1. 수집되는 정보</strong>
+        <span id="privacySection1Text">게임 진행을 위한 로컬 저장 정보, 언어 설정, 동의 여부, 광고 제공 과정에서 생성되는 쿠키 또는 기기 식별 정보가 사용될 수 있습니다.</span>
+      </div>
+      <div class="privacySection">
+        <strong id="privacySection2Title">2. 이용 목적</strong>
+        <span id="privacySection2Text">게임 설정 저장, 서비스 안정화, 광고 표시, 광고 성과 측정 및 부정 이용 방지를 위해 사용됩니다.</span>
+      </div>
+      <div class="privacySection">
+        <strong id="privacySection3Title">3. 광고 및 쿠키 안내</strong>
+        <span id="privacySection3Text">Google AdSense 등 광고 서비스가 쿠키를 사용해 개인화 또는 비개인화 광고를 표시할 수 있습니다. 브라우저 설정에서 쿠키를 제한할 수 있습니다.</span>
+      </div>
+      <div class="privacySection">
+        <strong id="privacySection4Title">4. 보관 및 관리</strong>
+        <span id="privacySection4Text">이 게임의 기본 설정과 동의 기록은 사용자의 브라우저에 저장됩니다. 브라우저 데이터 삭제 시 기록이 초기화될 수 있습니다.</span>
+      </div>
+    </div>
+
+    <div class="privacyActions">
+      <button class="privacySecondaryButton" id="privacyCloseOnlyBtn" type="button" onclick="privacyLaterChoice()">나중에 하기</button>
+      <button class="privacyAgreeButton" id="privacyAgreeBtn" type="button" onclick="agreePrivacyPolicy()">동의하고 계속하기</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="pauseOverlay" aria-hidden="true" onclick="if(event.target===event.currentTarget) resumeGameFromMenu()">
+  <div class="pausePanel" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" onclick="event.stopPropagation()">
+    <div class="pauseTitleBadge">PAUSE MENU</div>
+    <h2 id="pauseTitle">일시정지</h2>
+    <p>ESC 또는 메뉴 버튼으로 언제든 다시 열 수 있습니다.</p>
+
+    <div class="pauseActionStack">
+      <button class="pausePrimaryButton" type="button" onclick="resumeGameFromMenu()">계속 플레이</button>
+      <button class="pauseSecondaryButton" type="button" onclick="goMainFromPauseMenu()">메인화면으로 가기</button>
+    </div>
+
+    <div class="pauseSliderBox" aria-label="사운드 조절">
+      <div class="pauseSliderRow">
+        <label for="pauseBgmVolume">BGM <span id="pauseBgmValue">42%</span></label>
+        <input id="pauseBgmVolume" type="range" min="0" max="100" value="42" oninput="setBgmVolumeFromSlider(this.value)">
+      </div>
+      <div class="pauseSliderRow">
+        <label for="pauseSfxVolume">SFX <span id="pauseSfxValue">80%</span></label>
+        <input id="pauseSfxVolume" type="range" min="0" max="100" value="80" oninput="setSfxVolumeFromSlider(this.value)">
+      </div>
+      <button id="pauseThemeToggle" class="pauseThemeToggle" type="button" onclick="toggleDarkModeFromSettings()">🌙 다크모드</button>
+    </div>
+  </div>
+</div>
+
+<div id="countdownOverlay">
+  <div id="countNumber">3</div>
+  <div id="countRule" aria-hidden="true"></div>
+
+  <div id="classicCountdownGuide" aria-label="기본 룰 설명">
+    <div class="classicGuideHeader">
+      <div class="classicGuideIcon"></div>
+      <div class="classicGuideTitle">
+        <strong>기본 룰</strong>
+        <span>로비 도움말의 핵심 규칙 1~4번을 확인하고 시작하세요.</span>
+      </div>
+    </div>
+    <div class="classicGuideList classicRuleFourList">
+      <div class="classicGuideStep">
+        <b>1. 밖으로 나가면 흔적 생성</b>
+        <span>내 영역 밖으로 굴러가면 지나간 길이 라인으로 남습니다.</span>
+      </div>
+      <div class="classicGuideStep">
+        <b>2. 돌아오면 영역 점령</b>
+        <span>흔적으로 둘러싼 공간이 내 색으로 채워집니다.</span>
+      </div>
+      <div class="classicGuideStep">
+        <b>3. 자기 라인을 밟으면 위험</b>
+        <span>자기 라인을 밟으면 바로 사망 판정입니다.</span>
+      </div>
+      <div class="classicGuideStep">
+        <b>4. 더 넓게 차지하거나 상대 라인을 끊으면 승리</b>
+        <span>상단 게이지로 점령률을 확인하고, 상대 라인을 끊어도 승리할 수 있습니다.</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="ghostCountdownGuide" aria-label="고스트 모드 규칙 설명">
+    <div class="classicGuideHeader">
+      <div class="classicGuideIcon ghostIcon"></div>
+      <div class="classicGuideTitle">
+        <strong>고스트 모드 규칙</strong>
+        <span>서로의 흔적과 시야가 가려져 기억과 심리전이 중요해지는 모드입니다.</span>
+      </div>
+    </div>
+    <div class="classicGuideList">
+      <div class="classicGuideStep">
+        <b>1. 흔적은 숨김</b>
+        <span>내 땅 밖으로 나가도 이동 경로가 화면에 표시되지 않습니다.</span>
+      </div>
+      <div class="classicGuideStep">
+        <b>2. 점령은 그대로</b>
+        <span>다시 내 땅으로 돌아오면 보이지 않았던 경로 기준으로 영역을 차지합니다.</span>
+      </div>
+      <div class="classicGuideStep">
+        <b>3. 판정도 그대로</b>
+        <span>자기 흔적이나 상대 흔적은 보이지 않아도 밟으면 사망합니다.</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="itemCountdownGuide" aria-label="아이템 기능 설명">
+    <div class="itemGuideCard">
+      <div class="itemGuideIcon area"></div>
+      <div class="itemGuideText">
+        <strong>영역확장</strong>
+        <span>먹은 위치 주변을 내 영역으로 즉시 점령합니다.</span>
+      </div>
+    </div>
+    <div class="itemGuideCard">
+      <div class="itemGuideIcon speed"></div>
+      <div class="itemGuideText">
+        <strong>스피드 부스트</strong>
+        <span>2초 동안 블록이 더 빠르게 굴러갑니다.</span>
+      </div>
+    </div>
+    <div class="itemGuideCard">
+      <div class="itemGuideIcon shield"></div>
+      <div class="itemGuideText">
+        <strong>보호막</strong>
+        <span>4초 동안 내 흔적 라인이 2칸 높이의 벽처럼 솟아납니다.</span>
+      </div>
+    </div>
+    <div class="itemGuideCard">
+      <div class="itemGuideIcon line"></div>
+      <div class="itemGuideText">
+        <strong>거대화</strong>
+        <span>1.5초 동안 3×3 크기로 거대화되어 3칸씩 이동하며 지나가는 주변 3×3 영역을 즉시 내 땅으로 바꿉니다.</span>
+      </div>
+    </div>
+    <div class="itemGuideCard">
+      <div class="itemGuideIcon summon"></div>
+      <div class="itemGuideText">
+        <strong>로봇청소기</strong>
+        <span>3초 동안 2×2 로봇청소기를 보내 상대 영역을 지나가며 빈 영역으로 청소합니다.</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="countdownControlGuide" aria-label="조작법 풀배열 키보드 안내">
+    <div class="controlKeyboardTitle">
+      <div>
+        <strong>조작법</strong>
+        <span>풀배열 키보드에서 1P는 WASD, 2P는 방향키가 강조됩니다.</span>
+      </div>
+      <div class="playerKeyLabels">
+        <div class="playerKeyLabel">
+          <b>1P 이동</b>
+          <span>W A S D</span>
+        </div>
+        <div class="playerKeyLabel">
+          <b>2P 이동</b>
+          <span>방향키 ↑ ← ↓ →</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="tabletJoystickControlArt" class="tabletJoystickControlArt" aria-hidden="true">
+      <div class="tabletJoystickTitle">
+        <strong id="tabletJoystickGuideTitle">태블릿 조작법</strong>
+        <span id="tabletJoystickGuideText">화면 양쪽 조이스틱을 360도로 밀어 방향을 바꿉니다.</span>
+      </div>
+      <div class="tabletJoystickScreen">
+        <div class="tabletMiniBoard"></div>
+        <div class="tabletMiniBlock"></div>
+        <div class="tabletJoystickPair">
+          <div class="tabletStick left"></div>
+          <div class="tabletStick right"></div>
+          <div class="tabletFinger left"></div>
+          <div class="tabletFinger right"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="keyboardFullArt" aria-hidden="true">
+      <div class="keyboardSections">
+        <div class="kbBlock mainKeyboard">
+          <div class="kbRow">
+            <div class="keyCap sm">ESC</div><div class="keyCap sm">F1</div><div class="keyCap sm">F2</div><div class="keyCap sm">F3</div><div class="keyCap sm">F4</div><div class="keyCap sm">F5</div><div class="keyCap sm">F6</div><div class="keyCap sm">F7</div><div class="keyCap sm">F8</div><div class="keyCap sm">F9</div><div class="keyCap sm">F10</div><div class="keyCap sm">F11</div><div class="keyCap sm">F12</div>
+          </div>
+          <div class="kbRow">
+            <div class="keyCap">`</div><div class="keyCap">1</div><div class="keyCap">2</div><div class="keyCap">3</div><div class="keyCap">4</div><div class="keyCap">5</div><div class="keyCap">6</div><div class="keyCap">7</div><div class="keyCap">8</div><div class="keyCap">9</div><div class="keyCap">0</div><div class="keyCap">-</div><div class="keyCap">=</div><div class="keyCap w20 sm">BACK</div>
+          </div>
+          <div class="kbRow">
+            <div class="keyCap w15 sm">TAB</div><div class="keyCap">Q</div><div class="keyCap p1Key">W</div><div class="keyCap">E</div><div class="keyCap">R</div><div class="keyCap">T</div><div class="keyCap">Y</div><div class="keyCap">U</div><div class="keyCap">I</div><div class="keyCap">O</div><div class="keyCap">P</div><div class="keyCap">[</div><div class="keyCap">]</div><div class="keyCap w15">\\</div>
+          </div>
+          <div class="kbRow">
+            <div class="keyCap w18 sm">CAPS</div><div class="keyCap p1Key">A</div><div class="keyCap p1Key">S</div><div class="keyCap p1Key">D</div><div class="keyCap">F</div><div class="keyCap">G</div><div class="keyCap">H</div><div class="keyCap">J</div><div class="keyCap">K</div><div class="keyCap">L</div><div class="keyCap">;</div><div class="keyCap">'</div><div class="keyCap w22 sm">ENTER</div>
+          </div>
+          <div class="kbRow">
+            <div class="keyCap w24 sm">SHIFT</div><div class="keyCap">Z</div><div class="keyCap">X</div><div class="keyCap">C</div><div class="keyCap">V</div><div class="keyCap">B</div><div class="keyCap">N</div><div class="keyCap">M</div><div class="keyCap">,</div><div class="keyCap">.</div><div class="keyCap">/</div><div class="keyCap w24 sm">SHIFT</div>
+          </div>
+          <div class="kbRow">
+            <div class="keyCap w14 sm">CTRL</div><div class="keyCap w12 sm">WIN</div><div class="keyCap w12 sm">ALT</div><div class="keyCap space"></div><div class="keyCap w12 sm">ALT</div><div class="keyCap w12 sm">FN</div><div class="keyCap w12 sm">MENU</div><div class="keyCap w14 sm">CTRL</div>
+          </div>
+        </div>
+
+        <div class="kbBlock navKeyboard">
+          <div class="kbRow"><div class="keyCap sm">PRT</div><div class="keyCap sm">SCR</div><div class="keyCap sm">PAU</div></div>
+          <div class="kbRow"><div class="keyCap sm">INS</div><div class="keyCap sm">HOME</div><div class="keyCap sm">PG↑</div></div>
+          <div class="kbRow"><div class="keyCap sm">DEL</div><div class="keyCap sm">END</div><div class="keyCap sm">PG↓</div></div>
+          <div class="kbRow"><div class="keyCap empty"></div><div class="keyCap p2Key">↑</div><div class="keyCap empty"></div></div>
+          <div class="kbRow"><div class="keyCap p2Key">←</div><div class="keyCap p2Key">↓</div><div class="keyCap p2Key">→</div></div>
+        </div>
+
+        <div class="kbBlock numKeyboard">
+          <div class="kbRow"><div class="keyCap sm">NUM</div><div class="keyCap">/</div><div class="keyCap">*</div><div class="keyCap">-</div></div>
+          <div class="numpadGrid">
+            <div class="keyCap">7</div><div class="keyCap">8</div><div class="keyCap">9</div><div class="keyCap plus">+</div>
+            <div class="keyCap">4</div><div class="keyCap">5</div><div class="keyCap">6</div>
+            <div class="keyCap">1</div><div class="keyCap">2</div><div class="keyCap">3</div><div class="keyCap enterTall sm">ENT</div>
+            <div class="keyCap zero">0</div><div class="keyCap">.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="message" class="resultPanelV2">
+  <div id="resultText"></div>
+</div>
+
+
+<script src="assets_v218/js/degul-inline-01.js"></script>
+
+<script src="assets_v218/vendor/three-0.160.0.min.js"></script>
+<script src="assets_v218/js/game/01-foundation.js"></script>
+<script src="assets_v218/js/game/02-scene-board.js"></script>
+<script src="assets_v218/js/game/03-actors-loop-ai-movement.js"></script>
+<script src="assets_v218/js/game/04-territory-items.js"></script>
+<script src="assets_v218/js/game/05-lobby-countdown.js"></script>
+<script src="assets_v218/js/game/06-score-results-pause-audio-theme.js"></script>
+<script src="assets_v218/js/game/07-utils.js"></script>
+<script src="assets_v218/js/game/08-bootstrap.js"></script>
+
+<script src="assets_v218/js/degul-inline-03.js"></script>
+
+
+<script src="assets_v218/js/degul-inline-04.js"></script>
+
+
+<div class="degulTutorialLayer" id="degulTutorialLayer" aria-hidden="true">
+  <div class="degulTutorialSpotlight" id="degulTutorialSpotlight" aria-hidden="true"></div>
+  <div class="degulTutorialTip" id="degulTutorialTip" role="dialog" aria-live="polite">
+    <div class="degulTutorialProgress" id="degulTutorialProgress">1 / 3</div>
+    <strong id="degulTutorialTitle">대전 방식을 선택하세요.</strong>
+    <span id="degulTutorialText">2P 대전은 같은 화면에서 친구와 대결하고, AI 대전은 혼자 AI와 겨룹니다.</span>
+    <em id="degulTutorialHint">마우스 클릭 또는 Space 키로 다음 설명을 볼 수 있습니다.</em>
+  </div>
+  <button class="degulTutorialSkip" id="degulTutorialSkip" type="button" onclick="endDegulTutorial()">건너뛰기</button>
+</div>
+
+
+<script src="assets_v218/js/degul-inline-05.js"></script>
+
+
+
+<script src="assets_v218/js/degul-inline-06.js"></script>
+
+
+
+
+
+<script src="assets_v218/js/degul-inline-08.js"></script>
+
+
+
+<!-- v216 신규 사운드 이벤트 연결: 우세 외곽선 실제 렌더링 동기화 -->
+<script>
+(() => {
+  'use strict';
+
+  const audio = {
+    wingHover: document.getElementById('sfxWingHover'),
+    tutorialHighlight: document.getElementById('sfxTutorialHighlight'),
+    readyComplete: document.getElementById('sfxReadyComplete'),
+    victoryBgm: document.getElementById('victoryBgm'),
+    aiDefeatBgm: document.getElementById('aiDefeatBgm'),
+    dominanceEdge: document.getElementById('sfxDominanceEdge'),
+    victoryResultUI: document.getElementById('sfxVictoryResultUI')
+  };
+
+  const baseGain = {
+    wingHover: 1.00,
+    tutorialHighlight: 0.95,
+    readyComplete: 1.00,
+    victoryBgm: 0.82,
+    aiDefeatBgm: 0.82,
+    dominanceEdge: 0.95,
+    victoryResultUI: 1.00
+  };
+
+  const state = {
+    victoryActive: false,
+    outcomeBgmType: '',
+    resultVisible: false,
+    lastTutorialSignature: '',
+    tutorialVisible: false,
+    dominanceVisualActive: false,
+    dominanceVisualToken: '',
+    dominanceLeader: 'tie',
+    pendingDominanceLeader: '',
+    dominanceProbeUntil: 0,
+    dominanceCheckFrame: 0,
+    lastDominancePlayAt: 0,
+    lastWingPlayAt: 0,
+    timingCriticalSoundsPrimed: false,
+    wrappedFunctions: new Set()
+  };
+
+  function clamp01(value) {
+    return Math.max(0, Math.min(1, Number(value) || 0));
+  }
+
+  function readSliderVolume(primaryId, secondaryId, fallback) {
+    const slider = document.getElementById(primaryId) || document.getElementById(secondaryId);
+    if (!slider) return fallback;
+    return clamp01((Number(slider.value) || 0) / 100);
+  }
+
+  function getReferenceAudio(ids) {
+    for (const id of ids) {
+      const element = document.getElementById(id);
+      if (element instanceof HTMLMediaElement) return element;
+    }
+    return null;
+  }
+
+  function readEffectiveVolume(type) {
+    if (type === 'bgm') {
+      const sliderVolume = readSliderVolume('settingsBgmVolume', 'pauseBgmVolume', 0.42);
+      const reference = getReferenceAudio(['ingameBgm', 'lobbyBgm']);
+      if (!reference) return { volume: sliderVolume, muted: false };
+      const muted = reference.muted || (reference.volume <= 0.0001 && sliderVolume > 0.0001);
+      return { volume: sliderVolume, muted };
+    }
+
+    const sliderVolume = readSliderVolume('settingsSfxVolume', 'pauseSfxVolume', 0.80);
+    const reference = getReferenceAudio(['sfxButton', 'sfxStart', 'sfxTurn']);
+    if (!reference) return { volume: sliderVolume, muted: false };
+    const muted = reference.muted || (reference.volume <= 0.0001 && sliderVolume > 0.0001);
+    return { volume: sliderVolume, muted };
+  }
+
+  function syncNewAudioVolumes() {
+    const bgm = readEffectiveVolume('bgm');
+    const sfx = readEffectiveVolume('sfx');
+
+    if (audio.victoryBgm) {
+      audio.victoryBgm.volume = clamp01(bgm.volume * baseGain.victoryBgm);
+      audio.victoryBgm.muted = bgm.muted;
+    }
+    if (audio.aiDefeatBgm) {
+      audio.aiDefeatBgm.volume = clamp01(bgm.volume * baseGain.aiDefeatBgm);
+      audio.aiDefeatBgm.muted = bgm.muted;
+    }
+
+    ['wingHover', 'tutorialHighlight', 'readyComplete', 'dominanceEdge', 'victoryResultUI'].forEach((key) => {
+      if (!audio[key]) return;
+      audio[key].volume = clamp01(sfx.volume * baseGain[key]);
+      audio[key].muted = sfx.muted;
+    });
+  }
+
+  function safePlay(element, restart = true) {
+    if (!(element instanceof HTMLMediaElement)) return;
+    syncNewAudioVolumes();
+    try {
+      if (restart) element.currentTime = 0;
+      const playPromise = element.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch((error) => reportNewAudioFailure(element, error));
+      }
+    } catch (error) {
+      reportNewAudioFailure(element, error);
+    }
+  }
+
+  const reportedNewAudioFailures = new Set();
+
+  function reportNewAudioFailure(element, error) {
+    const sound = element?.id || element?.currentSrc || element?.src || 'unknown';
+    const key = `${sound}:${error?.name || 'playback'}`;
+    if (reportedNewAudioFailures.has(key)) return;
+    reportedNewAudioFailures.add(key);
+    console.warn(`[DegulAudio] ${sound} 재생 실패`, error || '');
+    document.dispatchEvent(new CustomEvent('degul:audio-error', {
+      detail: { sound, error: error?.message || String(error || '') }
+    }));
+  }
+
+  function safeStop(element, reset = true) {
+    if (!(element instanceof HTMLMediaElement)) return;
+    try {
+      element.pause();
+      if (reset) element.currentTime = 0;
+    } catch (_) {}
+  }
+
+  function isElementVisible(element) {
+    if (!element) return false;
+    const style = getComputedStyle(element);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+    if (Number(style.opacity || 1) <= 0.02) return false;
+    const rect = element.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  }
+
+  function isDrawResult() {
+    const resultText = (document.getElementById('resultText')?.textContent || '').trim();
+    return /무승부|\bdraw\b|\btie\b|引き分け|平局|和局/i.test(resultText);
+  }
+
+  function hasResultText() {
+    return Boolean((document.getElementById('resultText')?.textContent || '').trim());
+  }
+
+  function isAiPlayerDefeat(winner) {
+    return typeof matchMode !== 'undefined'
+      && matchMode === 'ai'
+      && winner
+      && typeof P1_LAND !== 'undefined'
+      && winner.landId !== P1_LAND;
+  }
+
+  function startVictoryBgm(winner = null) {
+    if (state.victoryActive || isDrawResult()) return;
+    state.victoryActive = true;
+    state.outcomeBgmType = isAiPlayerDefeat(winner) ? 'ai-defeat' : 'victory';
+
+    const ingameBgm = document.getElementById('ingameBgm');
+    if (ingameBgm instanceof HTMLMediaElement) {
+      try { ingameBgm.pause(); } catch (_) {}
+    }
+
+    const outcomeBgm = state.outcomeBgmType === 'ai-defeat'
+      ? audio.aiDefeatBgm
+      : audio.victoryBgm;
+    if (outcomeBgm) {
+      outcomeBgm.loop = true;
+      safePlay(outcomeBgm, true);
+    }
+  }
+
+  function stopVictoryBgm() {
+    state.victoryActive = false;
+    state.outcomeBgmType = '';
+    safeStop(audio.victoryBgm, true);
+    safeStop(audio.aiDefeatBgm, true);
+  }
+
+  window.startDegulOutcomeBgm = startVictoryBgm;
+
+  function resetRoundAudioState() {
+    stopVictoryBgm();
+    state.resultVisible = false;
+  }
+
+  function playResultPopupSound() {
+    safePlay(audio.victoryResultUI, true);
+  }
+
+  function hasOpeningClass(element) {
+    if (!element) return false;
+    return /(^|\s)(active|is-active|show|shown|visible|open|opened|appearing|enter|entering|result-open|result-show)(\s|$)/i.test(String(element.className || ''));
+  }
+
+  function isResultPanelRendered(message) {
+    if (!message || !hasResultText()) return false;
+    const style = getComputedStyle(message);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+    const rect = message.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  }
+
+  function isResultPanelOpening(message, fromMotionEvent = false) {
+    if (!isResultPanelRendered(message)) return false;
+
+    const style = getComputedStyle(message);
+    const opacity = Number.parseFloat(style.opacity || '1');
+    const ariaHidden = message.getAttribute('aria-hidden');
+    const inlineStyle = message.getAttribute('style') || '';
+    const inlineDisplayOpen = /display\s*:\s*(?!none)[^;]+/i.test(inlineStyle);
+
+    if (fromMotionEvent) return true;
+    if (ariaHidden === 'false' || hasOpeningClass(message) || inlineDisplayOpen) return true;
+    return Number.isFinite(opacity) ? opacity > 0.001 : true;
+  }
+
+  function checkResultState(options = {}) {
+    const message = document.getElementById('message');
+    const visible = Boolean(message && isResultPanelOpening(message, options.fromMotionEvent === true));
+
+    if (visible && !state.resultVisible) {
+      /* MutationObserver/animationstart는 화면이 그려지기 직전에 실행되므로 UI와 같은 프레임에 재생된다. */
+      state.resultVisible = true;
+      playResultPopupSound();
+      if (!isDrawResult()) startVictoryBgm();
+    } else if (!visible && state.resultVisible) {
+      state.resultVisible = false;
+    }
+
+    if (isDrawResult() && state.victoryActive) stopVictoryBgm();
+
+    if (state.victoryActive && !visible) {
+      const lobbyVisible = isElementVisible(document.getElementById('lobby'));
+      const countdownVisible = isElementVisible(document.getElementById('countdownOverlay'));
+      if (lobbyVisible || countdownVisible) stopVictoryBgm();
+    }
+  }
+
+  function attachWingHoverSound() {
+    document.querySelectorAll('.lobbyWingTab').forEach((tab) => {
+      const play = () => {
+        const now = performance.now();
+        if (now - state.lastWingPlayAt < 90) return;
+        state.lastWingPlayAt = now;
+        safePlay(audio.wingHover, true);
+      };
+      tab.addEventListener('pointerenter', play, { passive: true });
+      tab.addEventListener('focus', play, { passive: true });
+    });
+  }
+
+  function isReadyState(element) {
+    if (!element) return false;
+    const text = (element.textContent || '').replace(/\s+/g, ' ').trim();
+    const classes = String(element.className || '');
+    const dataReady = String(element.dataset.ready || '').toLowerCase();
+    const ariaPressed = element.getAttribute('aria-pressed');
+
+    if (/준비\s*전|not\s*ready|準備前|未准备|未準備/i.test(text)) return false;
+    if (ariaPressed === 'true' || dataReady === 'true' || dataReady === '1') return true;
+    if (/(^|\s)(is-ready|ready-complete|ready-active|confirmed|active)(\s|$)/i.test(classes)) return true;
+    return /준비\s*(완료|취소)|\bready\b|準備完了|準備解除|准备完成|已准备/i.test(text);
+  }
+
+  function attachReadySound() {
+    ['p1ReadyBox', 'p2ReadyBox'].forEach((id) => {
+      const element = document.getElementById(id);
+      if (!element) return;
+      let previousReady = isReadyState(element);
+      const observer = new MutationObserver(() => {
+        const currentReady = isReadyState(element);
+        if (!previousReady && currentReady) safePlay(audio.readyComplete, true);
+        previousReady = currentReady;
+      });
+      observer.observe(element, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ['class', 'aria-pressed', 'data-ready']
+      });
+    });
+  }
+
+  function tutorialIsVisible() {
+    const layer = document.getElementById('degulTutorialLayer');
+    if (!layer) return false;
+    if (layer.getAttribute('aria-hidden') === 'true') return false;
+    return isElementVisible(layer) || layer.classList.contains('active') || layer.classList.contains('show') || layer.classList.contains('open');
+  }
+
+  function getTutorialSignature() {
+    const progress = (document.getElementById('degulTutorialProgress')?.textContent || '').trim();
+    const title = (document.getElementById('degulTutorialTitle')?.textContent || '').trim();
+    return `${progress}|${title}`;
+  }
+
+  function checkTutorialHighlight() {
+    const visible = tutorialIsVisible();
+    if (!visible) {
+      state.tutorialVisible = false;
+      state.lastTutorialSignature = '';
+      return;
+    }
+
+    const signature = getTutorialSignature();
+    if (!state.tutorialVisible || (signature && signature !== state.lastTutorialSignature)) {
+      state.tutorialVisible = true;
+      state.lastTutorialSignature = signature;
+      safePlay(audio.tutorialHighlight, true);
+    }
+  }
+
+  function attachTutorialSound() {
+    const layer = document.getElementById('degulTutorialLayer');
+    if (!layer) return;
+    const observer = new MutationObserver(() => requestAnimationFrame(checkTutorialHighlight));
+    observer.observe(layer, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ['class', 'style', 'aria-hidden']
+    });
+    checkTutorialHighlight();
+  }
+
+  function colorHasAlpha(color) {
+    if (!color || color === 'transparent') return false;
+    const rgba = color.match(/rgba?\(([^)]+)\)/i);
+    if (!rgba) return true;
+    const parts = rgba[1].split(/[\s,\/]+/).filter(Boolean);
+    if (parts.length < 4) return true;
+    const alpha = Number.parseFloat(parts[3]);
+    return !Number.isFinite(alpha) || alpha > 0.015;
+  }
+
+  function styleHasVisiblePaint(style, inheritedOpacity = 1) {
+    if (!style || style.display === 'none' || style.visibility === 'hidden') return false;
+    const ownOpacity = Number.parseFloat(style.opacity || '1');
+    const effectiveOpacity = inheritedOpacity * (Number.isFinite(ownOpacity) ? ownOpacity : 1);
+    if (effectiveOpacity <= 0.01) return false;
+
+    if (style.backgroundImage && style.backgroundImage !== 'none') return true;
+    if (colorHasAlpha(style.backgroundColor)) return true;
+    if (style.boxShadow && style.boxShadow !== 'none' && !/rgba?\([^)]*,\s*0(?:\.0+)?\)/i.test(style.boxShadow)) return true;
+    if (style.textShadow && style.textShadow !== 'none') return true;
+    if (style.filter && style.filter !== 'none' && /drop-shadow|blur|brightness|contrast|saturate/i.test(style.filter)) return true;
+
+    return ['borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor']
+      .some((property) => Number.parseFloat(style[property.replace('Color', 'Width')] || '0') > 0 && colorHasAlpha(style[property]));
+  }
+
+  function getDominanceLeaderKey() {
+    const text = (document.getElementById('leaderText')?.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!text || /동점|tie|draw|同点|平局|和局/i.test(text)) return 'tie';
+    if (/1\s*P/i.test(text)) return 'p1';
+    if (/2\s*P|\bAI\b/i.test(text)) return 'p2';
+    return 'tie';
+  }
+
+  function getDominanceToken(overlay) {
+    if (!overlay) return '';
+    const explicit = [
+      overlay.dataset.leader,
+      overlay.dataset.player,
+      overlay.dataset.dominance,
+      overlay.dataset.side,
+      overlay.getAttribute('aria-label')
+    ].filter(Boolean).join(' ').toLowerCase();
+    const classText = String(overlay.className || '').toLowerCase();
+    const source = `${explicit} ${classText}`;
+
+    if (/(^|[\s_-])(p1|player1|player-1|one|blue|left)([\s_-]|$)/i.test(source)) return 'p1';
+    if (/(^|[\s_-])(p2|player2|player-2|two|ai|red|right)([\s_-]|$)/i.test(source)) return 'p2';
+
+    /* 오버레이가 플레이어 정보를 직접 갖지 않는 구조에서는 실제 점수 UI의 우세 상태를 사용한다. */
+    const leader = getDominanceLeaderKey();
+    return leader === 'tie' ? explicit.trim() : leader;
+  }
+
+  function getDominanceVisualSnapshot(overlay) {
+    if (!overlay) return { active: false, token: '' };
+
+    /* aria-hidden은 장식용 오버레이의 접근성 속성일 뿐 시각적 비활성 상태가 아니다. */
+    const base = getComputedStyle(overlay);
+    if (base.display === 'none' || base.visibility === 'hidden') {
+      return { active: false, token: getDominanceToken(overlay) };
+    }
+
+    const rect = overlay.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+      return { active: false, token: getDominanceToken(overlay) };
+    }
+
+    const baseOpacity = Number.parseFloat(base.opacity || '1');
+    const inheritedOpacity = Number.isFinite(baseOpacity) ? baseOpacity : 1;
+    if (inheritedOpacity <= 0.01) {
+      return { active: false, token: getDominanceToken(overlay) };
+    }
+
+    const before = getComputedStyle(overlay, '::before');
+    const after = getComputedStyle(overlay, '::after');
+    const active = styleHasVisiblePaint(base, 1)
+      || styleHasVisiblePaint(before, inheritedOpacity)
+      || styleHasVisiblePaint(after, inheritedOpacity);
+
+    return { active, token: getDominanceToken(overlay) };
+  }
+
+  function dominanceGameContextIsVisible() {
+    const scoreUI = document.getElementById('scoreUI');
+    const lobby = document.getElementById('lobby');
+    const countdown = document.getElementById('countdownOverlay');
+    const result = document.getElementById('message');
+
+    if (!scoreUI || !isElementVisible(scoreUI)) return false;
+    if (lobby && isElementVisible(lobby)) return false;
+    if (countdown && isElementVisible(countdown)) return false;
+    if (result && isElementVisible(result) && hasResultText()) return false;
+    return true;
+  }
+
+  function playDominanceEdgeSound(leader) {
+    if (!leader || leader === 'tie' || !dominanceGameContextIsVisible()) return false;
+
+    const now = performance.now();
+    if (now - state.lastDominancePlayAt < 140) return false;
+
+    state.lastDominancePlayAt = now;
+    state.pendingDominanceLeader = '';
+    state.dominanceProbeUntil = 0;
+    safePlay(audio.dominanceEdge, true);
+    return true;
+  }
+
+  function checkDominanceVisualStart(overlay) {
+    const snapshot = getDominanceVisualSnapshot(overlay);
+    const currentLeader = getDominanceLeaderKey();
+    const visualStarted = snapshot.active && !state.dominanceVisualActive;
+    const tokenChanged = Boolean(
+      snapshot.active
+      && state.dominanceVisualActive
+      && snapshot.token
+      && state.dominanceVisualToken
+      && snapshot.token !== state.dominanceVisualToken
+    );
+    const pendingMatchesVisual = Boolean(
+      snapshot.active
+      && state.pendingDominanceLeader
+      && state.pendingDominanceLeader !== 'tie'
+      && (snapshot.token === state.pendingDominanceLeader || currentLeader === state.pendingDominanceLeader)
+    );
+
+    state.dominanceVisualActive = snapshot.active;
+    state.dominanceVisualToken = snapshot.token;
+
+    if (pendingMatchesVisual) {
+      playDominanceEdgeSound(state.pendingDominanceLeader);
+      return;
+    }
+
+    if ((visualStarted || tokenChanged) && currentLeader !== 'tie') {
+      playDominanceEdgeSound(currentLeader);
+    }
+  }
+
+  function scheduleDominanceVisualCheck(overlay, keepProbing = false) {
+    if (state.dominanceCheckFrame) cancelAnimationFrame(state.dominanceCheckFrame);
+    state.dominanceCheckFrame = requestAnimationFrame(() => {
+      state.dominanceCheckFrame = 0;
+      checkDominanceVisualStart(overlay);
+
+      const shouldContinue = keepProbing
+        && state.pendingDominanceLeader
+        && performance.now() < state.dominanceProbeUntil;
+      if (shouldContinue) scheduleDominanceVisualCheck(overlay, true);
+    });
+  }
+
+  function armDominanceSoundForLeader(overlay) {
+    const leader = getDominanceLeaderKey();
+    const previousLeader = state.dominanceLeader;
+    state.dominanceLeader = leader;
+
+    if (leader === 'tie') {
+      state.pendingDominanceLeader = '';
+      state.dominanceProbeUntil = 0;
+      scheduleDominanceVisualCheck(overlay);
+      return;
+    }
+
+    if (leader === previousLeader) {
+      scheduleDominanceVisualCheck(overlay);
+      return;
+    }
+
+    /* 우세 변경은 재생 예약만 하고, 실제 외곽선이 렌더링된 프레임에서만 소리를 낸다. */
+    state.pendingDominanceLeader = leader;
+    state.dominanceProbeUntil = performance.now() + 650;
+    scheduleDominanceVisualCheck(overlay, true);
+  }
+
+  function attachDominanceSound() {
+    const overlay = document.getElementById('dominanceEdgeOverlay');
+    const leaderText = document.getElementById('leaderText');
+    if (!overlay) return;
+
+    const initial = getDominanceVisualSnapshot(overlay);
+    state.dominanceVisualActive = initial.active;
+    state.dominanceVisualToken = initial.token;
+    state.dominanceLeader = getDominanceLeaderKey();
+
+    const visualObserver = new MutationObserver(() => scheduleDominanceVisualCheck(overlay, Boolean(state.pendingDominanceLeader)));
+    visualObserver.observe(overlay, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: [
+        'class', 'style', 'hidden', 'aria-hidden', 'data-leader',
+        'data-player', 'data-dominance', 'data-side'
+      ]
+    });
+
+    if (leaderText) {
+      const leaderObserver = new MutationObserver(() => armDominanceSoundForLeader(overlay));
+      leaderObserver.observe(leaderText, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-leader']
+      });
+    }
+
+    /* 외곽선 활성 클래스나 CSS 변수가 body/html에 붙는 구현도 감지한다. */
+    const rootObserver = new MutationObserver(() => scheduleDominanceVisualCheck(overlay, Boolean(state.pendingDominanceLeader)));
+    rootObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] });
+    if (document.body) {
+      rootObserver.observe(document.body, { attributes: true, attributeFilter: ['class', 'style'] });
+    }
+
+    const onVisualMotionStart = () => scheduleDominanceVisualCheck(overlay, Boolean(state.pendingDominanceLeader));
+    overlay.addEventListener('animationstart', onVisualMotionStart, true);
+    overlay.addEventListener('transitionrun', onVisualMotionStart, true);
+    overlay.addEventListener('transitionstart', onVisualMotionStart, true);
+  }
+
+  function containsDrawHint(args) {
+    try {
+      return /무승부|\bdraw\b|\btie\b|引き分け|平局|和局/i.test(args.map((value) => String(value)).join(' '));
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function wrapVictoryFunction(name) {
+    if (state.wrappedFunctions.has(name)) return;
+    const original = window[name];
+    if (typeof original !== 'function' || original.__degulV214Wrapped) return;
+
+    function wrappedVictoryFunction(...args) {
+      const drawHint = containsDrawHint(args);
+      const result = original.apply(this, args);
+      if (!drawHint) queueMicrotask(() => {
+        if (!isDrawResult()) startVictoryBgm();
+      });
+      return result;
+    }
+
+    Object.defineProperty(wrappedVictoryFunction, '__degulV214Wrapped', { value: true });
+    try {
+      window[name] = wrappedVictoryFunction;
+      state.wrappedFunctions.add(name);
+    } catch (_) {}
+  }
+
+  function wrapRoundResetFunction(name) {
+    if (state.wrappedFunctions.has(`reset:${name}`)) return;
+    const original = window[name];
+    if (typeof original !== 'function' || original.__degulV214ResetWrapped) return;
+
+    function wrappedResetFunction(...args) {
+      resetRoundAudioState();
+      return original.apply(this, args);
+    }
+
+    Object.defineProperty(wrappedResetFunction, '__degulV214ResetWrapped', { value: true });
+    try {
+      window[name] = wrappedResetFunction;
+      state.wrappedFunctions.add(`reset:${name}`);
+    } catch (_) {}
+  }
+
+  function installRuntimeHooks() {
+    [
+      'endGame', 'finishGame', 'showResult', 'showGameResult', 'displayResult',
+      'declareWinner', 'startVictorySequence', 'playVictorySequence',
+      'focusWinner', 'zoomWinner', 'zoomToWinner', 'triggerVictorySequence'
+    ].forEach(wrapVictoryFunction);
+
+    [
+      'startGame', 'restartGame', 'resetGame', 'returnToLobby', 'goToLobby',
+      'goMainFromPauseMenu', 'startCountdown'
+    ].forEach(wrapRoundResetFunction);
+  }
+
+  function attachResultObservers() {
+    const message = document.getElementById('message');
+    const resultText = document.getElementById('resultText');
+    const observer = new MutationObserver(() => {
+      if (hasResultText() && !isDrawResult()) startVictoryBgm();
+      if (isDrawResult()) stopVictoryBgm();
+      /* rAF를 기다리지 않고 DOM 변경 직후, 첫 페인트 전에 실행한다. */
+      checkResultState();
+    });
+
+    if (message) {
+      observer.observe(message, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ['class', 'style', 'hidden', 'aria-hidden']
+      });
+
+      const onResultMotionStart = () => checkResultState({ fromMotionEvent: true });
+      message.addEventListener('animationstart', onResultMotionStart, true);
+      message.addEventListener('transitionrun', onResultMotionStart, true);
+      message.addEventListener('transitionstart', onResultMotionStart, true);
+    } else if (resultText) {
+      observer.observe(resultText, { subtree: true, childList: true, characterData: true });
+    }
+  }
+
+  function primeTimingCriticalSounds() {
+    if (state.timingCriticalSoundsPrimed) return;
+    state.timingCriticalSoundsPrimed = true;
+
+    [audio.dominanceEdge, audio.victoryResultUI].forEach((element) => {
+      if (!(element instanceof HTMLMediaElement)) return;
+      try {
+        element.load();
+      } catch (_) {}
+    });
+  }
+
+  function attachTimingCriticalSoundPrimer() {
+    const prime = () => primeTimingCriticalSounds();
+    document.addEventListener('pointerdown', prime, { capture: true, once: true, passive: true });
+    document.addEventListener('keydown', prime, { capture: true, once: true, passive: true });
+  }
+
+  function attachVolumeSync() {
+    ['settingsBgmVolume', 'pauseBgmVolume', 'settingsSfxVolume', 'pauseSfxVolume'].forEach((id) => {
+      const control = document.getElementById(id);
+      if (!control) return;
+      control.addEventListener('input', syncNewAudioVolumes, { passive: true });
+      control.addEventListener('change', syncNewAudioVolumes, { passive: true });
+    });
+
+    ['settingsBgmMute', 'settingsSfxMute', 'soundToggle'].forEach((id) => {
+      document.getElementById(id)?.addEventListener('click', () => {
+        setTimeout(syncNewAudioVolumes, 0);
+        setTimeout(syncNewAudioVolumes, 120);
+      });
+    });
+  }
+
+  function initNewSounds() {
+    Object.values(audio).forEach((element) => {
+      if (!(element instanceof HTMLMediaElement)) return;
+      element.addEventListener('error', () => {
+        reportNewAudioFailure(element, element.error || new Error('오디오 파일 로드 실패'));
+      }, { once: true });
+    });
+    syncNewAudioVolumes();
+    attachWingHoverSound();
+    attachReadySound();
+    attachTutorialSound();
+    attachDominanceSound();
+    attachResultObservers();
+    attachTimingCriticalSoundPrimer();
+    attachVolumeSync();
+    installRuntimeHooks();
+
+    checkResultState();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initNewSounds, { once: true });
+  } else {
+    initNewSounds();
+  }
+})();
+</script>
+
+
+<!-- v218 신규 사운드 이벤트 정밀 연결: 로봇청소기 실제 획득 시점 한정 -->
+<script>
+(() => {
+  'use strict';
+
+  const audio = {
+    robotActivate: document.getElementById('sfxRobotCleanerActivate'),
+    robotPickup: document.getElementById('sfxRobotCleanerPickup'),
+    death: document.getElementById('sfxDeathMotion'),
+    carousel: document.getElementById('sfxCarouselButton'),
+    back: document.getElementById('sfxBackButton'),
+    chaosGlitch: document.getElementById('sfxChaosGlitch')
+  };
+
+  const baseGain = {
+    robotActivate: 1.00,
+    robotPickup: 1.00,
+    death: 0.96,
+    carousel: 0.90,
+    back: 0.92,
+    chaosGlitch: 0.92
+  };
+
+  const state = {
+    suppressGenericButtonUntil: 0,
+    originalButtonPlay: null,
+    lastRobotPickupAt: 0,
+    lastDeathAt: 0,
+    lastCarouselAt: 0,
+    lastBackAt: 0,
+    chaosPlayedForCountdown: false,
+    chaosWasAtTwo: false,
+    deathHookDepth: 0,
+    wrappedFunctions: new Map(),
+    primed: false
+  };
+
+  /*
+   * 로봇청소기 사운드는 '아이템을 실제로 먹은 호출'에서만 재생한다.
+   * v217의 광범위한 window 함수 검색/재귀 힌트 판정은 UI 데이터나 아이템 목록까지
+   * 로봇청소기로 오인할 수 있었으므로 사용하지 않는다.
+   */
+  const ROBOT_PICKUP_FUNCTION_NAME = /(?:pick.?up|collect|obtain|acquire|take|consume).*(?:robot|robo|vacuum|cleaner|roomba|sweeper)|(?:robot|robo|vacuum|cleaner|roomba|sweeper).*(?:pick.?up|collect|obtain|acquire|take|consume)/i;
+  const ROBOT_IMMEDIATE_ACTIVATION_NAME = /^(?:activate|trigger|apply|use)(?:RobotCleaner|RobotVacuum|Vacuum|Cleaner|Roomba|SummonItem)$/i;
+  const GENERIC_PICKUP_FUNCTION_NAME = /(?:pick.?up|collect|obtain|acquire|take|consume|handle.*pickup|on.*pickup|apply.*item.*effect|activate.*item.*effect|use.*item)/i;
+  const ITEM_IDENTITY_KEYS = [
+    'type', 'kind', 'name', 'id', 'key', 'itemType', 'itemKind', 'itemName',
+    'pickupType', 'effectType', 'powerup', 'powerUp', 'skill'
+  ];
+  const DEATH_NAME = /(start.*death|death.*start|play.*death|death.*animation|die\b|kill.*player|player.*kill|eliminat|explode.*player|player.*explode|destroy.*player|player.*destroy|trigger.*death|handle.*death|set.*dead)/i;
+  const DEATH_EXCLUDE = /(check|isDead|isDeath|canDie|shouldDie|deathCount|deathReason|update|render|draw|reset|clear|record|result|message|text)/i;
+
+  function clamp01(value) {
+    return Math.max(0, Math.min(1, Number(value) || 0));
+  }
+
+  function readSfxVolume() {
+    const slider = document.getElementById('settingsSfxVolume') || document.getElementById('pauseSfxVolume');
+    return slider ? clamp01((Number(slider.value) || 0) / 100) : 0.80;
+  }
+
+  function readSfxMuted() {
+    const reference = document.getElementById('sfxButton') || document.getElementById('sfxStart');
+    if (!(reference instanceof HTMLMediaElement)) return false;
+    const sliderVolume = readSfxVolume();
+    return reference.muted || (reference.volume <= 0.0001 && sliderVolume > 0.0001);
+  }
+
+  function syncV217Volumes() {
+    const volume = readSfxVolume();
+    const muted = readSfxMuted();
+    Object.entries(audio).forEach(([key, element]) => {
+      if (!(element instanceof HTMLMediaElement)) return;
+      element.volume = clamp01(volume * baseGain[key]);
+      element.muted = muted;
+    });
+  }
+
+  function safePlay(element, options = {}) {
+    if (!(element instanceof HTMLMediaElement)) return;
+    syncV217Volumes();
+
+    const restart = options.restart !== false;
+    const overlap = options.overlap === true;
+    const target = overlap ? element.cloneNode(true) : element;
+
+    if (overlap) {
+      target.volume = element.volume;
+      target.muted = element.muted;
+      target.loop = false;
+    }
+
+    try {
+      if (restart) target.currentTime = 0;
+      const promise = target.play();
+      if (promise && typeof promise.catch === 'function') {
+        promise.catch((error) => reportAudioFailure(element, error));
+      }
+    } catch (error) {
+      reportAudioFailure(element, error);
+    }
+  }
+
+  const reportedAudioFailures = new Set();
+
+  function reportAudioFailure(element, error) {
+    const sound = element?.id || element?.currentSrc || element?.src || 'unknown';
+    const key = `${sound}:${error?.name || 'playback'}`;
+    if (reportedAudioFailures.has(key)) return;
+    reportedAudioFailures.add(key);
+    console.warn(`[DegulAudio] ${sound} 재생 실패`, error || '');
+    document.dispatchEvent(new CustomEvent('degul:audio-error', {
+      detail: { sound, error: error?.message || String(error || '') }
+    }));
+  }
+
+  function safeStop(element) {
+    if (!(element instanceof HTMLMediaElement)) return;
+    try {
+      element.pause();
+      element.currentTime = 0;
+    } catch (_) {}
+  }
+
+  function suppressGenericButtonSound(duration = 180) {
+    state.suppressGenericButtonUntil = Math.max(state.suppressGenericButtonUntil, performance.now() + duration);
+  }
+
+  function installGenericButtonSoundGate() {
+    const buttonAudio = document.getElementById('sfxButton');
+    if (!(buttonAudio instanceof HTMLMediaElement) || buttonAudio.__degulV217Gated) return;
+
+    const originalPlay = buttonAudio.play.bind(buttonAudio);
+    state.originalButtonPlay = originalPlay;
+
+    try {
+      buttonAudio.play = function(...args) {
+        if (performance.now() <= state.suppressGenericButtonUntil) {
+          try {
+            this.pause();
+            this.currentTime = 0;
+          } catch (_) {}
+          return Promise.resolve();
+        }
+        return originalPlay(...args);
+      };
+      Object.defineProperty(buttonAudio, '__degulV217Gated', { value: true });
+    } catch (_) {}
+  }
+
+  function normalizeText(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function elementMatchesCarouselControl(element) {
+    if (!(element instanceof Element)) return false;
+    const control = element.closest('button, [role="button"]');
+    if (!control) return false;
+
+    const classText = String(control.className || '');
+    const idText = String(control.id || '');
+    const onclick = control.getAttribute('onclick') || '';
+    const dataAction = [
+      control.getAttribute('data-carousel'),
+      control.getAttribute('data-direction'),
+      control.getAttribute('data-action'),
+      control.getAttribute('aria-label')
+    ].filter(Boolean).join(' ');
+    const ancestry = control.closest('[class*="carousel" i], [class*="slider" i], [data-carousel]');
+    const source = `${classText} ${idText} ${onclick} ${dataAction}`;
+
+    if (control.id === 'lobbyOnlineArrow') {
+      const target = normalizeText(control.getAttribute('data-panel-target')).toLowerCase();
+      return !/(local|main|back|return)/i.test(target);
+    }
+
+    if (/shiftAiDifficulty|shift.*(skin|palette|carousel)|carousel.*(next|prev)|(?:next|prev).*carousel/i.test(onclick)) return true;
+    if (/(carousel|slider).*(arrow|prev|next)|(?:arrow|prev|next).*(carousel|slider)/i.test(source)) return true;
+    if (ancestry && /(arrow|prev|next|previous|forward|backward|dot|pagination)/i.test(source)) return true;
+    return false;
+  }
+
+  function languageMenuIsOpen() {
+    const menu = document.getElementById('languageDropdownMenu');
+    if (!menu) return false;
+    const style = getComputedStyle(menu);
+    return menu.classList.contains('open')
+      || menu.classList.contains('active')
+      || menu.getAttribute('aria-hidden') === 'false'
+      || (style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.02);
+  }
+
+  function elementMatchesBackAction(element) {
+    if (!(element instanceof Element)) return false;
+    const control = element.closest('button, a, [role="button"]');
+    if (!control) return false;
+    if (control.matches(':disabled, [aria-disabled="true"]')) return false;
+    const classText = String(control.className || '');
+    const idText = String(control.id || '');
+    const onclick = control.getAttribute?.('onclick') || '';
+    const label = normalizeText(`${control.getAttribute?.('aria-label') || ''} ${control.textContent || ''}`);
+
+    if (/(close|dismiss|cancel|back|return)/i.test(`${classText} ${idText}`)) return true;
+    if (/\b(close|resumeGameFromMenu|goMainFromPauseMenu|privacyLaterChoice|endDegulTutorial|hidePcLobbyBottomAd)\b/i.test(onclick)) return true;
+    if (/닫기|나중에|건너뛰기|계속 플레이|메인화면으로 가기|돌아가기|뒤로가기|close|back|return/i.test(label)) return true;
+
+    if (control.id === 'languageToggle' && languageMenuIsOpen()) return true;
+
+    if (control.id === 'lobbyOnlineArrow') {
+      const target = normalizeText(control.getAttribute('data-panel-target')).toLowerCase();
+      return /(local|main|back|return)/i.test(target);
+    }
+
+    return false;
+  }
+
+  function visibleCloseOverlayExists() {
+    const selectors = [
+      '#aiRecordOverlay', '#siteInfoOverlay', '#settingsOverlay', '#helpOverlay',
+      '#privacyOverlay', '#pauseOverlay', '#degulTutorialLayer', '#languageDropdownMenu'
+    ];
+    return selectors.some((selector) => {
+      const element = document.querySelector(selector);
+      if (!element) return false;
+      const style = getComputedStyle(element);
+      if (style.display === 'none' || style.visibility === 'hidden') return false;
+      if (element.getAttribute('aria-hidden') === 'true' && !element.classList.contains('active') && !element.classList.contains('open') && !element.classList.contains('show')) return false;
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && Number.parseFloat(style.opacity || '1') > 0.02;
+    });
+  }
+
+  function playCarouselSound() {
+    const now = performance.now();
+    if (now - state.lastCarouselAt < 45) return;
+    state.lastCarouselAt = now;
+    safePlay(audio.carousel, { restart: true, overlap: true });
+  }
+
+  function playBackSound() {
+    const now = performance.now();
+    if (now - state.lastBackAt < 80) return;
+    state.lastBackAt = now;
+    safePlay(audio.back, { restart: true, overlap: true });
+  }
+
+  function attachDedicatedButtonSounds() {
+    const preclassify = (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target) return;
+      if (elementMatchesBackAction(target) || elementMatchesCarouselControl(target)) {
+        suppressGenericButtonSound();
+      }
+    };
+
+    document.addEventListener('pointerdown', preclassify, { capture: true, passive: true });
+    document.addEventListener('keydown', (event) => {
+      if ((event.key === 'Enter' || event.key === ' ') && document.activeElement instanceof Element) {
+        preclassify({ target: document.activeElement });
+      }
+    }, true);
+
+    document.addEventListener('click', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target) return;
+
+      if (elementMatchesBackAction(target)) {
+        suppressGenericButtonSound();
+        playBackSound();
+        return;
+      }
+
+      if (elementMatchesCarouselControl(target)) {
+        suppressGenericButtonSound();
+        playCarouselSound();
+      }
+    }, true);
+  }
+
+  function safeHint(value, depth = 0, seen = new WeakSet()) {
+    if (value == null) return '';
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
+    if (typeof value === 'function') return value.name || '';
+    if (depth > 2 || (typeof value !== 'object' && typeof value !== 'function')) return '';
+    if (typeof value === 'object') {
+      if (seen.has(value)) return '';
+      seen.add(value);
+    }
+
+    const preferredKeys = [
+      'type', 'kind', 'name', 'id', 'itemType', 'itemKind', 'itemName', 'effect',
+      'effectType', 'powerup', 'powerUp', 'pickupType', 'skill', 'mode', 'key', 'label',
+      'item', 'data', 'payload', 'meta'
+    ];
+    const parts = [];
+    for (const key of preferredKeys) {
+      try {
+        if (key in value) parts.push(`${key}:${safeHint(value[key], depth + 1, seen)}`);
+      } catch (_) {}
+    }
+    if (parts.length === 0 && Array.isArray(value)) {
+      value.slice(0, 6).forEach((item) => parts.push(safeHint(item, depth + 1, seen)));
+    }
+    return parts.join(' ');
+  }
+
+  function argsHint(args) {
+    try {
+      return Array.from(args || []).map((arg) => safeHint(arg)).join(' ');
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function playRobotPickupPair() {
+    const now = performance.now();
+    if (now - state.lastRobotPickupAt < 350) return;
+    state.lastRobotPickupAt = now;
+    safePlay(audio.robotPickup, { restart: true, overlap: true });
+    safePlay(audio.robotActivate, { restart: true, overlap: true });
+  }
+
+  function playDeathMotionSound() {
+    const now = performance.now();
+    if (now - state.lastDeathAt < 55) return;
+    state.lastDeathAt = now;
+    safePlay(audio.death, { restart: true, overlap: true });
+  }
+
+  function normalizeItemIdentity(value) {
+    return String(value == null ? '' : value)
+      .toLowerCase()
+      .replace(/[\s_\-.:/\\]+/g, '');
+  }
+
+  function isRobotCleanerIdentity(value) {
+    const token = normalizeItemIdentity(value);
+    if (!token) return false;
+
+    /* 부분 문장이나 전체 설정 객체가 아니라 실제 아이템 타입 값만 허용한다. */
+    return token === 'robot'
+      || token === 'robotitem'
+      || token === 'robotcleaner'
+      || token === 'robotcleaneritem'
+      || token === 'robotvacuum'
+      || token === 'robotvacuumitem'
+      || token === 'vacuum'
+      || token === 'vacuumitem'
+      || token === 'cleaner'
+      || token === 'cleaneritem'
+      || token === 'roomba'
+      || token === 'roombaitem'
+      || token === 'sweeper'
+      || token === 'sweeperitem'
+      || token === 'summon'
+      || token === 'summonitem'
+      || token === '로봇'
+      || token === '로봇청소기'
+      || token === '로봇청소기아이템';
+  }
+
+  function objectHasDirectRobotItemIdentity(value) {
+    if (!value || typeof value !== 'object') return false;
+
+    for (const key of ITEM_IDENTITY_KEYS) {
+      try {
+        if (Object.prototype.hasOwnProperty.call(value, key) && isRobotCleanerIdentity(value[key])) {
+          return true;
+        }
+      } catch (_) {}
+    }
+
+    /* item/pickup처럼 실제 아이템 객체를 한 번 감싼 구조까지만 확인한다. */
+    for (const wrapperKey of ['item', 'pickup', 'powerup', 'powerUp']) {
+      let nested;
+      try { nested = value[wrapperKey]; } catch (_) { nested = null; }
+      if (!nested || typeof nested !== 'object') continue;
+      for (const key of ITEM_IDENTITY_KEYS) {
+        try {
+          if (Object.prototype.hasOwnProperty.call(nested, key) && isRobotCleanerIdentity(nested[key])) {
+            return true;
+          }
+        } catch (_) {}
+      }
+    }
+
+    return false;
+  }
+
+  function argsContainDirectRobotItem(args) {
+    try {
+      return Array.from(args || []).some((arg) => {
+        if (typeof arg === 'string' || typeof arg === 'number') {
+          return isRobotCleanerIdentity(arg);
+        }
+        return objectHasDirectRobotItemIdentity(arg);
+      });
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function isConfirmedRobotPickupCall(functionName, args) {
+    const name = String(functionName || '');
+
+    /* 함수 이름 자체가 로봇청소기 '획득/수집'을 명시하면 그 호출만 인정한다. */
+    if (ROBOT_PICKUP_FUNCTION_NAME.test(name)) return true;
+
+    /* 즉시형 로봇청소기 효과 함수는 획득과 같은 호출 흐름에서 실행되는 정확한 이름만 허용한다. */
+    if (ROBOT_IMMEDIATE_ACTIVATION_NAME.test(name)) return true;
+
+    /* 일반 아이템 함수는 직접 전달된 현재 아이템 타입이 로봇청소기일 때만 인정한다. */
+    return GENERIC_PICKUP_FUNCTION_NAME.test(name) && argsContainDirectRobotItem(args);
+  }
+
+  function wrapRuntimeFunction(name, type) {
+    const original = window[name];
+    if (typeof original !== 'function') return;
+    if (original.__degulV218WrappedType) return;
+    if (original.__degulV217WrappedType === type) return;
+    if (state.wrappedFunctions.get(name) === original) return;
+
+    const wrapped = function(...args) {
+      const isDeath = type === 'death';
+      if (isDeath) {
+        if (state.deathHookDepth === 0) playDeathMotionSound();
+        state.deathHookDepth += 1;
+      }
+
+      let result;
+      let completed = false;
+      try {
+        result = original.apply(this, args);
+        completed = true;
+        return result;
+      } finally {
+        if (isDeath) state.deathHookDepth = Math.max(0, state.deathHookDepth - 1);
+
+        /* 실제 함수가 정상 실행된 뒤, 로봇청소기 획득이 확정된 호출에서만 두 음원을 동시에 낸다. */
+        if (type === 'robot' && completed && result !== false && isConfirmedRobotPickupCall(name, args)) {
+          playRobotPickupPair();
+        }
+      }
+    };
+
+    try {
+      Object.defineProperty(wrapped, '__degulV218WrappedType', { value: type });
+      Object.defineProperty(wrapped, '__degulV218Original', { value: original });
+      window[name] = wrapped;
+      state.wrappedFunctions.set(name, wrapped);
+    } catch (_) {}
+  }
+
+  function installGameplaySoundHooks() {
+    const explicitDeathFunctions = [
+      'startDeathAnimation', 'playDeathAnimation', 'playDeathMotion', 'triggerDeathAnimation',
+      'killPlayer', 'handlePlayerDeath', 'handleDeath', 'playerDie', 'diePlayer',
+      'eliminatePlayer', 'explodePlayer', 'destroyPlayer', 'setPlayerDead'
+    ];
+
+    explicitDeathFunctions.forEach((name) => wrapRuntimeFunction(name, 'death'));
+  }
+
+  function isElementRendered(element) {
+    if (!element) return false;
+    const style = getComputedStyle(element);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+    const rect = element.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && Number.parseFloat(style.opacity || '1') > 0.01;
+  }
+
+  function selectedChaosAiMode() {
+    const aiButton = document.getElementById('aiModeBtn');
+    const chaosButton = document.getElementById('aiDiffChaos');
+    const aiSelected = Boolean(aiButton && (
+      aiButton.classList.contains('selected')
+      || aiButton.classList.contains('active')
+      || aiButton.getAttribute('aria-pressed') === 'true'
+    ));
+    const chaosSelected = Boolean(chaosButton && (
+      chaosButton.classList.contains('selected')
+      || chaosButton.classList.contains('active')
+      || chaosButton.getAttribute('aria-pressed') === 'true'
+    ));
+
+    if (aiSelected && chaosSelected) return true;
+
+    const globals = [
+      window.matchMode, window.selectedMatchMode, window.currentMatchMode,
+      window.aiDifficulty, window.selectedAiDifficulty, window.currentAiDifficulty
+    ].map((value) => String(value || '').toLowerCase()).join(' ');
+    return /\bai\b/.test(globals) && /chaos/.test(globals);
+  }
+
+  function countdownIsAtTwo() {
+    const count = normalizeText(document.getElementById('countNumber')?.textContent);
+    return /^0?2(?:\.0+)?$/.test(count) || /^2\s*(초|s|sec|seconds?)?$/i.test(count);
+  }
+
+  function playChaosGlitchAtVisualStart() {
+    const overlay = document.getElementById('countdownOverlay');
+    const atTwo = countdownIsAtTwo();
+    const valid = atTwo && selectedChaosAiMode() && isElementRendered(overlay);
+
+    if (!atTwo) {
+      state.chaosWasAtTwo = false;
+      state.chaosPlayedForCountdown = false;
+      safeStop(audio.chaosGlitch);
+      return;
+    }
+
+    state.chaosWasAtTwo = true;
+    if (!valid || state.chaosPlayedForCountdown) return;
+
+    state.chaosPlayedForCountdown = true;
+    requestAnimationFrame(() => {
+      if (countdownIsAtTwo() && selectedChaosAiMode() && isElementRendered(overlay)) {
+        safePlay(audio.chaosGlitch, { restart: true });
+      }
+    });
+  }
+
+  function attachChaosCountdownSound() {
+    const count = document.getElementById('countNumber');
+    const overlay = document.getElementById('countdownOverlay');
+    const chaosButton = document.getElementById('aiDiffChaos');
+    const aiButton = document.getElementById('aiModeBtn');
+
+    const observer = new MutationObserver(playChaosGlitchAtVisualStart);
+    [count, overlay, chaosButton, aiButton, document.documentElement, document.body].forEach((element) => {
+      if (!element) return;
+      observer.observe(element, {
+        subtree: element === count || element === overlay,
+        childList: element === count || element === overlay,
+        characterData: element === count || element === overlay,
+        attributes: true,
+        attributeFilter: ['class', 'style', 'aria-hidden', 'aria-pressed', 'data-mode', 'data-difficulty']
+      });
+    });
+
+    if (overlay) {
+      const motionStart = () => playChaosGlitchAtVisualStart();
+      overlay.addEventListener('animationstart', motionStart, true);
+      overlay.addEventListener('transitionstart', motionStart, true);
+    }
+  }
+
+  function primeNewSounds() {
+    if (state.primed) return;
+    state.primed = true;
+    syncV217Volumes();
+
+    Object.values(audio).forEach((element) => {
+      if (!(element instanceof HTMLMediaElement)) return;
+      try {
+        element.load();
+      } catch (_) {}
+    });
+  }
+
+  function attachVolumeSync() {
+    ['settingsSfxVolume', 'pauseSfxVolume'].forEach((id) => {
+      const slider = document.getElementById(id);
+      slider?.addEventListener('input', syncV217Volumes, { passive: true });
+      slider?.addEventListener('change', syncV217Volumes, { passive: true });
+    });
+    document.getElementById('settingsSfxMute')?.addEventListener('click', () => {
+      setTimeout(syncV217Volumes, 0);
+      setTimeout(syncV217Volumes, 120);
+    });
+  }
+
+  function installRobotPickupBridge() {
+    const playExactPair = () => playRobotPickupPair();
+
+    /* 게임 코드에서 직접 호출 가능한 단일 진입점. 다른 아이템/UI에서는 호출하지 않는다. */
+    try {
+      window.playRobotCleanerPickupSounds = playExactPair;
+      window.__degulRobotCleanerPicked = playExactPair;
+    } catch (_) {}
+
+    document.addEventListener('degul:robot-cleaner-picked', playExactPair);
+  }
+
+  function initV217Sounds() {
+    Object.values(audio).forEach((element) => {
+      if (!(element instanceof HTMLMediaElement)) return;
+      element.addEventListener('error', () => {
+        reportAudioFailure(element, element.error || new Error('오디오 파일 로드 실패'));
+      }, { once: true });
+    });
+    installGenericButtonSoundGate();
+    syncV217Volumes();
+    attachDedicatedButtonSounds();
+    attachChaosCountdownSound();
+    attachVolumeSync();
+    installRobotPickupBridge();
+    installGameplaySoundHooks();
+
+    document.addEventListener('pointerdown', primeNewSounds, { capture: true, once: true, passive: true });
+    document.addEventListener('keydown', primeNewSounds, { capture: true, once: true });
+
+    playChaosGlitchAtVisualStart();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initV217Sounds, { once: true });
+  } else {
+    initV217Sounds();
+  }
+})();
+
+</script>
+
+</body>
+</html>
