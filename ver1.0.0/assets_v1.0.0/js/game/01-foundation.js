@@ -1896,16 +1896,16 @@ const AI_DIFFICULTIES = {
 // AI 대전 난이도별 인게임 BGM 파일명 매핑
 // - 이지/노말/PVP: 기존 기본 인게임 BGM 유지
 // - 하드 이상 AI 대전: 같은 폴더에 아래 wav 파일을 넣으면 자동 적용
-const DEFAULT_INGAME_BGM_SRC = "audio_v218/ingame_bgm(drumX).mp3";
-const GHOST_MODE_INGAME_BGM_SRC = "audio_v218/ghostmode_bgm.mp3";
+const DEFAULT_INGAME_BGM_SRC = "audio_v1.0.0/ingame_bgm(drumX).mp3";
+const GHOST_MODE_INGAME_BGM_SRC = "audio_v1.0.0/ghostmode_bgm.mp3";
 const AI_INGAME_BGM_BY_DIFFICULTY = {
   easy: DEFAULT_INGAME_BGM_SRC,
   normal: DEFAULT_INGAME_BGM_SRC,
-  hard: "audio_v218/ai_hard_bgm.mp3",
-  superhard: "audio_v218/ai_superhard_bgm.mp3",
-  extreme: "audio_v218/ai_extreme_bgm.mp3",
-  hell: "audio_v218/ai_hell_bgm.mp3",
-  chaos: "audio_v218/ai_chaos_bgm.mp3"
+  hard: "audio_v1.0.0/ai_hard_bgm.mp3",
+  superhard: "audio_v1.0.0/ai_superhard_bgm.mp3",
+  extreme: "audio_v1.0.0/ai_extreme_bgm.mp3",
+  hell: "audio_v1.0.0/ai_hell_bgm.mp3",
+  chaos: "audio_v1.0.0/ai_chaos_bgm.mp3"
 };
 
 let currentIngameBgmSrc = DEFAULT_INGAME_BGM_SRC;
@@ -2070,6 +2070,11 @@ function applyForcedDeviceLayoutClass() {
 }
 
 function setForcedDeviceLayout(choice) {
+  if (detectMobilePhoneDevice()) {
+    forcedDeviceLayout = "";
+    updateMobileUIState();
+    return;
+  }
   forcedDeviceLayout = choice === "tablet" ? "tablet" : "pc";
   autoPcLayoutApplied = false;
   applyForcedDeviceLayoutClass();
@@ -2153,7 +2158,9 @@ function updateDeviceLayoutChoicePrompt() {
     "将应用适合当前屏幕的布局。"
   );
 
-  const shouldAsk = (isBelowFhdDisplay() || isBelowFhdViewport()) && !forcedDeviceLayout;
+  const shouldAsk = !detectMobilePhoneDevice()
+    && (isBelowFhdDisplay() || isBelowFhdViewport())
+    && !forcedDeviceLayout;
   overlay.classList.toggle("show", shouldAsk);
   overlay.setAttribute("aria-hidden", shouldAsk ? "false" : "true");
 }
@@ -2171,6 +2178,10 @@ function getShortestScreenSide() {
 function detectTabletDevice() {
   if (forcedDeviceLayout === "tablet") return true;
   if (forcedDeviceLayout === "pc") return false;
+  return detectNativeTabletDevice();
+}
+
+function detectNativeTabletDevice() {
   const ua = navigator.userAgent || "";
   const isIPad = /iPad/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
   const isAndroidTablet = /Android/i.test(ua) && !/Mobile/i.test(ua);
@@ -2185,11 +2196,14 @@ function detectMobileDevice() {
 }
 
 function detectMobilePhoneDevice() {
-  if (forcedDeviceLayout === "tablet" || forcedDeviceLayout === "pc") return false;
   const ua = navigator.userAgent || "";
   const explicitPhone = /iPhone|iPod/i.test(ua) || (/Android/i.test(ua) && /Mobile/i.test(ua));
-  const smallTouchScreen = hasTouchInput() && getShortestScreenSide() < 600;
-  return !detectTabletDevice() && (explicitPhone || smallTouchScreen);
+  const shortestPhysicalSide = Math.min(
+    Number(window.screen?.width) || window.innerWidth,
+    Number(window.screen?.height) || window.innerHeight
+  );
+  const smallTouchScreen = hasTouchInput() && shortestPhysicalSide < 600;
+  return !detectNativeTabletDevice() && (explicitPhone || smallTouchScreen);
 }
 
 function updateMobileUIState() {
@@ -2198,6 +2212,11 @@ function updateMobileUIState() {
   const isTabletDevice = detectTabletDevice();
   isMobileDevice = detectMobileDevice();
   isMobilePhoneBlocked = detectMobilePhoneDevice();
+  if (isMobilePhoneBlocked && forcedDeviceLayout) {
+    forcedDeviceLayout = "";
+    autoPcLayoutApplied = false;
+    applyForcedDeviceLayoutClass();
+  }
   const isLandscape = window.innerWidth >= window.innerHeight;
   document.body.classList.toggle("tablet-device", isTabletDevice && !isMobilePhoneBlocked);
   document.body.classList.toggle("mobile-device", isMobileDevice);
@@ -2473,7 +2492,7 @@ const I18N = {
     mobileReadyStatus: (mode, ghost) => `${mode}${ghost} 선택됨. 준비 카드를 터치하세요.`,
     ghostDarkOnly: "고스트모드에서는 다크모드만 사용할 수 있습니다.",
     ghostDarkFixed: "👻 다크모드 고정",
-    phoneRecommend: "PC 또는 태블릿 환경을 권장합니다.",
+    phoneRecommend: "모바일에서는 플레이할 수 없습니다. PC 또는 태블릿으로 플레이하길 권장합니다.",
     rotateTitle: "가로모드로 돌려주세요",
     rotateText: "모바일 로비는 가로 한 화면에 맞춰 최적화됩니다.",
     unmuteBgm: "BGM 음소거 해제",
@@ -2547,7 +2566,7 @@ const I18N = {
     mobileReadyStatus: (mode, ghost) => `${mode}${ghost}を選択中。準備カードをタップしてください。`,
     ghostDarkOnly: "ゴーストモードではダークモードのみ使用できます。",
     ghostDarkFixed: "👻 ダークモード固定",
-    phoneRecommend: "PCまたはタブレット環境を推奨します。",
+    phoneRecommend: "スマートフォンではプレイできません。PCまたはタブレットでのプレイを推奨します。",
     rotateTitle: "横向きにしてください",
     rotateText: "モバイルロビーは横向きの1画面に最適化されています。",
     unmuteBgm: "BGMのミュートを解除",
@@ -2621,7 +2640,7 @@ const I18N = {
     mobileReadyStatus: (mode, ghost) => `已选择${mode}${ghost}。请点击准备卡。`,
     ghostDarkOnly: "幽灵模式只能使用深色模式。",
     ghostDarkFixed: "👻 锁定深色模式",
-    phoneRecommend: "建议使用PC或平板设备。",
+    phoneRecommend: "手机无法进行游戏。建议使用PC或平板设备游玩。",
     rotateTitle: "请旋转至横屏",
     rotateText: "移动端大厅已针对横屏单页显示进行优化。",
     unmuteBgm: "取消BGM静音",
@@ -2695,7 +2714,7 @@ const I18N = {
     mobileReadyStatus: (mode, ghost) => `${mode}${ghost} selected. Tap each ready card.`,
     ghostDarkOnly: "Only Dark Mode is available in Ghost Mode.",
     ghostDarkFixed: "👻 Dark Mode Locked",
-    phoneRecommend: "PC or tablet is recommended.",
+    phoneRecommend: "Playing on phones is not supported. Please use a PC or tablet.",
     rotateTitle: "Rotate to landscape",
     rotateText: "The mobile lobby is optimized for a single landscape screen.",
     unmuteBgm: "Unmute BGM",
@@ -2934,8 +2953,8 @@ function updateSiteInfoLanguage() {
     : "Major features and fixes are listed by the actual deployed version.");
   const updateItems = document.querySelectorAll('[data-site-panel="updates"] .updateItem');
   const updateTexts = ko
-    ? [["ver218",["단색 블록과 로비 미리보기에 캐릭터 눈 디자인 적용","한국어·영어·일본어·중국어 UI 번역 누락 보완","배포용 개인정보처리방침과 실제 버전 업데이트 내역 정비"]],["ver214–217",["준비 완료·결과 UI·우세 외곽선·사망 모션 사운드 추가","로봇청소기 아이템 획득 및 발동 사운드 추가","효과음 재생 시점과 중복 재생 방지 로직 개선"]],["ver200–211",["온라인 대전 준비 패널과 로비 슬라이드 UI 추가","스킨·AI 난이도 잠금 표시와 캐러셀 UI 개선","설정창 블록형 볼륨 슬라이더와 PC·태블릿 레이아웃 개선"]]]
-    : [["ver218",["Added character eyes to solid-color blocks and lobby previews","Completed missing Korean, English, Japanese, and Chinese UI translations","Prepared the deployment privacy policy and replaced the update log with actual versions"]],["ver214–217",["Added ready, result UI, dominance edge, and death-motion sounds","Added Robot Vacuum pickup and activation sounds","Improved sound timing and duplicate-play prevention"]],["ver200–211",["Added the online-battle coming-soon panel and lobby slider","Improved skin and AI difficulty locks and carousel UI","Added block-style volume sliders and improved PC/tablet layouts"]]];
+    ? [["ver1.0.0",["단색 블록과 로비 미리보기에 캐릭터 눈 디자인 적용","한국어·영어·일본어·중국어 UI 번역 누락 보완","배포용 개인정보처리방침과 실제 버전 업데이트 내역 정비"]],["ver214–217",["준비 완료·결과 UI·우세 외곽선·사망 모션 사운드 추가","로봇청소기 아이템 획득 및 발동 사운드 추가","효과음 재생 시점과 중복 재생 방지 로직 개선"]],["ver200–211",["온라인 대전 준비 패널과 로비 슬라이드 UI 추가","스킨·AI 난이도 잠금 표시와 캐러셀 UI 개선","설정창 블록형 볼륨 슬라이더와 PC·태블릿 레이아웃 개선"]]]
+    : [["ver1.0.0",["Added character eyes to solid-color blocks and lobby previews","Completed missing Korean, English, Japanese, and Chinese UI translations","Prepared the deployment privacy policy and replaced the update log with actual versions"]],["ver214–217",["Added ready, result UI, dominance edge, and death-motion sounds","Added Robot Vacuum pickup and activation sounds","Improved sound timing and duplicate-play prevention"]],["ver200–211",["Added the online-battle coming-soon panel and lobby slider","Improved skin and AI difficulty locks and carousel UI","Added block-style volume sliders and improved PC/tablet layouts"]]];
   updateItems.forEach((item, index) => {
     const data = updateTexts[index];
     if (!data) return;
@@ -3261,7 +3280,7 @@ function updateExtendedLanguageText() {
     setText('[data-site-panel="updates"] h2', "更新记录");
     setText('[data-site-panel="updates"] .siteInfoLead', "按实际发布版本说明主要功能和修复内容。");
     document.querySelectorAll('[data-site-panel="updates"] .updateItem').forEach((item, index) => {
-      const data = [["ver218", ["为纯色方块和大厅预览添加角色眼睛设计", "补全韩语、英语、日语和中文UI翻译", "完善发布用隐私政策并将更新记录改为实际版本"]], ["ver214–217", ["新增准备完成、结果UI、领先边框和死亡动作音效", "新增扫地机器人拾取与启动音效", "优化音效触发时机和防重复播放逻辑"]], ["ver200–211", ["新增在线对战准备面板和大厅滑动UI", "优化皮肤与AI难度锁定标记及轮播UI", "新增方块式音量滑块并优化PC与平板布局"]]][index];
+      const data = [["ver1.0.0", ["为纯色方块和大厅预览添加角色眼睛设计", "补全韩语、英语、日语和中文UI翻译", "完善发布用隐私政策并将更新记录改为实际版本"]], ["ver214–217", ["新增准备完成、结果UI、领先边框和死亡动作音效", "新增扫地机器人拾取与启动音效", "优化音效触发时机和防重复播放逻辑"]], ["ver200–211", ["新增在线对战准备面板和大厅滑动UI", "优化皮肤与AI难度锁定标记及轮播UI", "新增方块式音量滑块并优化PC与平板布局"]]][index];
       if (!data) return;
       const b = item.querySelector("b");
       if (b) b.textContent = data[0];
@@ -3420,7 +3439,7 @@ function updateExtendedLanguageText() {
   setText('[data-site-panel="updates"] h2', "更新情報");
   setText('[data-site-panel="updates"] .siteInfoLead', "実際の配布バージョンに基づいて、主な機能追加と修正内容を案内します。");
   document.querySelectorAll('[data-site-panel="updates"] .updateItem').forEach((item, index) => {
-    const data = [["ver218", ["単色ブロックとロビープレビューにキャラクターの目を追加", "韓国語・英語・日本語・中国語UIの翻訳漏れを補完", "配布用プライバシーポリシーを整備し、更新履歴を実際のバージョンに変更"]], ["ver214–217", ["準備完了・結果UI・優勢エッジ・死亡モーションのサウンドを追加", "ロボット掃除機の取得音と発動音を追加", "効果音の再生タイミングと重複防止ロジックを改善"]], ["ver200–211", ["オンライン対戦準備パネルとロビースライドUIを追加", "スキン・AI難易度のロック表示とカルーセルUIを改善", "ブロック型音量スライダーとPC・タブレットレイアウトを改善"]]][index];
+    const data = [["ver1.0.0", ["単色ブロックとロビープレビューにキャラクターの目を追加", "韓国語・英語・日本語・中国語UIの翻訳漏れを補完", "配布用プライバシーポリシーを整備し、更新履歴を実際のバージョンに変更"]], ["ver214–217", ["準備完了・結果UI・優勢エッジ・死亡モーションのサウンドを追加", "ロボット掃除機の取得音と発動音を追加", "効果音の再生タイミングと重複防止ロジックを改善"]], ["ver200–211", ["オンライン対戦準備パネルとロビースライドUIを追加", "スキン・AI難易度のロック表示とカルーセルUIを改善", "ブロック型音量スライダーとPC・タブレットレイアウトを改善"]]][index];
     if (!data) return;
     const b = item.querySelector("b");
     if (b) b.textContent = data[0];

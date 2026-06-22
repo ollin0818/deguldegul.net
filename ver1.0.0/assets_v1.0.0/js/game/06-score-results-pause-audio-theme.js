@@ -643,7 +643,12 @@ function isResultPopupVisible() {
 }
 
 function canAcceptLobbyReadyInput() {
-  return isLobbyVisible() && !isResultPopupVisible() && !gameStarted && !isCountingDown;
+  return !isMobilePhoneBlocked
+    && !detectMobilePhoneDevice()
+    && isLobbyVisible()
+    && !isResultPopupVisible()
+    && !gameStarted
+    && !isCountingDown;
 }
 
 function tryStartLobbyBgm() {
