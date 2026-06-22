@@ -413,6 +413,7 @@ function createBoardTileState(x, z) {
     userData: {},
     bucketKey: "",
     bucketSlot: -1,
+    renderColor: 0xffffff,
     x,
     z
   };
@@ -488,8 +489,7 @@ function getBoardTileBucketKey(style) {
   const mapKey = style.map ? style.map.uuid : "none";
   return [
     mapKey,
-    new THREE.Color(style.color).getHexString(),
-    new THREE.Color(style.emissive).getHexString(),
+    Number(style.emissive || 0).toString(16),
     Number(style.emissiveIntensity || 0).toFixed(3),
     Number(style.roughness || 0).toFixed(3),
     Number(style.metalness || 0).toFixed(3),
@@ -515,7 +515,7 @@ function disposeBoardTileStates() {
 
 function createBoardTileBucket(key, style) {
   const material = new THREE.MeshStandardMaterial({
-    color: style.color,
+    color: 0xffffff,
     map: style.map || null,
     roughness: style.roughness,
     metalness: style.metalness,
@@ -536,11 +536,13 @@ function createBoardTileBucket(key, style) {
   return bucket;
 }
 
-function setBoardBucketMatrix(bucket, slot, tile) {
-  const matrix = new THREE.Matrix4();
-  matrix.compose(tile.position, new THREE.Quaternion(), tile.scale);
-  bucket.mesh.setMatrixAt(slot, matrix);
+function setBoardBucketInstance(bucket, slot, tile) {
+  boardMatrixScratch.compose(tile.position, boardQuaternionScratch, tile.scale);
+  bucket.mesh.setMatrixAt(slot, boardMatrixScratch);
+  boardColorScratch.set(tile.renderColor);
+  bucket.mesh.setColorAt(slot, boardColorScratch);
   bucket.mesh.instanceMatrix.needsUpdate = true;
+  if (bucket.mesh.instanceColor) bucket.mesh.instanceColor.needsUpdate = true;
 }
 
 function removeTileFromBoardBucket(tile) {
@@ -553,7 +555,7 @@ function removeTileFromBoardBucket(tile) {
   if (removeSlot !== lastSlot && lastTile) {
     bucket.tiles[removeSlot] = lastTile;
     lastTile.bucketSlot = removeSlot;
-    setBoardBucketMatrix(bucket, removeSlot, lastTile);
+    setBoardBucketInstance(bucket, removeSlot, lastTile);
   }
   bucket.tiles.pop();
   bucket.mesh.count = bucket.tiles.length;
@@ -563,6 +565,7 @@ function removeTileFromBoardBucket(tile) {
 
 function moveTileToBoardBucket(tile, style) {
   const key = getBoardTileBucketKey(style);
+  tile.renderColor = style.color;
   tile.position.y = style.y;
   tile.scale.y = style.scaleY;
   tile.userData.extremeAiLand = !!style.specialType;
@@ -570,7 +573,7 @@ function moveTileToBoardBucket(tile, style) {
   tile.userData.chaosAiLand = style.specialType === "chaos";
   if (tile.bucketKey === key && tile.bucketSlot >= 0) {
     const currentBucket = boardTileBuckets.get(key);
-    if (currentBucket) setBoardBucketMatrix(currentBucket, tile.bucketSlot, tile);
+    if (currentBucket) setBoardBucketInstance(currentBucket, tile.bucketSlot, tile);
     return;
   }
   removeTileFromBoardBucket(tile);
@@ -579,7 +582,7 @@ function moveTileToBoardBucket(tile, style) {
   tile.bucketSlot = bucket.tiles.length;
   bucket.tiles.push(tile);
   bucket.mesh.count = bucket.tiles.length;
-  setBoardBucketMatrix(bucket, tile.bucketSlot, tile);
+  setBoardBucketInstance(bucket, tile.bucketSlot, tile);
 }
 
 function initializeBoardTileInstances() {
@@ -695,6 +698,7 @@ function markSquareLand(cx, cz, radius, owner) {
 // 판정 배열(land)은 그대로 유지하고, 시각 표현만 부분 업데이트한다.
 function refreshBoardCells(changedCells) {
   if (!changedCells || !changedCells.length) return;
+  if (typeof invalidateAiNavigationCache === "function") invalidateAiNavigationCache();
 
   const seen = new Set();
   for (const cell of changedCells) {
@@ -714,6 +718,7 @@ function refreshBoardCell(x, z) {
 
 
 function refreshBoardColors() {
+  if (typeof invalidateAiNavigationCache === "function") invalidateAiNavigationCache();
   initializeBoardTileInstances();
 }
 

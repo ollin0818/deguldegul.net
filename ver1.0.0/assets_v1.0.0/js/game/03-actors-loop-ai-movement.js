@@ -147,14 +147,49 @@ function createGhostVisionOverlay() {
   resizeGhostVisionOverlay();
 }
 
+function rebuildGhostFogTexture() {
+  const size = performanceLevel === "low" ? 320 : 480;
+  if (!ghostFogTextureCanvas) {
+    ghostFogTextureCanvas = document.createElement("canvas");
+    ghostFogTextureCtx = ghostFogTextureCanvas.getContext("2d");
+  }
+  ghostFogTextureCanvas.width = size;
+  ghostFogTextureCanvas.height = size;
+  if (!ghostFogTextureCtx) return;
+
+  const ctx = ghostFogTextureCtx;
+  ctx.clearRect(0, 0, size, size);
+  const bg = ctx.createRadialGradient(size * 0.5, size * 0.42, size * 0.08, size * 0.5, size * 0.5, size * 0.72);
+  bg.addColorStop(0, "rgba(24,25,31,0.34)");
+  bg.addColorStop(0.46, "rgba(5,6,9,0.28)");
+  bg.addColorStop(1, "rgba(0,0,0,0.62)");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, size, size);
+
+  for (const dot of ghostVisionFogDots) {
+    const x = dot.x * size;
+    const y = dot.y * size;
+    const radius = Math.max(20, dot.r * size / 720);
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, `rgba(52,54,64,${Math.min(0.11, dot.a * 2.1)})`);
+    gradient.addColorStop(0.55, `rgba(18,19,24,${Math.min(0.08, dot.a * 1.4)})`);
+    gradient.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
 function resizeGhostVisionOverlay() {
   if (!ghostVisionCanvas) return;
-  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  const dpr = Math.max(1, Math.min(performanceConfig.pixelRatio, window.devicePixelRatio || 1));
   ghostVisionCanvas.width = Math.floor(window.innerWidth * dpr);
   ghostVisionCanvas.height = Math.floor(window.innerHeight * dpr);
   ghostVisionCanvas.style.width = `${window.innerWidth}px`;
   ghostVisionCanvas.style.height = `${window.innerHeight}px`;
   if (ghostVisionCtx) ghostVisionCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  rebuildGhostFogTexture();
 }
 
 function getGhostVisionTarget(now) {
@@ -212,33 +247,17 @@ function getActorScreenPosition(actor) {
 }
 
 function drawBlackFog(ctx, w, h, now) {
-  ctx.save();
   ctx.fillStyle = "rgba(0,0,0,0.955)";
   ctx.fillRect(0, 0, w, h);
-
-  const bg = ctx.createRadialGradient(w * 0.5, h * 0.42, Math.min(w, h) * 0.12, w * 0.5, h * 0.5, Math.max(w, h) * 0.7);
-  bg.addColorStop(0, "rgba(12,12,16,0.25)");
-  bg.addColorStop(0.42, "rgba(0,0,0,0.32)");
-  bg.addColorStop(1, "rgba(0,0,0,0.58)");
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, w, h);
-
-  // 매우 어두운 안개 입자. 위치 파악은 불가능하지만 단색 검정처럼 보이지 않게 한다.
-  for (const dot of ghostVisionFogDots) {
-    const driftX = Math.sin(now * 0.00008 * dot.s + dot.r) * 20;
-    const driftY = Math.cos(now * 0.00007 * dot.s + dot.r) * 16;
-    const x = (dot.x * w + driftX + w) % w;
-    const y = (dot.y * h + driftY + h) % h;
-    const g = ctx.createRadialGradient(x, y, 0, x, y, dot.r);
-    g.addColorStop(0, `rgba(42,44,52,${dot.a})`);
-    g.addColorStop(0.55, `rgba(15,16,20,${dot.a * 0.75})`);
-    g.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(x, y, dot.r, 0, Math.PI * 2);
-    ctx.fill();
+  if (!ghostFogTextureCanvas) rebuildGhostFogTexture();
+  if (ghostFogTextureCanvas) {
+    const driftX = Math.sin(now * 0.00011) * 12;
+    const driftY = Math.cos(now * 0.00009) * 9;
+    ctx.save();
+    ctx.globalAlpha = 0.92;
+    ctx.drawImage(ghostFogTextureCanvas, driftX - 12, driftY - 9, w + 24, h + 18);
+    ctx.restore();
   }
-  ctx.restore();
 }
 
 function drawGhostSpotlight(ctx, x, y, radius, alpha, color) {
@@ -403,10 +422,16 @@ function updateExtremeAiBackgroundGrid() {
 let lastRenderedFrameAt = 0;
 function getTargetRenderFps() {
   if (document.hidden) return 0;
-  if (gamePhase === GAME_PHASE.PLAYING) return performanceConfig.fps;
+  if (gamePhase === GAME_PHASE.PLAYING) {
+    return performanceAutoTune.emergency30Fps ? 30 : performanceConfig.fps;
+  }
   if (gamePhase === GAME_PHASE.COUNTDOWN) return Math.min(30, performanceConfig.fps);
   if (gamePhase === GAME_PHASE.PAUSED) return 2;
-  if (gamePhase === GAME_PHASE.ENDED) return deathCameraFocus ? Math.min(30, performanceConfig.fps) : 10;
+  if (gamePhase === GAME_PHASE.ENDED) {
+    const deathMotionActive = players && players.some(player => player && player.dying && player.alive !== false);
+    if (deathMotionActive || deathCameraFocus) return performanceLevel === "low" ? 30 : 60;
+    return 10;
+  }
   return 15;
 }
 
@@ -444,8 +469,9 @@ function animate() {
 
   updateExtremeAiBackgroundGrid();
   if (performanceLevel === "high" || performanceFrameCounter % 2 === 0) updateGhostVisionOverlay();
+  updateFrameTasks(now);
   renderer.render(scene, camera);
-  updatePerformanceHud(now);
+  updatePerformanceMetrics(now);
 }
 
 function handleInput() {
@@ -509,8 +535,22 @@ function getAiDifficultyLabel(level = aiDifficulty) {
   return currentLang === "en" ? cfg.labelEn : cfg.labelKo;
 }
 
+const aiNavigationCache = {
+  boardVersion: 0,
+  landDistanceMaps: new Map()
+};
+
+function invalidateAiNavigationCache() {
+  aiNavigationCache.boardVersion++;
+  aiNavigationCache.landDistanceMaps.clear();
+}
+
 function createAiDistanceContext() {
-  return { landDistanceMaps: new Map() };
+  return {
+    boardVersion: aiNavigationCache.boardVersion,
+    landDistanceMaps: aiNavigationCache.landDistanceMaps,
+    chaosReturnPaths: new Map()
+  };
 }
 
 function buildLandDistanceMap(targetLandId) {
@@ -620,13 +660,85 @@ function isMoveUnsafeForAi(actor, dir, options = {}) {
 
     if (opponent && opponent.alive && opponent.x === nx && opponent.z === nz) return true;
 
-    if (opponent && opponent.alive && containsPoint(opponent.trail, nx, nz) && !allowOpponentTrailAttack) {
+    if (opponent && opponent.alive && containsPoint(opponent.trail, nx, nz)) {
+      // 상대 보호막이 켜져 있으면 라인은 실제 벽이므로 공격 허용 여부와 관계없이 이동할 수 없다.
+      if (isShieldActive(opponent)) return true;
       // 상대 라인을 자르는 것은 공격이므로 별도 허용 옵션이 있을 때만 위험 판정에서 제외한다.
-      return true;
+      if (!allowOpponentTrailAttack) return true;
     }
   }
 
   return false;
+}
+
+function hasChaosAiReturnPath(actor, dir, aiContext = null) {
+  if (!actor || actor.aiDifficulty !== "chaos" || !dir) return true;
+
+  const stepDistance = getActorStepDistance(actor);
+  const startX = actor.x + dir.dx * stepDistance;
+  const startZ = actor.z + dir.dz * stepDistance;
+  if (!inBounds(startX, startZ)) return false;
+  if (land[startZ][startX] === actor.landId) return true;
+  const trailVersion = actor.trail ? actor.trail.length : 0;
+  const opponent = getOpponent(actor);
+  const cacheKey = `${startX},${startZ}|${trailVersion}|${opponent && opponent.alive ? `${opponent.x},${opponent.z},${opponent.trail.length},${isShieldActive(opponent) ? 1 : 0}` : "none"}`;
+  if (aiContext && aiContext.chaosReturnPaths && aiContext.chaosReturnPaths.has(cacheKey)) {
+    return aiContext.chaosReturnPaths.get(cacheKey);
+  }
+
+  const total = GRID_SIZE * GRID_SIZE;
+  const visited = new Uint8Array(total);
+  const queue = new Int32Array(total);
+  let head = 0;
+  let tail = 0;
+
+  const enqueue = (x, z) => {
+    if (!inBounds(x, z)) return;
+    const index = z * GRID_SIZE + x;
+    if (visited[index]) return;
+    if (!(x === startX && z === startZ) && containsPoint(actor.trail, x, z)) return;
+    if (opponent && opponent.alive && opponent.x === x && opponent.z === z) return;
+    if (opponent && opponent.alive && isShieldActive(opponent) && containsPoint(opponent.trail, x, z)) return;
+    visited[index] = 1;
+    queue[tail++] = index;
+  };
+
+  enqueue(startX, startZ);
+  while (head < tail) {
+    const index = queue[head++];
+    const x = index % GRID_SIZE;
+    const z = (index / GRID_SIZE) | 0;
+    if (land[z][x] === actor.landId) {
+      if (aiContext && aiContext.chaosReturnPaths) aiContext.chaosReturnPaths.set(cacheKey, true);
+      return true;
+    }
+    enqueue(x + 1, z);
+    enqueue(x - 1, z);
+    enqueue(x, z + 1);
+    enqueue(x, z - 1);
+  }
+
+  if (aiContext && aiContext.chaosReturnPaths) aiContext.chaosReturnPaths.set(cacheKey, false);
+  return false;
+}
+
+function recoverChaosAiFromTrailTrap(actor, dirs) {
+  if (!actor || actor.aiDifficulty !== "chaos" || !actor.trail || !actor.trail.length) return null;
+
+  const maxRollback = Math.min(3, actor.trail.length);
+  for (let removed = 0; removed < maxRollback; removed++) {
+    if (!removeRecentTrailPoint(actor)) break;
+    const escape = dirs.find(dir =>
+      !isMoveUnsafeForAi(actor, dir, { allowOpponentTrailAttack: true })
+      && hasChaosAiReturnPath(actor, dir)
+    );
+    if (escape) {
+      setShieldTrailWalls(actor, true, performance.now(), true);
+      return escape;
+    }
+  }
+
+  return null;
 }
 
 function getAiCandidateDirections(actor) {
@@ -693,6 +805,31 @@ function getAiItemScore(actor, nx, nz, cfg) {
   return bestScore;
 }
 
+function getShieldedOpponentExpansionScore(actor, opponent, nx, nz, nextLand, aiContext) {
+  if (!actor || !opponent || !opponent.alive || !isShieldActive(opponent)) return 0;
+
+  const currentOwnDistance = getDistanceToOwnLand(actor, actor.x, actor.z, aiContext);
+  const nextOwnDistance = getDistanceToOwnLand(actor, nx, nz, aiContext);
+  const movingOutward = nextOwnDistance > currentOwnDistance;
+  const returning = currentOwnDistance - nextOwnDistance;
+  const trailLength = actor.trail ? actor.trail.length : 0;
+  let score = 0;
+
+  // 상대 보호막이 켜진 동안에는 라인 공격이 불가능하므로 점령 면적 확대를 최우선으로 둔다.
+  if (nextLand === EMPTY) score += 760;
+  else if (nextLand === opponent.landId) score += 980;
+  else if (nextLand === actor.landId) score += trailLength > 0 ? 720 : 40;
+
+  if (trailLength < 7 && movingOutward && nextLand !== actor.landId) score += 420;
+  if (trailLength >= 5) score += returning * 360;
+  if (trailLength >= 8 && nextLand !== actor.landId) score -= 850;
+  if (trailLength >= 5 && nextLand === actor.landId) score += 980;
+
+  const playerDistance = Math.abs(opponent.x - nx) + Math.abs(opponent.z - nz);
+  score += Math.min(playerDistance, 10) * 22;
+  return score;
+}
+
 function evaluateAiDirection(actor, dir, cfg, aiContext = null) {
   const nx = actor.x + dir.dx;
   const nz = actor.z + dir.dz;
@@ -700,16 +837,19 @@ function evaluateAiDirection(actor, dir, cfg, aiContext = null) {
 
   const opponent = getOpponent(actor);
   const opponentTrailHit = opponent && opponent.alive && containsPoint(opponent.trail, nx, nz);
+  const opponentShieldActive = !!(opponent && opponent.alive && isShieldActive(opponent));
 
   // AI 자살 방지: 자기 라인, 벽, 직접 충돌은 최고 우선순위로 배제한다.
   if (isMoveUnsafeForAi(actor, dir, { allowOpponentTrailAttack: opponentTrailHit })) return -99999;
+  if (actor.aiDifficulty === "chaos" && !hasChaosAiReturnPath(actor, dir, aiContext)) return -99999;
 
   let score = 0;
   const nextLand = land[nz][nx];
 
-  score += getAiItemScore(actor, nx, nz, cfg);
+  // 상대 보호막 중에는 아이템 추격보다 영역 확장을 우선한다.
+  if (!opponentShieldActive) score += getAiItemScore(actor, nx, nz, cfg);
 
-  if (opponentTrailHit) score += 2600 + cfg.aggression * 480 + cfg.counterBias * 780;
+  if (opponentTrailHit && !opponentShieldActive) score += 2600 + cfg.aggression * 480 + cfg.counterBias * 780;
 
   if (nextLand === actor.landId) {
     score += actor.trail.length > 0 ? 980 * cfg.returnBias : 80;
@@ -719,7 +859,11 @@ function evaluateAiDirection(actor, dir, cfg, aiContext = null) {
     score += 175 * cfg.aggression;
   }
 
-  if (cfg.chaosExpansion && opponent && opponent.alive) {
+  if (opponentShieldActive) {
+    score += getShieldedOpponentExpansionScore(actor, opponent, nx, nz, nextLand, aiContext);
+  }
+
+  if (cfg.chaosExpansion && opponent && opponent.alive && !opponentShieldActive) {
     const playerDistanceNow = Math.abs(opponent.x - actor.x) + Math.abs(opponent.z - actor.z);
     const playerDistanceNext = Math.abs(opponent.x - nx) + Math.abs(opponent.z - nz);
     const farFromPlayer = playerDistanceNow >= (cfg.farExpansionRange || 11);
@@ -782,7 +926,7 @@ function evaluateAiDirection(actor, dir, cfg, aiContext = null) {
     if (actor.trail.length > 6 && nextLand === actor.landId) score += 620 * cfg.returnBias;
   }
 
-  if (opponent && opponent.alive) {
+  if (opponent && opponent.alive && !opponentShieldActive) {
     const distToOpponent = Math.abs(opponent.x - nx) + Math.abs(opponent.z - nz);
     const opponentTrailDist = getDistanceToPointList(nx, nz, opponent.trail);
     const opponentBold = isOpponentExpandingBoldly(opponent, cfg);
@@ -841,6 +985,16 @@ function updateAiDirection(actor) {
     .sort((a, b) => b.score - a.score);
 
   if (!scored.length) {
+    const recoveredEscape = recoverChaosAiFromTrailTrap(actor, dirs);
+    if (recoveredEscape) {
+      const changed = !actor.nextDir || actor.nextDir.dx !== recoveredEscape.dx || actor.nextDir.dz !== recoveredEscape.dz;
+      actor.nextDir = { dx: recoveredEscape.dx, dz: recoveredEscape.dz };
+      if (changed && gameStarted && !gameOver && !isCountingDown && !isPaused) {
+        DegulSfx.playTurn(actor);
+      }
+      return;
+    }
+
     // 막다른 길에서는 기존 반대 방향 금지를 풀고, 죽지 않는 칸을 최우선으로 선택한다.
     const emergency = dirs.find(dir => !isMoveUnsafeForAi(actor, dir, { allowOpponentTrailAttack: true }));
     if (emergency) {
@@ -986,14 +1140,14 @@ function rollActor(actor, dx, dz, onDone) {
     const startRotY = mesh.rotation.y;
     const targetRotY = Math.atan2(Math.sign(dx), Math.sign(dz) || 0.0001);
 
-    function hopStep() {
+    function hopStep(now) {
       if (actor.dying || actor.rollToken !== rollToken) {
         actor.moving = false;
         DegulSfx.endRoll(actor);
-        return;
+        return false;
       }
 
-      const t = Math.min((performance.now() - startTime) / duration, 1);
+      const t = Math.min((now - startTime) / duration, 1);
       const eased = easeOutCubic(t);
       mesh.position.lerpVectors(startPos, endPos, eased);
       mesh.position.y = endY + Math.sin(eased * Math.PI) * (isKnightSkin ? 0.12 : 0.18);
@@ -1002,23 +1156,23 @@ function rollActor(actor, dx, dz, onDone) {
       mesh.rotation.z = Math.sin(eased * Math.PI * 2) * (isKnightSkin ? 0.035 : 0.08);
       if (isKnightSkin) mesh.rotation.x = Math.sin(eased * Math.PI) * 0.045;
 
-      if (t < 1) {
-        requestAnimationFrame(hopStep);
-      } else {
+      if (t >= 1) {
         mesh.position.copy(endPos);
         mesh.userData.baseY = endY;
         if (actor.dying || actor.rollToken !== rollToken) {
           actor.moving = false;
           DegulSfx.endRoll(actor);
-          return;
+          return false;
         }
         actor.moving = false;
         actor.rollToken = null;
         DegulSfx.endRoll(actor);
         onDone();
+        return false;
       }
+      return true;
     }
-    hopStep();
+    addFrameTask(hopStep);
     return;
   }
 
@@ -1037,23 +1191,21 @@ function rollActor(actor, dx, dz, onDone) {
   const startTime = performance.now();
   const duration = getActorMoveTime(actor);
 
-  function step() {
+  function step(now) {
     if (actor.dying || actor.rollToken !== rollToken) {
       scene.attach(mesh);
       scene.remove(pivot);
       actor.moving = false;
       DegulSfx.endRoll(actor);
-      return;
+      return false;
     }
 
-    const t = Math.min((performance.now() - startTime) / duration, 1);
+    const t = Math.min((now - startTime) / duration, 1);
     const eased = easeOutCubic(t);
     pivot.rotation.set(0,0,0);
     pivot.rotateOnAxis(axis, eased * Math.PI / 2);
 
-    if (t < 1) {
-      requestAnimationFrame(step);
-    } else {
+    if (t >= 1) {
       scene.attach(mesh);
       scene.remove(pivot);
 
@@ -1065,16 +1217,18 @@ function rollActor(actor, dx, dz, onDone) {
       if (actor.dying || actor.rollToken !== rollToken) {
         actor.moving = false;
         DegulSfx.endRoll(actor);
-        return;
+        return false;
       }
       actor.moving = false;
       actor.rollToken = null;
       DegulSfx.endRoll(actor);
       onDone();
+      return false;
     }
+    return true;
   }
 
-  step();
+  addFrameTask(step);
 }
 
 function afterMove(actor) {

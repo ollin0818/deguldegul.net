@@ -118,6 +118,23 @@ function clearTrail(actor) {
   actor._shieldTrailVisible = null;
 }
 
+function removeRecentTrailPoint(actor) {
+  if (!actor || !actor.trail || !actor.trail.length) return null;
+  const point = actor.trail.pop();
+  if (actor.trail.pointSet) actor.trail.pointSet.delete(pointKey(point.x, point.z));
+
+  const visual = actor.trailMeshes && actor.trailMeshes.length
+    ? actor.trailMeshes.pop()
+    : null;
+  if (visual) {
+    boardGroup.remove(visual);
+    disposeObject3D(visual);
+  }
+
+  actor._shieldTrailVisible = null;
+  return point;
+}
+
 // ===================== 영역 점령 =====================
 function claimArea(actor) {
   const claimStartedAt = performance.now();
@@ -1716,20 +1733,20 @@ function createRobotVacuumBurst(x, z, colorValue) {
   group.add(light);
 
   const start = performance.now();
-  function step() {
-    const t = Math.min((performance.now() - start) / 420, 1);
+  function step(now) {
+    const t = Math.min((now - start) / 420, 1);
     const scale = 1 + t * 1.9;
     group.scale.set(scale, scale, scale);
     group.rotation.y += 0.12;
     group.children.forEach(child => { if (child.material) child.material.opacity *= 0.91; });
-    if (t < 1) {
-      requestAnimationFrame(step);
-    } else {
+    if (t >= 1) {
       scene.remove(group);
       disposeObject3D(group);
+      return false;
     }
+    return true;
   }
-  step();
+  addFrameTask(step);
 }
 
 function createLandNeutralizeSpark(cellsToClear, colorValue) {
@@ -1763,19 +1780,19 @@ function createLandNeutralizeSpark(cellsToClear, colorValue) {
   }
 
   const start = performance.now();
-  function step() {
-    const t = Math.min((performance.now() - start) / 280, 1);
+  function step(now) {
+    const t = Math.min((now - start) / 280, 1);
     group.scale.setScalar(1 + t * 0.46);
     group.rotation.y += 0.15;
     group.children.forEach(child => { if (child.material) child.material.opacity *= 0.86; });
-    if (t < 1) {
-      requestAnimationFrame(step);
-    } else {
+    if (t >= 1) {
       scene.remove(group);
       disposeObject3D(group);
+      return false;
     }
+    return true;
   }
-  step();
+  addFrameTask(step);
 }
 
 function claimItemArea(actor, cx, cz) {
@@ -1948,31 +1965,27 @@ function consumeShield(actor) {
   return true;
 }
 
-function playShieldBlockEffect(owner, x, z) {
-  if (!owner || !owner.mesh) return;
+const shieldBlockEffectPool = [];
+const MAX_SHIELD_BLOCK_EFFECT_POOL_SIZE = 6;
 
-  DegulSfx.oneShot("shieldWallHit");
-
+function createShieldBlockEffectObject() {
   const block = new THREE.Group();
-  const wallColor = owner.lineColor || 0xffd166;
-  block.position.set(toWorld(x), 0.94, toWorld(z));
-  scene.add(block);
-
-  const mat = new THREE.MeshBasicMaterial({
-    color: wallColor,
-    transparent: true,
-    opacity: 0.58,
-    wireframe: true,
-    depthWrite: false
-  });
-
-  const wall = new THREE.Mesh(new THREE.BoxGeometry(0.92, 1.88, 0.92), mat);
+  const wall = new THREE.Mesh(
+    new THREE.BoxGeometry(0.92, 1.88, 0.92),
+    new THREE.MeshBasicMaterial({
+      color: 0xffd166,
+      transparent: true,
+      opacity: 0.58,
+      wireframe: true,
+      depthWrite: false
+    })
+  );
   block.add(wall);
 
   const ring = new THREE.Mesh(
     new THREE.TorusGeometry(0.62, 0.026, 8, 40),
     new THREE.MeshBasicMaterial({
-      color: wallColor,
+      color: 0xffd166,
       transparent: true,
       opacity: 0.72,
       depthWrite: false
@@ -1981,11 +1994,60 @@ function playShieldBlockEffect(owner, x, z) {
   ring.rotation.x = Math.PI / 2;
   ring.position.y = -0.88;
   block.add(ring);
+  block.userData.wall = wall;
+  block.userData.ring = ring;
+  return block;
+}
+
+function acquireShieldBlockEffect(wallColor) {
+  const block = shieldBlockEffectPool.pop() || createShieldBlockEffectObject();
+  const wall = block.userData.wall;
+  const ring = block.userData.ring;
+  block.position.set(0, 0, 0);
+  block.rotation.set(0, 0, 0);
+  block.scale.set(1, 1, 1);
+  block.visible = true;
+  block.userData.inShieldBlockEffectPool = false;
+  wall.material.color.set(wallColor);
+  wall.material.opacity = 0.58;
+  ring.material.color.set(wallColor);
+  ring.material.opacity = 0.72;
+  scene.add(block);
+  return block;
+}
+
+function releaseShieldBlockEffect(block) {
+  if (!block || block.userData.inShieldBlockEffectPool) return;
+  if (block.parent) block.parent.remove(block);
+  block.visible = false;
+  block.userData.inShieldBlockEffectPool = true;
+  if (shieldBlockEffectPool.length < MAX_SHIELD_BLOCK_EFFECT_POOL_SIZE) {
+    shieldBlockEffectPool.push(block);
+  } else {
+    disposeObject3D(block);
+  }
+}
+
+function playShieldBlockEffect(owner, x, z) {
+  if (!owner || !owner.mesh) return;
+
+  DegulSfx.oneShot("shieldWallHit");
+
+  const wallColor = owner.lineColor || 0xffd166;
+  const block = acquireShieldBlockEffect(wallColor);
+  block.position.set(toWorld(x), 0.94, toWorld(z));
 
   const start = performance.now();
+  let released = false;
 
-  function updateBlockEffect() {
-    const t = Math.min((performance.now() - start) / 260, 1);
+  function releaseBlockEffect() {
+    if (released) return;
+    released = true;
+    releaseShieldBlockEffect(block);
+  }
+
+  function updateBlockEffect(now) {
+    const t = Math.min((now - start) / 260, 1);
     const scale = 1 + t * 0.65;
     block.scale.set(scale, scale, scale);
     block.rotation.y += 0.12;
@@ -1994,18 +2056,14 @@ function playShieldBlockEffect(owner, x, z) {
       if (child.material) child.material.opacity *= 0.88;
     });
 
-    if (t < 1) {
-      requestAnimationFrame(updateBlockEffect);
-    } else {
-      scene.remove(block);
-      block.traverse(obj => {
-        if (obj.geometry) obj.geometry.dispose();
-        if (obj.material) obj.material.dispose();
-      });
+    if (t >= 1) {
+      releaseBlockEffect();
+      return false;
     }
+    return true;
   }
 
-  updateBlockEffect();
+  addFrameTask(updateBlockEffect, releaseBlockEffect);
 }
 
 function createShieldBreakEffect(actor) {
@@ -2033,8 +2091,8 @@ function createShieldBreakEffect(actor) {
   }
 
   const start = performance.now();
-  function updateBurst() {
-    const t = Math.min((performance.now() - start) / 420, 1);
+  function updateBurst(now) {
+    const t = Math.min((now - start) / 420, 1);
 
     burst.children.forEach(shard => {
       shard.position.x += shard.userData.vx;
@@ -2044,18 +2102,18 @@ function createShieldBreakEffect(actor) {
       shard.scale.setScalar(1 - t * 0.55);
     });
 
-    if (t < 1) {
-      requestAnimationFrame(updateBurst);
-    } else {
+    if (t >= 1) {
       scene.remove(burst);
       burst.traverse(obj => {
         if (obj.geometry) obj.geometry.dispose();
         if (obj.material) obj.material.dispose();
       });
+      return false;
     }
+    return true;
   }
 
-  updateBurst();
+  addFrameTask(updateBurst);
 }
 
 function ensureSpeedEffect(actor) {

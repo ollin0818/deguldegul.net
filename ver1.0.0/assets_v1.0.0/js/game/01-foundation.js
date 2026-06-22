@@ -22,9 +22,9 @@ const MOVE_TIME = 145;
 const PERFORMANCE_STORAGE_KEY = "degulDegulPerformanceLevel";
 const PERFORMANCE_HUD_STORAGE_KEY = "degulDegulPerformanceHud";
 const PERFORMANCE_PRESETS = {
-  low: { fps: 30, glowTiles: 36, effectInterval: 2, specialTileInterval: 4, backgroundInterval: 5, ghostFogDots: 20, enableSpecialTileAnimation: false },
-  medium: { fps: 45, glowTiles: 80, effectInterval: 2, specialTileInterval: 2, backgroundInterval: 3, ghostFogDots: 40, enableSpecialTileAnimation: true },
-  high: { fps: 60, glowTiles: 180, effectInterval: 1, specialTileInterval: 1, backgroundInterval: 1, ghostFogDots: 80, enableSpecialTileAnimation: true }
+  low: { fps: 45, pixelRatio: 1, glowTiles: 36, effectInterval: 2, specialTileInterval: 4, backgroundInterval: 5, ghostFogDots: 20, enableSpecialTileAnimation: false },
+  medium: { fps: 60, pixelRatio: 1.5, glowTiles: 80, effectInterval: 2, specialTileInterval: 2, backgroundInterval: 3, ghostFogDots: 40, enableSpecialTileAnimation: true },
+  high: { fps: 60, pixelRatio: 2, glowTiles: 180, effectInterval: 1, specialTileInterval: 1, backgroundInterval: 1, ghostFogDots: 80, enableSpecialTileAnimation: true }
 };
 
 function getInitialPerformanceLevel() {
@@ -51,6 +51,52 @@ const performanceMetrics = {
   sampleFrames: 0,
   lastClaimMs: 0
 };
+const performanceAutoTune = {
+  lowFpsStartedAt: 0,
+  lastLevelChangeAt: performance.now(),
+  cooldownMs: 15000,
+  sustainMs: 6500,
+  emergency30Fps: false,
+  emergencyStartedAt: 0,
+  nextRecoveryProbeAt: 0
+};
+const frameTasks = new Set();
+let nextFrameTaskId = 1;
+const boardMatrixScratch = new THREE.Matrix4();
+const boardQuaternionScratch = new THREE.Quaternion();
+const boardColorScratch = new THREE.Color();
+
+function addFrameTask(update, cancel) {
+  if (typeof update !== "function") return null;
+  const task = { id: nextFrameTaskId++, update, cancel };
+  frameTasks.add(task);
+  return task;
+}
+
+function removeFrameTask(task) {
+  if (!task || !frameTasks.delete(task)) return;
+  if (typeof task.cancel === "function") task.cancel();
+}
+
+function updateFrameTasks(now) {
+  if (!frameTasks.size) return;
+  for (const task of frameTasks) {
+    let keep = false;
+    try {
+      keep = task.update(now) !== false;
+    } catch (error) {
+      console.error("Frame task failed", error);
+    }
+    if (!keep) frameTasks.delete(task);
+  }
+}
+
+function clearFrameTasks() {
+  for (const task of frameTasks) {
+    if (typeof task.cancel === "function") task.cancel();
+  }
+  frameTasks.clear();
+}
 
 function resetGhostVisionFogDots() {
   ghostVisionFogDots = Array.from({ length: performanceConfig.ghostFogDots }, (_, i) => ({
@@ -60,12 +106,13 @@ function resetGhostVisionFogDots() {
     a: 0.035 + (i % 5) * 0.006,
     s: 0.12 + (i % 7) * 0.025
   }));
+  if (typeof rebuildGhostFogTexture === "function") rebuildGhostFogTexture();
 }
 
 function applyRendererPerformanceConfig() {
   if (!renderer) return;
   const dpr = Math.max(1, Number(window.devicePixelRatio) || 1);
-  renderer.setPixelRatio(Math.min(dpr, 2));
+  renderer.setPixelRatio(Math.min(dpr, performanceConfig.pixelRatio));
   // 내부 렌더링 배율만 성능 옵션에 따라 조절하고, 캔버스 표시 크기는
   // 항상 현재 기기의 뷰포트 전체를 사용한다.
   renderer.setSize(window.innerWidth, window.innerHeight, true);
@@ -127,8 +174,8 @@ function togglePerformanceHud() {
   setPerformanceHudEnabled(!performanceHudEnabled);
 }
 
-function updatePerformanceHud(now) {
-  if (!performanceHudEnabled || !renderer) return;
+function updatePerformanceMetrics(now) {
+  if (!renderer) return;
   if (!performanceMetrics.sampleStartedAt) performanceMetrics.sampleStartedAt = now;
   performanceMetrics.sampleFrames++;
   if (performanceMetrics.lastFrameAt) {
@@ -144,6 +191,9 @@ function updatePerformanceHud(now) {
   performanceMetrics.sampleFrames = 0;
   performanceMetrics.sampleStartedAt = now;
 
+  updateAutomaticPerformanceLevel(now);
+  if (!performanceHudEnabled) return;
+
   const hud = document.getElementById("performanceHud");
   if (!hud) return;
   const info = renderer.info;
@@ -157,14 +207,54 @@ function updatePerformanceHud(now) {
     `Geo ${info.memory.geometries}  Tex ${info.memory.textures}`,
     `Board buckets ${activeBuckets}`,
     `Claim ${performanceMetrics.lastClaimMs.toFixed(2)}ms`,
-    `Mode ${performanceLevel} / ${gamePhase}`
+    `Mode ${performanceLevel}${performanceAutoTune.emergency30Fps ? " (30 FPS emergency)" : ""} / ${gamePhase}`
   ].join("\n");
 }
 
-function setPerformanceLevel(level) {
+function updateAutomaticPerformanceLevel(now) {
+  if (gamePhase !== GAME_PHASE.PLAYING || document.hidden) {
+    performanceAutoTune.lowFpsStartedAt = 0;
+    return;
+  }
+  if (performanceLevel === "low" && performanceAutoTune.emergency30Fps) {
+    if (now >= performanceAutoTune.nextRecoveryProbeAt) {
+      performanceAutoTune.emergency30Fps = false;
+      performanceAutoTune.lowFpsStartedAt = 0;
+      performanceAutoTune.lastLevelChangeAt = now;
+    }
+    return;
+  }
+  if (now - performanceAutoTune.lastLevelChangeAt < performanceAutoTune.cooldownMs) return;
+  const targetFps = performanceConfig.fps;
+  const lowThreshold = targetFps * 0.72;
+  if (performanceMetrics.fps >= lowThreshold) {
+    performanceAutoTune.lowFpsStartedAt = 0;
+    return;
+  }
+  if (!performanceAutoTune.lowFpsStartedAt) {
+    performanceAutoTune.lowFpsStartedAt = now;
+    return;
+  }
+  if (now - performanceAutoTune.lowFpsStartedAt < performanceAutoTune.sustainMs) return;
+  if (performanceLevel === "low") {
+    performanceAutoTune.emergency30Fps = true;
+    performanceAutoTune.emergencyStartedAt = now;
+    performanceAutoTune.nextRecoveryProbeAt = now + 20000;
+    performanceAutoTune.lowFpsStartedAt = 0;
+    return;
+  }
+  setPerformanceLevel(performanceLevel === "high" ? "medium" : "low", { automatic: true });
+}
+
+function setPerformanceLevel(level, options = {}) {
   if (!PERFORMANCE_PRESETS[level]) return;
   performanceLevel = level;
   performanceConfig = PERFORMANCE_PRESETS[level];
+  performanceAutoTune.lowFpsStartedAt = 0;
+  performanceAutoTune.lastLevelChangeAt = performance.now();
+  performanceAutoTune.emergency30Fps = false;
+  performanceAutoTune.emergencyStartedAt = 0;
+  performanceAutoTune.nextRecoveryProbeAt = 0;
   try { localStorage.setItem(PERFORMANCE_STORAGE_KEY, level); } catch (e) {}
   if (document.body) {
     document.body.classList.toggle("performance-low", level === "low");
@@ -1977,6 +2067,8 @@ function setGamePhase(phase) {
 
 let ghostVisionCanvas = null;
 let ghostVisionCtx = null;
+let ghostFogTextureCanvas = null;
+let ghostFogTextureCtx = null;
 let ghostVisionPhase = { target: null, alpha: 0, phase: "dark" };
 let ghostVisionFogDots = [];
 const GHOST_VISION_CYCLE_MS = 8000;

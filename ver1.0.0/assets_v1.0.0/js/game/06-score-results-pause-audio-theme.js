@@ -141,8 +141,8 @@ function playDeathMotion(player, onDone) {
 
   createDeathParticles(startPos, player.lineColor);
 
-  function step() {
-    const t = Math.min((performance.now() - startTime) / duration, 1);
+  function step(now) {
+    const t = Math.min((now - startTime) / duration, 1);
     const pop = Math.sin(t * Math.PI);
     const shake = Math.sin(t * Math.PI * 10) * 0.035 * (1 - t);
 
@@ -156,17 +156,48 @@ function playDeathMotion(player, onDone) {
     const s = Math.max(0.02, 1 - t);
     mesh.scale.set(startScale.x * s, startScale.y * s, startScale.z * s);
 
-    if (t < 1) {
-      requestAnimationFrame(step);
-    } else {
+    if (t >= 1) {
       mesh.scale.copy(startScale);
       mesh.position.copy(startPos);
       mesh.rotation.copy(startRot);
       onDone();
+      return false;
     }
+    return true;
   }
 
-  step();
+  addFrameTask(step);
+}
+
+const deathParticlePool = [];
+
+function acquireDeathParticle(color) {
+  const mesh = deathParticlePool.pop() || new THREE.Mesh(
+    new THREE.BoxGeometry(0.16, 0.16, 0.16),
+    new THREE.MeshStandardMaterial({
+      color,
+      emissive: color,
+      emissiveIntensity: 0.16,
+      roughness: 0.45
+    })
+  );
+  mesh.material.color.set(color);
+  mesh.material.emissive.set(color);
+  mesh.position.set(0, 0, 0);
+  mesh.rotation.set(0, 0, 0);
+  mesh.scale.set(1, 1, 1);
+  mesh.visible = true;
+  mesh.userData.inDeathParticlePool = false;
+  scene.add(mesh);
+  return mesh;
+}
+
+function releaseDeathParticle(mesh) {
+  if (!mesh || mesh.userData.inDeathParticlePool) return;
+  if (mesh.parent) mesh.parent.remove(mesh);
+  mesh.visible = false;
+  mesh.userData.inDeathParticlePool = true;
+  deathParticlePool.push(mesh);
 }
 
 function createDeathParticles(pos, color) {
@@ -174,17 +205,8 @@ function createDeathParticles(pos, color) {
   const particles = [];
 
   for (let i = 0; i < particleCount; i++) {
-    const geo = new THREE.BoxGeometry(0.16, 0.16, 0.16);
-    const mat = new THREE.MeshStandardMaterial({
-      color,
-      emissive: color,
-      emissiveIntensity: 0.16,
-      roughness: 0.45
-    });
-
-    const p = new THREE.Mesh(geo, mat);
+    const p = acquireDeathParticle(color);
     p.position.copy(pos);
-    scene.add(p);
 
     const angle = (Math.PI * 2 * i) / particleCount;
     const speed = 0.055 + Math.random() * 0.035;
@@ -196,6 +218,13 @@ function createDeathParticles(pos, color) {
       vy: 0.055 + Math.random() * 0.045,
       life: 1
     });
+  }
+
+  let released = false;
+  function releaseParticles() {
+    if (released) return;
+    released = true;
+    for (const p of particles) releaseDeathParticle(p.mesh);
   }
 
   function updateParticles() {
@@ -215,18 +244,14 @@ function createDeathParticles(pos, color) {
       p.mesh.scale.set(s, s, s);
     }
 
-    if (alive) {
-      requestAnimationFrame(updateParticles);
-    } else {
-      for (const p of particles) {
-        scene.remove(p.mesh);
-        p.mesh.geometry.dispose();
-        p.mesh.material.dispose();
-      }
+    if (!alive) {
+      releaseParticles();
+      return false;
     }
+    return true;
   }
 
-  updateParticles();
+  addFrameTask(updateParticles, releaseParticles);
 }
 
 function createVictoryFireworks(player) {
@@ -296,8 +321,7 @@ function createVictoryFireworks(player) {
     }
   }
 
-  function updateConfettiFireworks() {
-    const now = performance.now();
+  function updateConfettiFireworks(now) {
     let alive = false;
 
     for (const p of pieces) {
@@ -331,15 +355,15 @@ function createVictoryFireworks(player) {
       if (t < 1) alive = true;
     }
 
-    if (alive) {
-      requestAnimationFrame(updateConfettiFireworks);
-    } else {
+    if (!alive) {
       scene.remove(group);
       disposeObjectTree(group);
+      return false;
     }
+    return true;
   }
 
-  updateConfettiFireworks();
+  addFrameTask(updateConfettiFireworks);
 }
 
 

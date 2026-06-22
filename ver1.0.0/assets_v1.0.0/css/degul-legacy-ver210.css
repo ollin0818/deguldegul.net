@@ -1642,7 +1642,7 @@ body.dark-mode .ghostToggleBox.ghostMiniToggle.active {
 /* ===== 요청 수정: 로비 타이틀 전용 커스텀 폰트 ===== */
 @font-face {
   font-family: 'DegulTitleFont';
-  src: url('../fonts/ver212-font-01.ttf') format('truetype');
+  src: url('../fonts/ver212-font-01.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -3736,7 +3736,7 @@ body.dark-mode .solidColorButton {
 /* ===== 요청 수정: 영문판 ROLL ROLL 타이틀 폰트 + 구르기 유지 ===== */
 @font-face {
   font-family: 'RollRollTitleFont';
-  src: url('../fonts/ver212-font-02.ttf') format('truetype');
+  src: url('../fonts/ver212-font-02.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -7435,13 +7435,38 @@ body.performance-low * {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
+body.performance-low #lobby,
+body.performance-low .lobbyCard,
+body.performance-low .settingsPopup,
+body.performance-low .pausePanel,
+body.performance-low .siteInfoPopup,
+body.performance-low .resultPanel {
+  box-shadow: none !important;
+  filter: none !important;
+}
+body.performance-low .bgRollingBlock,
+body.performance-low .rollingShadow,
+body.performance-low .pcLobbyAd::before,
+body.performance-low .tabletLobbyAd::before {
+  display: none !important;
+}
 body.performance-low .titleRollText,
 body.performance-low .rollingCube,
 body.performance-low .rollingShadow,
 body.performance-low .selectedPreview::before,
 body.performance-low .selectedPreview::after,
-body.performance-low .resultPlayerCard.winner .resultBlockIcon {
+body.performance-low .resultPlayerCard.winner .resultBlockIcon,
+body.performance-low .dominanceEdge,
+body.performance-low #dominanceEdgeOverlay {
   animation: none !important;
+  transition: none !important;
+}
+body.performance-low .selectedPreview,
+body.performance-low .colorChip,
+body.performance-low .skinChoiceCard,
+body.performance-low .resultPlayerCard,
+body.performance-low button {
+  box-shadow: none !important;
 }
 body.performance-medium #settingsOverlay,
 body.performance-medium .settingsPopup {
@@ -9560,7 +9585,7 @@ body.device-layout-forced-tablet.mobile-landscape #lobby .lobbySettingsButton {
 /* ===== ver167: 일본어 타이틀 전용 폰트/색감/애니메이션 ===== */
 @font-face {
   font-family: 'DegulJapaneseTitleFont';
-  src: url('../fonts/ver212-font-03.ttf') format('truetype');
+  src: url('../fonts/ver212-font-03.woff2') format('woff2');
   font-display: swap;
 }
 

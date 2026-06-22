@@ -551,6 +551,7 @@ function clearSceneExtras() {
 }
 
 function resetMatch() {
+  clearFrameTasks();
   clearCountdownTimer();
   DegulSfx.stopAll();
   pauseIngameBgm(true);
