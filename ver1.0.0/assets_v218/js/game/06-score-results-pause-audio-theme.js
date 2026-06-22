@@ -879,6 +879,7 @@ function openSettingsPopup() {
   if (!overlay) return;
   updatePauseVolumeUI();
   updateSettingsThemeUI();
+  updatePerformanceSettingsUI();
   overlay.classList.add("show");
   overlay.setAttribute("aria-hidden", "false");
 }

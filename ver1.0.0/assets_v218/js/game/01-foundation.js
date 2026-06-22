@@ -19,6 +19,163 @@ const TILE_VISUAL_SIZE = 0.90;
 const TILE_GAP = CELL - TILE_VISUAL_SIZE;
 const MOVE_TIME = 145;
 
+const PERFORMANCE_STORAGE_KEY = "degulDegulPerformanceLevel";
+const PERFORMANCE_HUD_STORAGE_KEY = "degulDegulPerformanceHud";
+const PERFORMANCE_PRESETS = {
+  low: { fps: 30, glowTiles: 36, effectInterval: 2, specialTileInterval: 4, backgroundInterval: 5, ghostFogDots: 20, enableSpecialTileAnimation: false },
+  medium: { fps: 45, glowTiles: 80, effectInterval: 2, specialTileInterval: 2, backgroundInterval: 3, ghostFogDots: 40, enableSpecialTileAnimation: true },
+  high: { fps: 60, glowTiles: 180, effectInterval: 1, specialTileInterval: 1, backgroundInterval: 1, ghostFogDots: 80, enableSpecialTileAnimation: true }
+};
+
+function getInitialPerformanceLevel() {
+  try {
+    const saved = localStorage.getItem(PERFORMANCE_STORAGE_KEY);
+    if (PERFORMANCE_PRESETS[saved]) return saved;
+  } catch (e) {}
+  const lowPowerDevice = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4)
+    || (navigator.deviceMemory && navigator.deviceMemory <= 4)
+    || /Android|iPad|Tablet/i.test(navigator.userAgent || "");
+  return lowPowerDevice ? "low" : "medium";
+}
+
+let performanceLevel = getInitialPerformanceLevel();
+let performanceConfig = PERFORMANCE_PRESETS[performanceLevel];
+let performanceFrameCounter = 0;
+let performanceHudEnabled = false;
+try { performanceHudEnabled = localStorage.getItem(PERFORMANCE_HUD_STORAGE_KEY) === "1"; } catch (e) {}
+const performanceMetrics = {
+  fps: 0,
+  frameMs: 0,
+  lastFrameAt: 0,
+  sampleStartedAt: 0,
+  sampleFrames: 0,
+  lastClaimMs: 0
+};
+
+function resetGhostVisionFogDots() {
+  ghostVisionFogDots = Array.from({ length: performanceConfig.ghostFogDots }, (_, i) => ({
+    x: (Math.sin(i * 37.17) * 0.5 + 0.5),
+    y: (Math.cos(i * 21.41) * 0.5 + 0.5),
+    r: 80 + (i % 9) * 28,
+    a: 0.035 + (i % 5) * 0.006,
+    s: 0.12 + (i % 7) * 0.025
+  }));
+}
+
+function applyRendererPerformanceConfig() {
+  if (!renderer) return;
+  const dpr = Math.max(1, Number(window.devicePixelRatio) || 1);
+  renderer.setPixelRatio(Math.min(dpr, 2));
+  // 내부 렌더링 배율만 성능 옵션에 따라 조절하고, 캔버스 표시 크기는
+  // 항상 현재 기기의 뷰포트 전체를 사용한다.
+  renderer.setSize(window.innerWidth, window.innerHeight, true);
+  renderer.domElement.style.width = "100vw";
+  renderer.domElement.style.height = "100vh";
+  renderer.domElement.style.display = "block";
+  if (typeof resizeGhostVisionOverlay === "function") resizeGhostVisionOverlay();
+}
+
+function updatePerformanceSettingsUI() {
+  const labels = {
+    ko: { low: "낮음", medium: "보통", high: "높음" },
+    en: { low: "Low", medium: "Medium", high: "High" },
+    ja: { low: "低", medium: "標準", high: "高" },
+    zh: { low: "低", medium: "中", high: "高" }
+  };
+  const langLabels = labels[currentLang] || labels.ko;
+  const value = document.getElementById("settingsPerformanceValue");
+  if (value) value.textContent = langLabels[performanceLevel];
+  document.querySelectorAll("[data-performance-level]").forEach(button => {
+    const level = button.dataset.performanceLevel;
+    button.textContent = langLabels[level];
+    button.classList.toggle("selected", level === performanceLevel);
+    button.setAttribute("aria-pressed", level === performanceLevel ? "true" : "false");
+  });
+  updatePerformanceHudUI();
+}
+
+function updatePerformanceHudUI() {
+  const hud = document.getElementById("performanceHud");
+  const button = document.getElementById("settingsPerformanceHudToggle");
+  const labels = {
+    ko: performanceHudEnabled ? "📊 성능 정보 숨기기" : "📊 성능 정보 표시",
+    en: performanceHudEnabled ? "📊 Hide performance info" : "📊 Show performance info",
+    ja: performanceHudEnabled ? "📊 パフォーマンス情報を隠す" : "📊 パフォーマンス情報を表示",
+    zh: performanceHudEnabled ? "📊 隐藏性能信息" : "📊 显示性能信息"
+  };
+  if (hud) hud.classList.toggle("show", performanceHudEnabled);
+  if (button) {
+    button.textContent = labels[currentLang] || labels.ko;
+    button.classList.toggle("active", performanceHudEnabled);
+  }
+}
+
+function setPerformanceHudEnabled(enabled, persist = true) {
+  performanceHudEnabled = !!enabled;
+  performanceMetrics.fps = 0;
+  performanceMetrics.frameMs = 0;
+  performanceMetrics.lastFrameAt = 0;
+  performanceMetrics.sampleStartedAt = 0;
+  performanceMetrics.sampleFrames = 0;
+  if (persist) {
+    try { localStorage.setItem(PERFORMANCE_HUD_STORAGE_KEY, performanceHudEnabled ? "1" : "0"); } catch (e) {}
+  }
+  updatePerformanceHudUI();
+}
+
+function togglePerformanceHud() {
+  setPerformanceHudEnabled(!performanceHudEnabled);
+}
+
+function updatePerformanceHud(now) {
+  if (!performanceHudEnabled || !renderer) return;
+  if (!performanceMetrics.sampleStartedAt) performanceMetrics.sampleStartedAt = now;
+  performanceMetrics.sampleFrames++;
+  if (performanceMetrics.lastFrameAt) {
+    const frameTime = now - performanceMetrics.lastFrameAt;
+    performanceMetrics.frameMs = performanceMetrics.frameMs
+      ? performanceMetrics.frameMs * 0.82 + frameTime * 0.18
+      : frameTime;
+  }
+  performanceMetrics.lastFrameAt = now;
+  const elapsed = now - performanceMetrics.sampleStartedAt;
+  if (elapsed < 500) return;
+  performanceMetrics.fps = performanceMetrics.sampleFrames * 1000 / elapsed;
+  performanceMetrics.sampleFrames = 0;
+  performanceMetrics.sampleStartedAt = now;
+
+  const hud = document.getElementById("performanceHud");
+  if (!hud) return;
+  const info = renderer.info;
+  let activeBuckets = 0;
+  if (boardTileBuckets && boardTileBuckets.size) {
+    boardTileBuckets.forEach(bucket => { if (bucket.tiles.length) activeBuckets++; });
+  }
+  hud.textContent = [
+    `FPS ${performanceMetrics.fps.toFixed(1)}  ${performanceMetrics.frameMs.toFixed(1)}ms`,
+    `Draw ${info.render.calls}  Tri ${info.render.triangles}`,
+    `Geo ${info.memory.geometries}  Tex ${info.memory.textures}`,
+    `Board buckets ${activeBuckets}`,
+    `Claim ${performanceMetrics.lastClaimMs.toFixed(2)}ms`,
+    `Mode ${performanceLevel} / ${gamePhase}`
+  ].join("\n");
+}
+
+function setPerformanceLevel(level) {
+  if (!PERFORMANCE_PRESETS[level]) return;
+  performanceLevel = level;
+  performanceConfig = PERFORMANCE_PRESETS[level];
+  try { localStorage.setItem(PERFORMANCE_STORAGE_KEY, level); } catch (e) {}
+  if (document.body) {
+    document.body.classList.toggle("performance-low", level === "low");
+    document.body.classList.toggle("performance-medium", level === "medium");
+    document.body.classList.toggle("performance-high", level === "high");
+  }
+  if (typeof ghostVisionFogDots !== "undefined") resetGhostVisionFogDots();
+  applyRendererPerformanceConfig();
+  updatePerformanceSettingsUI();
+}
+
 // ===================== 효과음 매니저 =====================
 // 파일명 기준 매칭:
 // 카운트다운 3,2,1 / START / 블록 이동 루프 / 방향 전환 / 영역 점령 / 아이템 생성 / 아이템 획득 / 버튼 클릭
@@ -1754,10 +1911,12 @@ const AI_INGAME_BGM_BY_DIFFICULTY = {
 let currentIngameBgmSrc = DEFAULT_INGAME_BGM_SRC;
 
 let scene, camera, renderer;
-let boardGroup, actorsGroup, backgroundGridGroup, boardSeamGrid;
+let boardGroup, actorsGroup, backgroundGridGroup, boardSeamGrid, boardTileInstances, boardTileRenderGroup, boardTileGeometry;
 let cells = [];
 let land = [];
 let landRainbowIndex = [];
+let specialBoardInstanceMeshes = [];
+let boardTileBuckets = new Map();
 let p1, p2;
 let players = [];
 const GAME_PHASE = Object.freeze({
@@ -2854,18 +3013,22 @@ function updateExtendedLanguageText() {
   const settingsTexts = {
     ko: {
       close: "설정 닫기", title: "설정", desc: "소리와 화면 모드를 조절할 수 있습니다.", sfx: "효과음", bgmMute: "BGM 음소거", sfxMute: "효과음 음소거",
+      performance: "성능 옵션",
       pauseTitle: "일시정지", pauseDesc: "ESC 또는 메뉴 버튼으로 언제든 다시 열 수 있습니다.", resume: "계속 플레이", main: "메인화면으로 가기", volume: "음량", pauseAria: "일시정지 메뉴"
     },
     en: {
       close: "Close settings", title: "Settings", desc: "Adjust sound and display options.", sfx: "SFX", bgmMute: "Mute BGM", sfxMute: "Mute SFX",
+      performance: "Performance",
       pauseTitle: "Paused", pauseDesc: "You can reopen this menu anytime with ESC or the menu button.", resume: "Continue", main: "Go to Lobby", volume: "Volume", pauseAria: "Pause menu"
     },
     ja: {
       close: "設定を閉じる", title: "設定", desc: "サウンドと画面モードを調整できます。", sfx: "効果音", bgmMute: "BGMをミュート", sfxMute: "効果音をミュート",
+      performance: "パフォーマンス",
       pauseTitle: "一時停止", pauseDesc: "ESCまたはメニューボタンでいつでも開き直せます。", resume: "プレイを再開", main: "ロビーに戻る", volume: "音量", pauseAria: "一時停止メニュー"
     },
     zh: {
       close: "关闭设置", title: "设置", desc: "可以调整声音和画面模式。", sfx: "音效", bgmMute: "静音BGM", sfxMute: "静音音效",
+      performance: "性能选项",
       pauseTitle: "暂停", pauseDesc: "可随时按ESC或菜单按钮重新打开。", resume: "继续游戏", main: "返回大厅", volume: "音量", pauseAria: "暂停菜单"
     }
   }[lang] || {};
@@ -2878,6 +3041,12 @@ function updateExtendedLanguageText() {
   if (sfxLabel && sfxValue) sfxLabel.innerHTML = `${settingsTexts.sfx} <span id="settingsSfxValue">${sfxValue.textContent}</span>`;
   setAttr("#settingsBgmMute", "aria-label", settingsTexts.bgmMute);
   setAttr("#settingsSfxMute", "aria-label", settingsTexts.sfxMute);
+  const performanceLabel = document.getElementById("settingsPerformanceLabel");
+  const performanceValue = document.getElementById("settingsPerformanceValue");
+  if (performanceLabel && performanceValue) {
+    performanceLabel.innerHTML = `${settingsTexts.performance} <span id="settingsPerformanceValue">${performanceValue.textContent}</span>`;
+  }
+  updatePerformanceSettingsUI();
   setText("#pauseTitle", settingsTexts.pauseTitle);
   setText(".pausePanel p", settingsTexts.pauseDesc);
   setText(".pausePrimaryButton", settingsTexts.resume);

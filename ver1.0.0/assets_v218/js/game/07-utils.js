@@ -3,7 +3,19 @@ function getOpponent(actor) {
   return actor === p1 ? p2 : p1;
 }
 
+function pointKey(x, z) {
+  return z * GRID_SIZE + x;
+}
+
+function createPointList() {
+  const list = [];
+  list.pointSet = new Set();
+  return list;
+}
+
 function containsPoint(arr, x, z) {
+  if (!arr) return false;
+  if (arr.pointSet) return arr.pointSet.has(pointKey(x, z));
   return arr.some(p => p.x === x && p.z === z);
 }
 
@@ -115,6 +127,6 @@ function restartGame() {
 function onResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  applyRendererPerformanceConfig();
   resizeGhostVisionOverlay();
 }

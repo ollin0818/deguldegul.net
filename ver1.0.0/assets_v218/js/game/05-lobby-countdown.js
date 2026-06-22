@@ -583,6 +583,12 @@ function resetMatch() {
     }
   }
 
+  if (typeof disposeBoardTileStates === "function") disposeBoardTileStates();
+  boardTileRenderGroup = null;
+  boardTileInstances = null;
+  boardTileGeometry = null;
+  specialBoardInstanceMeshes = [];
+  boardTileBuckets = new Map();
   cells = [];
   land = [];
   landRainbowIndex = [];

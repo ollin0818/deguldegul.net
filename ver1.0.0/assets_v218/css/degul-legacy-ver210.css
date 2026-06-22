@@ -7358,6 +7358,60 @@ body.tablet-device.ai-match-mode.mobile-controls-active #mobileControlLayer .mob
 }
 .settingsRow label span { color: #6b7280; font-size: 12px; }
 .settingsRow input[type="range"] { width: 100%; accent-color: #007aff; }
+.settingsPerformanceOptions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.settingsPerformanceOptions button {
+  min-width: 0;
+  padding: 10px 8px !important;
+  border: 1px solid rgba(15,23,42,0.08) !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,0.78) !important;
+  color: #475569 !important;
+  box-shadow: none !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+}
+.settingsPerformanceOptions button.selected {
+  border-color: rgba(0,122,255,0.34) !important;
+  background: #007aff !important;
+  color: #fff !important;
+}
+.settingsPerformanceHudToggle {
+  width: 100%;
+  border: 1px solid rgba(15,23,42,0.08) !important;
+  border-radius: 14px !important;
+  padding: 11px 14px !important;
+  background: rgba(255,255,255,0.78) !important;
+  color: #334155 !important;
+  box-shadow: none !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+}
+.settingsPerformanceHudToggle.active {
+  background: rgba(52,199,89,0.14) !important;
+  color: #087a37 !important;
+  border-color: rgba(52,199,89,0.28) !important;
+}
+#performanceHud {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 145;
+  display: none;
+  min-width: 166px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: rgba(2,6,23,0.82);
+  color: #dff7ff;
+  font: 700 11px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: pre;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(2,6,23,0.22);
+}
+#performanceHud.show { display: block; }
 .settingsThemeToggle,
 .pauseThemeToggle {
   width: 100%;
@@ -7376,6 +7430,24 @@ body.dark-mode .settingsBody { background: rgba(255,255,255,0.90) !important; co
 body.dark-mode .settingsHeader p,
 body.dark-mode .settingsRow label span { color: #6b7280 !important; }
 body.dark-mode .settingsCloseButton { background: rgba(17,24,39,0.08) !important; color: #111827 !important; }
+
+body.performance-low * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.performance-low .titleRollText,
+body.performance-low .rollingCube,
+body.performance-low .rollingShadow,
+body.performance-low .selectedPreview::before,
+body.performance-low .selectedPreview::after,
+body.performance-low .resultPlayerCard.winner .resultBlockIcon {
+  animation: none !important;
+}
+body.performance-medium #settingsOverlay,
+body.performance-medium .settingsPopup {
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}
 
 /* BGM 온/오프 버튼은 제거하고, 다크모드는 설정/일시정지 안에서만 조작 */
 #soundToggle { display: none !important; }

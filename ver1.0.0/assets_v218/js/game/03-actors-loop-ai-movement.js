@@ -108,7 +108,7 @@ function createActor({name, x, z, color, colorData = null, landId, lineColor, is
     moving: false,
     dir: startDir,
     nextDir: {...startDir},
-    trail: [],
+    trail: createPointList(),
     trailMeshes: [],
     lineColor,
     alive: true,
@@ -142,13 +142,7 @@ function createGhostVisionOverlay() {
   document.body.appendChild(ghostVisionCanvas);
   ghostVisionCtx = ghostVisionCanvas.getContext("2d");
 
-  ghostVisionFogDots = Array.from({length: 80}, (_, i) => ({
-    x: (Math.sin(i * 37.17) * 0.5 + 0.5),
-    y: (Math.cos(i * 21.41) * 0.5 + 0.5),
-    r: 80 + (i % 9) * 28,
-    a: 0.035 + (i % 5) * 0.006,
-    s: 0.12 + (i % 7) * 0.025
-  }));
+  resetGhostVisionFogDots();
 
   resizeGhostVisionOverlay();
 }
@@ -375,10 +369,13 @@ function updateExtremeAiBackgroundGrid() {
   if (!backgroundGridGroup) return;
   const theme = getPerspectiveGridTheme();
   const active = !!(theme.extreme || theme.hell || theme.chaos);
+  if (!active) return;
+  if (performanceFrameCounter % performanceConfig.backgroundInterval !== 0) return;
   const t = performance.now() * 0.001;
   const pulse = active ? (0.5 + 0.5 * Math.sin(t * (theme.hell ? 4.2 : (theme.chaos ? 6.6 : 3.4)))) : 0;
 
-  backgroundGridGroup.traverse(obj => {
+  const parts = backgroundGridGroup.userData.renderParts || {};
+  Object.values(parts).forEach(obj => {
     if (!obj.material) return;
     const role = obj.userData && obj.userData.gridRole;
 
@@ -400,12 +397,28 @@ function updateExtremeAiBackgroundGrid() {
       obj.material.color.set(theme.sparkleColor || 0xd8b4fe);
       obj.material.opacity = active ? ((theme.hell ? 0.34 : (theme.chaos ? 0.38 : 0.28)) + pulse * (theme.hell ? 0.54 : (theme.chaos ? 0.62 : 0.48))) : 0;
     }
-    obj.material.needsUpdate = true;
   });
+}
+
+let lastRenderedFrameAt = 0;
+function getTargetRenderFps() {
+  if (document.hidden) return 0;
+  if (gamePhase === GAME_PHASE.PLAYING) return performanceConfig.fps;
+  if (gamePhase === GAME_PHASE.COUNTDOWN) return Math.min(30, performanceConfig.fps);
+  if (gamePhase === GAME_PHASE.PAUSED) return 2;
+  if (gamePhase === GAME_PHASE.ENDED) return deathCameraFocus ? Math.min(30, performanceConfig.fps) : 10;
+  return 15;
 }
 
 function animate() {
   requestAnimationFrame(animate);
+  const now = performance.now();
+  const targetFps = getTargetRenderFps();
+  if (targetFps <= 0) return;
+  const frameInterval = 1000 / targetFps;
+  if (now - lastRenderedFrameAt < frameInterval) return;
+  lastRenderedFrameAt = now - ((now - lastRenderedFrameAt) % frameInterval);
+  performanceFrameCounter++;
 
   updatePauseMenuButtonVisibility();
 
@@ -413,10 +426,13 @@ function animate() {
     handleInput();
     updateCamera();
     updateScoreUIThrottled();
-    updatePlayerBuffs();
-    updateAreaItemAnimation();
-    updateSummonedAiAssists();
-    updateClaimGlowEffects();
+    const updateEffects = performanceFrameCounter % performanceConfig.effectInterval === 0;
+    if (updateEffects) {
+      updatePlayerBuffs();
+      updateAreaItemAnimation();
+      updateSummonedAiAssists();
+      updateClaimGlowEffects();
+    }
     updateExtremeAiLandSparkle();
     updateGhostSkinActors();
   }
@@ -427,8 +443,9 @@ function animate() {
   }
 
   updateExtremeAiBackgroundGrid();
-  updateGhostVisionOverlay();
+  if (performanceLevel === "high" || performanceFrameCounter % 2 === 0) updateGhostVisionOverlay();
   renderer.render(scene, camera);
+  updatePerformanceHud(now);
 }
 
 function handleInput() {

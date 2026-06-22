@@ -9,11 +9,12 @@ function init() {
   camera.lookAt(0, 0, 0);
 
   renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
-  renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = false;
   // 1차 최적화: 저사양 노트북 렉 감소를 위해 실시간 그림자는 비활성화
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   document.body.appendChild(renderer.domElement);
+  setPerformanceLevel(performanceLevel);
+  setPerformanceHudEnabled(performanceHudEnabled, false);
   createGhostVisionOverlay();
 
   hemiLight = new THREE.HemisphereLight(0xffffff, 0xd9e6ff, 1.6);
@@ -47,6 +48,14 @@ function init() {
   showPrivacyConsentIfNeeded();
 
   window.addEventListener("resize", onResize);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      lastRenderedFrameAt = performance.now();
+      performanceMetrics.lastFrameAt = 0;
+      performanceMetrics.sampleStartedAt = 0;
+      performanceMetrics.sampleFrames = 0;
+    }
+  });
   document.addEventListener("pointerdown", () => DegulSfx.unlock(), { passive: true });
   document.addEventListener("click", e => {
     if (e.target && e.target.closest && e.target.closest("button")) DegulSfx.oneShot("button");
@@ -296,29 +305,34 @@ function createPerspectiveBackgroundGrid() {
   });
   strongLineMat.userData = { gridRole: "strongLine" };
 
-  function addLine(x1, z1, x2, z2, strong = false) {
-    const geo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(x1, y, z1),
-      new THREE.Vector3(x2, y, z2)
-    ]);
-    const line = new THREE.Line(geo, strong ? strongLineMat : lineMat);
-    line.userData.gridRole = strong ? "strongLine" : "line";
-    line.renderOrder = -30;
-    backgroundGridGroup.add(line);
-  }
-
   // 칸 경계선(-15.5, -14.5, ... 15.5)과 같은 규격으로 무한 확장.
   // 이렇게 해야 보드 타일의 1칸과 배경 네모칸 1칸이 정확히 이어진다.
   const start = -half;
   const end = half;
   const lineCount = Math.round((end - start) / tileStep);
+  const linePositions = [];
+  const strongLinePositions = [];
   for (let n = 0; n <= lineCount; n++) {
     const v = start + n * tileStep;
     const gridIndexFromBoardEdge = Math.round((v + boardEdge) / tileStep);
     const strong = gridIndexFromBoardEdge % 5 === 0;
-    addLine(v, start, v, end, strong);
-    addLine(start, v, end, v, strong);
+    const target = strong ? strongLinePositions : linePositions;
+    target.push(v, y, start, v, y, end);
+    target.push(start, y, v, end, y, v);
   }
+  const lineGeo = new THREE.BufferGeometry();
+  lineGeo.setAttribute("position", new THREE.Float32BufferAttribute(linePositions, 3));
+  const gridLines = new THREE.LineSegments(lineGeo, lineMat);
+  gridLines.userData.gridRole = "line";
+  gridLines.renderOrder = -30;
+  backgroundGridGroup.add(gridLines);
+
+  const strongLineGeo = new THREE.BufferGeometry();
+  strongLineGeo.setAttribute("position", new THREE.Float32BufferAttribute(strongLinePositions, 3));
+  const strongGridLines = new THREE.LineSegments(strongLineGeo, strongLineMat);
+  strongGridLines.userData.gridRole = "strongLine";
+  strongGridLines.renderOrder = -30;
+  backgroundGridGroup.add(strongGridLines);
 
   // 실제 게임판의 논리 외곽선. 배경 그리드와 보드의 첫 경계가 딱 맞는지 확인 가능하게 옅게 표시.
   const edgeMat = new THREE.LineBasicMaterial({
@@ -335,13 +349,17 @@ function createPerspectiveBackgroundGrid() {
     [new THREE.Vector3(edgeOffset, y + 0.004, edgeOffset), new THREE.Vector3(-edgeOffset, y + 0.004, edgeOffset)],
     [new THREE.Vector3(-edgeOffset, y + 0.004, edgeOffset), new THREE.Vector3(-edgeOffset, y + 0.004, -edgeOffset)]
   ];
-  edgePoints.forEach(points => {
-    const geo = new THREE.BufferGeometry().setFromPoints(points);
-    const line = new THREE.Line(geo, edgeMat);
-    line.userData.gridRole = "boardEdge";
-    line.renderOrder = -25;
-    backgroundGridGroup.add(line);
-  });
+  const edgePositions = [];
+  edgePoints.forEach(points => edgePositions.push(
+    points[0].x, points[0].y, points[0].z,
+    points[1].x, points[1].y, points[1].z
+  ));
+  const edgeGeo = new THREE.BufferGeometry();
+  edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
+  const edgeLines = new THREE.LineSegments(edgeGeo, edgeMat);
+  edgeLines.userData.gridRole = "boardEdge";
+  edgeLines.renderOrder = -25;
+  backgroundGridGroup.add(edgeLines);
 
   // AI 익스트림 전용: 익스트림 스킨 색의 보라색 반짝임 포인트.
   // 항상 생성해두고 난이도가 로봇청소기일 때만 표시해, 다른 모드 성능에는 영향이 거의 없게 한다.
@@ -377,10 +395,211 @@ function createPerspectiveBackgroundGrid() {
   backgroundGridGroup.add(sparkle);
 
   backgroundGridGroup.renderOrder = -50;
+  backgroundGridGroup.userData.renderParts = {
+    floor,
+    line: gridLines,
+    strongLine: strongGridLines,
+    boardEdge: edgeLines,
+    extremeSparkle: sparkle
+  };
   scene.add(backgroundGridGroup);
 }
 
 // ===================== 보드 생성 =====================
+function createBoardTileState(x, z) {
+  return {
+    position: new THREE.Vector3(toWorld(x), -0.04, toWorld(z)),
+    scale: new THREE.Vector3(1, 1, 1),
+    userData: {},
+    bucketKey: "",
+    bucketSlot: -1,
+    x,
+    z
+  };
+}
+
+function getBoardTileStyle(x, z) {
+  const owner = land[z][x];
+  const colors = getThemeColors();
+  if (owner === EMPTY) {
+    return {
+      color: colors.emptyLand,
+      map: null,
+      roughness: 0.72,
+      metalness: 0.03,
+      emissive: 0x000000,
+      emissiveIntensity: 0,
+      specialType: "",
+      y: -0.04,
+      scaleY: 1
+    };
+  }
+
+  const colorData = owner === P1_LAND
+    ? selectedColors[1]
+    : (matchMode === "ai" ? getAiColorData() : selectedColors[2]);
+  const skin = colorData && colorData.skin;
+  let color = colorData ? colorData.landLight : colors.emptyLand;
+  let map = null;
+  let roughness = 0.72;
+  let metalness = 0.03;
+  let emissive = 0x000000;
+  let emissiveIntensity = 0;
+
+  if (isRainbowColorData(colorData)) {
+    color = getRainbowLandColor(getRainbowCellIndex(x, z, owner));
+    roughness = 0.46;
+    metalness = 0.04;
+  } else if (skin === "chess") {
+    color = ((x + z) % 2 === 0) ? 0xf8fafc : 0x111827;
+    roughness = 0.34;
+    metalness = 0.06;
+  } else {
+    map = getSkinTexture("land", skin);
+    if (map) color = 0xffffff;
+    roughness = skin === "ice" ? 0.18 : (skin === "ghost" ? 0.64 : (skin === "hell" ? 0.42 : (skin === "chaos" ? 0.24 : (skin === "chocolate" ? 0.50 : 0.54))));
+    metalness = skin === "ice" ? 0.02 : (skin === "chaos" ? 0.14 : ((skin === "extreme" || skin === "hell") ? 0.08 : 0.05));
+    if (skin === "chaos") {
+      emissive = 0x00d96a;
+      emissiveIntensity = 0.34;
+    }
+  }
+
+  const specialType = skin === "extreme" || skin === "hell" || skin === "chaos" ? skin : "";
+  if (specialType) {
+    emissive = specialType === "hell" ? 0xff4500 : (specialType === "chaos" ? 0x00ff78 : 0x843cff);
+    emissiveIntensity = specialType === "hell" ? 0.30 : (specialType === "chaos" ? 0.38 : 0.22);
+  }
+
+  return {
+    color,
+    map,
+    roughness,
+    metalness,
+    emissive,
+    emissiveIntensity,
+    specialType,
+    y: 0.02,
+    scaleY: 1.55
+  };
+}
+
+function getBoardTileBucketKey(style) {
+  const mapKey = style.map ? style.map.uuid : "none";
+  return [
+    mapKey,
+    new THREE.Color(style.color).getHexString(),
+    new THREE.Color(style.emissive).getHexString(),
+    Number(style.emissiveIntensity || 0).toFixed(3),
+    Number(style.roughness || 0).toFixed(3),
+    Number(style.metalness || 0).toFixed(3),
+    style.specialType || "normal"
+  ].join("|");
+}
+
+function clearBoardTileRenderGroup() {
+  if (!boardTileRenderGroup) return;
+  boardGroup.remove(boardTileRenderGroup);
+  boardTileRenderGroup.traverse(object => {
+    if (object.material && typeof object.material.dispose === "function") object.material.dispose();
+  });
+  boardTileRenderGroup.clear();
+  boardTileRenderGroup = null;
+  specialBoardInstanceMeshes = [];
+  boardTileBuckets = new Map();
+}
+
+function disposeBoardTileStates() {
+  // 논리 타일에는 GPU 리소스를 보관하지 않는다.
+}
+
+function createBoardTileBucket(key, style) {
+  const material = new THREE.MeshStandardMaterial({
+    color: style.color,
+    map: style.map || null,
+    roughness: style.roughness,
+    metalness: style.metalness,
+    emissive: style.emissive,
+    emissiveIntensity: style.emissiveIntensity
+  });
+  material.userData = { preserveTexturesOnDispose: true };
+  const mesh = new THREE.InstancedMesh(boardTileGeometry, material, GRID_SIZE * GRID_SIZE);
+  mesh.name = "BoardTileBucket";
+  mesh.count = 0;
+  mesh.receiveShadow = false;
+  mesh.frustumCulled = false;
+  mesh.userData.specialType = style.specialType || "";
+  const bucket = { key, style, material, mesh, tiles: [] };
+  boardTileBuckets.set(key, bucket);
+  boardTileRenderGroup.add(mesh);
+  if (style.specialType) specialBoardInstanceMeshes.push(mesh);
+  return bucket;
+}
+
+function setBoardBucketMatrix(bucket, slot, tile) {
+  const matrix = new THREE.Matrix4();
+  matrix.compose(tile.position, new THREE.Quaternion(), tile.scale);
+  bucket.mesh.setMatrixAt(slot, matrix);
+  bucket.mesh.instanceMatrix.needsUpdate = true;
+}
+
+function removeTileFromBoardBucket(tile) {
+  if (!tile || !tile.bucketKey || tile.bucketSlot < 0) return;
+  const bucket = boardTileBuckets.get(tile.bucketKey);
+  if (!bucket) return;
+  const removeSlot = tile.bucketSlot;
+  const lastSlot = bucket.tiles.length - 1;
+  const lastTile = bucket.tiles[lastSlot];
+  if (removeSlot !== lastSlot && lastTile) {
+    bucket.tiles[removeSlot] = lastTile;
+    lastTile.bucketSlot = removeSlot;
+    setBoardBucketMatrix(bucket, removeSlot, lastTile);
+  }
+  bucket.tiles.pop();
+  bucket.mesh.count = bucket.tiles.length;
+  tile.bucketKey = "";
+  tile.bucketSlot = -1;
+}
+
+function moveTileToBoardBucket(tile, style) {
+  const key = getBoardTileBucketKey(style);
+  tile.position.y = style.y;
+  tile.scale.y = style.scaleY;
+  tile.userData.extremeAiLand = !!style.specialType;
+  tile.userData.hellAiLand = style.specialType === "hell";
+  tile.userData.chaosAiLand = style.specialType === "chaos";
+  if (tile.bucketKey === key && tile.bucketSlot >= 0) {
+    const currentBucket = boardTileBuckets.get(key);
+    if (currentBucket) setBoardBucketMatrix(currentBucket, tile.bucketSlot, tile);
+    return;
+  }
+  removeTileFromBoardBucket(tile);
+  const bucket = boardTileBuckets.get(key) || createBoardTileBucket(key, style);
+  tile.bucketKey = key;
+  tile.bucketSlot = bucket.tiles.length;
+  bucket.tiles.push(tile);
+  bucket.mesh.count = bucket.tiles.length;
+  setBoardBucketMatrix(bucket, tile.bucketSlot, tile);
+}
+
+function initializeBoardTileInstances() {
+  clearBoardTileRenderGroup();
+  boardTileRenderGroup = new THREE.Group();
+  boardTileRenderGroup.name = "BoardTileInstances";
+  boardTileBuckets = new Map();
+  specialBoardInstanceMeshes = [];
+  boardGroup.add(boardTileRenderGroup);
+  boardTileInstances = boardTileRenderGroup;
+  for (let z = 0; z < GRID_SIZE; z++) {
+    for (let x = 0; x < GRID_SIZE; x++) {
+      const tile = cells[z][x];
+      tile.bucketKey = "";
+      tile.bucketSlot = -1;
+      moveTileToBoardBucket(tile, getBoardTileStyle(x, z));
+    }
+  }
+}
+
 function createBoard() {
   cells = [];
   land = [];
@@ -388,7 +607,8 @@ function createBoard() {
   rainbowClaimCounters[P1_LAND] = 0;
   rainbowClaimCounters[P2_LAND] = 0;
 
-  const baseGeo = new THREE.BoxGeometry(TILE_VISUAL_SIZE, 0.08, TILE_VISUAL_SIZE);
+  specialBoardInstanceMeshes = [];
+  boardTileGeometry = new THREE.BoxGeometry(TILE_VISUAL_SIZE, 0.08, TILE_VISUAL_SIZE);
 
   for (let z = 0; z < GRID_SIZE; z++) {
     cells[z] = [];
@@ -396,19 +616,7 @@ function createBoard() {
 
     for (let x = 0; x < GRID_SIZE; x++) {
       land[z][x] = EMPTY;
-
-      const mat = new THREE.MeshStandardMaterial({
-        color: 0xf1f4ff,
-        roughness: 0.72,
-        metalness: 0.03
-      });
-
-      const tile = new THREE.Mesh(baseGeo, mat);
-      tile.position.set(toWorld(x), -0.04, toWorld(z));
-      tile.receiveShadow = true;
-      boardGroup.add(tile);
-
-      cells[z][x] = tile;
+      cells[z][x] = createBoardTileState(x, z);
     }
   }
 
@@ -488,12 +696,6 @@ function markSquareLand(cx, cz, radius, owner) {
 function refreshBoardCells(changedCells) {
   if (!changedCells || !changedCells.length) return;
 
-  // 한 번에 너무 넓은 영역이 바뀌는 경우에는 전체 갱신이 더 안전하고 빠르다.
-  if (changedCells.length > GRID_SIZE * GRID_SIZE * 0.42) {
-    refreshBoardColors();
-    return;
-  }
-
   const seen = new Set();
   for (const cell of changedCells) {
     if (!cell || !inBounds(cell.x, cell.z)) continue;
@@ -506,236 +708,45 @@ function refreshBoardCells(changedCells) {
 
 function refreshBoardCell(x, z) {
   if (!cells || !cells[z] || !cells[z][x]) return;
-
-  const colors = getThemeColors();
   const tile = cells[z][x];
-
-  tile.userData.extremeAiLand = false;
-  tile.userData.hellAiLand = false;
-  tile.userData.chaosAiLand = false;
-  tile.userData.extremeAiPhase = tile.userData.extremeAiPhase || Math.random() * Math.PI * 2;
-
-  const applyChessLandCell = () => {
-    tile.material.map = null;
-    tile.material.color.set(((x + z) % 2 === 0) ? 0xf8fafc : 0x111827);
-    tile.material.roughness = 0.34;
-    tile.material.metalness = 0.06;
-    tile.material.emissive.set(0x000000);
-    tile.material.emissiveIntensity = 0;
-    tile.material.needsUpdate = true;
-  };
-
-  if (land[z][x] === P1_LAND) {
-    const colorData = selectedColors[1];
-    if (isRainbowColorData(colorData)) {
-      tile.material.map = null;
-      tile.material.color.set(getRainbowLandColor(getRainbowCellIndex(x, z, P1_LAND)));
-      tile.material.roughness = 0.46;
-      tile.material.metalness = 0.04;
-      tile.material.needsUpdate = true;
-    } else if (colorData && colorData.skin === "chess") {
-      applyChessLandCell();
-    } else {
-      applySkinToMaterial(tile.material, colorData, "land");
-    }
-
-    if (colorData && (colorData.skin === "extreme" || colorData.skin === "hell" || colorData.skin === "chaos")) {
-      tile.userData.extremeAiLand = true;
-      tile.userData.hellAiLand = colorData.skin === "hell";
-      tile.userData.chaosAiLand = colorData.skin === "chaos";
-      tile.material.emissive.set(colorData.skin === "hell" ? 0xff4500 : (colorData.skin === "chaos" ? 0x00ff78 : 0x843cff));
-      tile.material.emissiveIntensity = colorData.skin === "hell" ? 0.30 : (colorData.skin === "chaos" ? 0.38 : 0.22);
-    } else {
-      tile.material.emissive.set(0x000000);
-      tile.material.emissiveIntensity = 0;
-    }
-
-    tile.position.y = 0.02;
-    tile.scale.y = 1.55;
-  } else if (land[z][x] === P2_LAND) {
-    const colorData = matchMode === "ai" ? getAiColorData() : selectedColors[2];
-    if (isRainbowColorData(colorData)) {
-      tile.material.map = null;
-      tile.material.color.set(getRainbowLandColor(getRainbowCellIndex(x, z, P2_LAND)));
-      tile.material.roughness = 0.46;
-      tile.material.metalness = 0.04;
-      tile.material.needsUpdate = true;
-    } else if (colorData && colorData.skin === "chess") {
-      applyChessLandCell();
-    } else {
-      applySkinToMaterial(tile.material, colorData, "land");
-    }
-
-    if (colorData && (colorData.skin === "extreme" || colorData.skin === "hell" || colorData.skin === "chaos")) {
-      tile.userData.extremeAiLand = true;
-      tile.userData.hellAiLand = colorData.skin === "hell";
-      tile.userData.chaosAiLand = colorData.skin === "chaos";
-      tile.material.emissive.set(colorData.skin === "hell" ? 0xff4500 : (colorData.skin === "chaos" ? 0x00ff78 : 0x843cff));
-      tile.material.emissiveIntensity = colorData.skin === "hell" ? 0.30 : (colorData.skin === "chaos" ? 0.38 : 0.22);
-    } else {
-      tile.userData.extremeAiLand = false;
-      tile.userData.hellAiLand = false;
-      tile.userData.chaosAiLand = false;
-      tile.material.emissive.set(0x000000);
-      tile.material.emissiveIntensity = 0;
-    }
-
-    tile.position.y = 0.02;
-    tile.scale.y = 1.55;
-  } else {
-    tile.material.map = null;
-    tile.material.color.set(colors.emptyLand);
-    tile.material.roughness = 0.72;
-    tile.material.metalness = 0.03;
-    tile.material.needsUpdate = true;
-    tile.material.emissive.set(0x000000);
-    tile.material.emissiveIntensity = 0;
-
-    tile.position.y = -0.04;
-    tile.scale.y = 1;
-  }
-
+  moveTileToBoardBucket(tile, getBoardTileStyle(x, z));
 }
 
 
 function refreshBoardColors() {
-  const colors = getThemeColors();
-
-  for (let z = 0; z < GRID_SIZE; z++) {
-    for (let x = 0; x < GRID_SIZE; x++) {
-      const tile = cells[z][x];
-
-      tile.userData.extremeAiLand = false;
-      tile.userData.hellAiLand = false;
-      tile.userData.chaosAiLand = false;
-      tile.userData.extremeAiPhase = tile.userData.extremeAiPhase || Math.random() * Math.PI * 2;
-      const applyChessLandCell = () => {
-        tile.material.map = null;
-        tile.material.color.set(((x + z) % 2 === 0) ? 0xf8fafc : 0x111827);
-        tile.material.roughness = 0.34;
-        tile.material.metalness = 0.06;
-        tile.material.emissive.set(0x000000);
-        tile.material.emissiveIntensity = 0;
-        tile.material.needsUpdate = true;
-      };
-
-      if (land[z][x] === P1_LAND) {
-        const colorData = selectedColors[1];
-        if (isRainbowColorData(colorData)) {
-          tile.material.map = null;
-          tile.material.color.set(getRainbowLandColor(getRainbowCellIndex(x, z, P1_LAND)));
-          tile.material.roughness = 0.46;
-          tile.material.metalness = 0.04;
-          tile.material.needsUpdate = true;
-        } else if (colorData && colorData.skin === "chess") {
-          applyChessLandCell();
-        } else {
-          applySkinToMaterial(tile.material, colorData, "land");
-        }
-        if (colorData && (colorData.skin === "extreme" || colorData.skin === "hell" || colorData.skin === "chaos")) {
-          tile.userData.extremeAiLand = true;
-          tile.userData.hellAiLand = colorData.skin === "hell";
-          tile.userData.chaosAiLand = colorData.skin === "chaos";
-          tile.material.emissive.set(colorData.skin === "hell" ? 0xff4500 : (colorData.skin === "chaos" ? 0x00ff78 : 0x843cff));
-          tile.material.emissiveIntensity = colorData.skin === "hell" ? 0.30 : (colorData.skin === "chaos" ? 0.38 : 0.22);
-        } else {
-          tile.userData.extremeAiLand = false;
-          tile.userData.hellAiLand = false;
-          tile.userData.chaosAiLand = false;
-          tile.material.emissive.set(0x000000);
-          tile.material.emissiveIntensity = 0;
-        }
-
-        // 점령된 블록은 살짝 올라오게 해서 입체감 강화
-        tile.position.y = 0.02;
-        tile.scale.y = 1.55;
-      } else if (land[z][x] === P2_LAND) {
-        const colorData = matchMode === "ai" ? getAiColorData() : selectedColors[2];
-        if (isRainbowColorData(colorData)) {
-          tile.material.map = null;
-          tile.material.color.set(getRainbowLandColor(getRainbowCellIndex(x, z, P2_LAND)));
-          tile.material.roughness = 0.46;
-          tile.material.metalness = 0.04;
-          tile.material.needsUpdate = true;
-        } else if (colorData && colorData.skin === "chess") {
-          applyChessLandCell();
-        } else {
-          applySkinToMaterial(tile.material, colorData, "land");
-        }
-        if (colorData && (colorData.skin === "extreme" || colorData.skin === "hell" || colorData.skin === "chaos")) {
-          tile.userData.extremeAiLand = true;
-          tile.userData.hellAiLand = colorData.skin === "hell";
-          tile.userData.chaosAiLand = colorData.skin === "chaos";
-          tile.material.emissive.set(colorData.skin === "hell" ? 0xff4500 : (colorData.skin === "chaos" ? 0x00ff78 : 0x843cff));
-          tile.material.emissiveIntensity = colorData.skin === "hell" ? 0.30 : (colorData.skin === "chaos" ? 0.38 : 0.22);
-        } else {
-          tile.userData.extremeAiLand = false;
-          tile.userData.hellAiLand = false;
-          tile.userData.chaosAiLand = false;
-          tile.material.emissive.set(0x000000);
-          tile.material.emissiveIntensity = 0;
-        }
-
-        // 점령된 블록은 살짝 올라오게 해서 입체감 강화
-        tile.position.y = 0.02;
-        tile.scale.y = 1.55;
-      } else {
-        tile.material.map = null;
-        tile.material.color.set(colors.emptyLand);
-        tile.material.roughness = 0.72;
-        tile.material.metalness = 0.03;
-        tile.material.needsUpdate = true;
-        tile.userData.extremeAiLand = false;
-        tile.userData.hellAiLand = false;
-        tile.userData.chaosAiLand = false;
-        tile.material.emissive.set(0x000000);
-        tile.material.emissiveIntensity = 0;
-
-        // 빈 블록은 기본 높이로 유지
-        tile.position.y = -0.04;
-        tile.scale.y = 1;
-      }
-    }
-  }
+  initializeBoardTileInstances();
 }
 
 function updateExtremeAiLandSparkle() {
-  if (!cells || !cells.length) return;
+  if (!performanceConfig.enableSpecialTileAnimation || !specialBoardInstanceMeshes.length) return;
+  if (performanceFrameCounter % performanceConfig.specialTileInterval !== 0) return;
 
   const now = performance.now();
-  for (let z = 0; z < GRID_SIZE; z++) {
-    if (!cells[z]) continue;
-    for (let x = 0; x < GRID_SIZE; x++) {
-      const tile = cells[z][x];
-      if (!tile || !tile.userData || !tile.userData.extremeAiLand || !tile.material) continue;
-
-      const phase = tile.userData.extremeAiPhase || 0;
-      const isHell = !!tile.userData.hellAiLand;
-      const isChaos = !!tile.userData.chaosAiLand;
-      const pulse = isHell
-        ? 0.42 + Math.max(0, Math.sin(now * 0.0068 + phase)) * 0.56
-        : (isChaos
-          ? 0.38 + Math.max(0, Math.sin(now * 0.0115 + phase)) * 0.64
-          : 0.34 + Math.max(0, Math.sin(now * 0.0055 + phase)) * 0.46);
-      const twinkle = Math.max(0, Math.sin(now * (isHell ? 0.022 : (isChaos ? 0.038 : 0.017)) + phase * 2.7)) * (isHell ? 0.26 : (isChaos ? 0.36 : 0.18));
-
-      if (isHell) {
-        const lavaWave = Math.max(0, Math.sin(now * 0.009 + phase * 1.4));
-        const lavaColor = lavaWave > 0.58 ? 0xffb000 : (lavaWave > 0.25 ? 0xff4500 : 0x6b0000);
-        tile.material.emissive.set(lavaColor);
-        tile.material.emissiveIntensity = pulse + twinkle;
-        tile.position.y = 0.02 + Math.max(0, Math.sin(now * 0.008 + phase)) * 0.026;
-      } else if (isChaos) {
-        const glitch = Math.sin(now * 0.041 + phase * 5.1) > 0.72;
-        tile.material.emissive.set(glitch ? 0x00ffcc : 0x00ff78);
-        tile.material.emissiveIntensity = pulse + twinkle + (glitch ? 0.42 : 0);
-        tile.position.y = 0.02 + Math.max(0, Math.sin(now * 0.010 + phase)) * 0.024 + (glitch ? 0.012 : 0);
-      } else {
-        tile.material.emissive.set(0x843cff);
-        tile.material.emissiveIntensity = pulse + twinkle;
-        tile.position.y = 0.02 + Math.max(0, Math.sin(now * 0.006 + phase)) * 0.018;
-      }
+  for (let index = 0; index < specialBoardInstanceMeshes.length; index++) {
+    const mesh = specialBoardInstanceMeshes[index];
+    if (!mesh || !mesh.material) continue;
+    const phase = index * 0.83;
+    const type = mesh.userData.specialType;
+    const isHell = type === "hell";
+    const isChaos = type === "chaos";
+    const pulse = isHell
+      ? 0.42 + Math.max(0, Math.sin(now * 0.0068 + phase)) * 0.56
+      : (isChaos
+        ? 0.38 + Math.max(0, Math.sin(now * 0.0115 + phase)) * 0.64
+        : 0.34 + Math.max(0, Math.sin(now * 0.0055 + phase)) * 0.46);
+    if (isHell) {
+      const lavaWave = Math.max(0, Math.sin(now * 0.009 + phase));
+      mesh.material.emissive.set(lavaWave > 0.58 ? 0xffb000 : (lavaWave > 0.25 ? 0xff4500 : 0x6b0000));
+      mesh.position.y = Math.max(0, Math.sin(now * 0.008 + phase)) * 0.026;
+    } else if (isChaos) {
+      const glitch = Math.sin(now * 0.041 + phase * 2.1) > 0.72;
+      mesh.material.emissive.set(glitch ? 0x00ffcc : 0x00ff78);
+      mesh.position.y = Math.max(0, Math.sin(now * 0.010 + phase)) * 0.024 + (glitch ? 0.012 : 0);
+    } else {
+      mesh.material.emissive.set(0x843cff);
+      mesh.position.y = Math.max(0, Math.sin(now * 0.006 + phase)) * 0.018;
     }
+    mesh.material.emissiveIntensity = pulse;
   }
 }
 

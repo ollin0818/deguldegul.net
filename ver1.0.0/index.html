@@ -27,7 +27,7 @@
 
 <link rel="icon" type="image/png" sizes="512x512" href="assets_v218/images/favicon.png" />
 <link rel="apple-touch-icon" href="assets_v218/images/favicon.png" />
-<link rel="stylesheet" href="assets_v218/css/degul-legacy-ver210.css">
+<link rel="stylesheet" href="assets_v218/css/degul-legacy-ver210.css?v=221-performance-pass">
 <link rel="stylesheet" href="assets_v218/css/degul-volume-slider.css">
 <link rel="stylesheet" href="assets_v218/css/degul-qhd-uniform.css">
 </head>
@@ -559,11 +559,21 @@
           <button id="settingsSfxMute" class="settingsMuteButton" type="button" onclick="toggleSfxMute()" aria-label="효과음 음소거">🔇</button>
         </div>
       </div>
+      <div class="settingsRow settingsPerformanceRow">
+        <label id="settingsPerformanceLabel">성능 옵션 <span id="settingsPerformanceValue">보통</span></label>
+        <div class="settingsPerformanceOptions" role="group" aria-labelledby="settingsPerformanceLabel">
+          <button type="button" data-performance-level="low" onclick="setPerformanceLevel('low')">낮음</button>
+          <button type="button" data-performance-level="medium" onclick="setPerformanceLevel('medium')">보통</button>
+          <button type="button" data-performance-level="high" onclick="setPerformanceLevel('high')">높음</button>
+        </div>
+      </div>
+      <button id="settingsPerformanceHudToggle" class="settingsPerformanceHudToggle" type="button" onclick="togglePerformanceHud()">📊 성능 정보 표시</button>
       <button id="settingsThemeToggle" class="settingsThemeToggle" type="button" onclick="toggleDarkModeFromSettings()">🌙 다크모드</button>
     </div>
   </div>
 </div>
 
+<div id="performanceHud" aria-live="polite"></div>
 
 <div id="helpOverlay" aria-hidden="true" onclick="closeHelpPopup(event)">
   <div class="helpPopup" role="dialog" aria-modal="true" aria-labelledby="helpTitle" onclick="event.stopPropagation()">
@@ -926,14 +936,14 @@
 <script src="assets_v218/js/degul-inline-01.js"></script>
 
 <script src="assets_v218/vendor/three-0.160.0.min.js"></script>
-<script src="assets_v218/js/game/01-foundation.js"></script>
-<script src="assets_v218/js/game/02-scene-board.js"></script>
-<script src="assets_v218/js/game/03-actors-loop-ai-movement.js"></script>
-<script src="assets_v218/js/game/04-territory-items.js"></script>
-<script src="assets_v218/js/game/05-lobby-countdown.js"></script>
-<script src="assets_v218/js/game/06-score-results-pause-audio-theme.js"></script>
-<script src="assets_v218/js/game/07-utils.js"></script>
-<script src="assets_v218/js/game/08-bootstrap.js"></script>
+<script src="assets_v218/js/game/01-foundation.js?v=221-performance-pass"></script>
+<script src="assets_v218/js/game/02-scene-board.js?v=221-performance-pass"></script>
+<script src="assets_v218/js/game/03-actors-loop-ai-movement.js?v=221-performance-pass"></script>
+<script src="assets_v218/js/game/04-territory-items.js?v=221-performance-pass"></script>
+<script src="assets_v218/js/game/05-lobby-countdown.js?v=221-performance-pass"></script>
+<script src="assets_v218/js/game/06-score-results-pause-audio-theme.js?v=221-performance-pass"></script>
+<script src="assets_v218/js/game/07-utils.js?v=221-performance-pass"></script>
+<script src="assets_v218/js/game/08-bootstrap.js?v=221-performance-pass"></script>
 
 <script src="assets_v218/js/degul-inline-03.js"></script>
 

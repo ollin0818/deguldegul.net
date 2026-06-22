@@ -70,10 +70,12 @@ function setShieldTrailWalls(actor, visible, now = performance.now(), force = fa
 
 function disposeMaterialResource(material) {
   if (!material) return;
-  const textureKeys = ["map", "alphaMap", "aoMap", "bumpMap", "displacementMap", "emissiveMap", "envMap", "lightMap", "metalnessMap", "normalMap", "roughnessMap"];
-  for (const key of textureKeys) {
-    const texture = material[key];
-    if (texture && typeof texture.dispose === "function") texture.dispose();
+  if (!(material.userData && material.userData.preserveTexturesOnDispose)) {
+    const textureKeys = ["map", "alphaMap", "aoMap", "bumpMap", "displacementMap", "emissiveMap", "envMap", "lightMap", "metalnessMap", "normalMap", "roughnessMap"];
+    for (const key of textureKeys) {
+      const texture = material[key];
+      if (texture && typeof texture.dispose === "function") texture.dispose();
+    }
   }
   if (typeof material.dispose === "function") material.dispose();
 }
@@ -94,6 +96,7 @@ function addTrail(actor, x, z) {
   if (containsPoint(actor.trail, x, z)) return;
 
   actor.trail.push({x, z});
+  if (actor.trail.pointSet) actor.trail.pointSet.add(pointKey(x, z));
 
   // 고스트 모드: 흔적 데이터는 남겨서 점령/사망 판정은 유지하지만 화면에는 표시하지 않는다.
   if (ghostModeEnabled) return;
@@ -110,13 +113,14 @@ function clearTrail(actor) {
     boardGroup.remove(mesh);
     disposeObject3D(mesh);
   }
-  actor.trail = [];
+  actor.trail = createPointList();
   actor.trailMeshes = [];
   actor._shieldTrailVisible = null;
 }
 
 // ===================== 영역 점령 =====================
 function claimArea(actor) {
+  const claimStartedAt = performance.now();
   const glowCells = [];
 
   function addGlowCell(x, z) {
@@ -140,20 +144,18 @@ function claimArea(actor) {
     자기 땅과 라인을 벽으로 보고
     바깥과 연결되지 않은 칸을 둘러싼 영역으로 판단.
   */
-  const blocked = [];
-  const outside = [];
+  const totalCells = GRID_SIZE * GRID_SIZE;
+  const blocked = new Uint8Array(totalCells);
+  const outside = new Uint8Array(totalCells);
+  const queue = new Int32Array(totalCells);
+  let queueTail = 0;
 
   for (let z = 0; z < GRID_SIZE; z++) {
-    blocked[z] = [];
-    outside[z] = [];
-
     for (let x = 0; x < GRID_SIZE; x++) {
-      blocked[z][x] = land[z][x] === actor.landId || containsPoint(actor.trail, x, z);
-      outside[z][x] = false;
+      const index = z * GRID_SIZE + x;
+      blocked[index] = land[z][x] === actor.landId || containsPoint(actor.trail, x, z) ? 1 : 0;
     }
   }
-
-  const q = [];
 
   for (let i = 0; i < GRID_SIZE; i++) {
     enqueueOutside(i, 0);
@@ -164,36 +166,25 @@ function claimArea(actor) {
 
   function enqueueOutside(x, z) {
     if (!inBounds(x, z)) return;
-    if (outside[z][x]) return;
-    if (blocked[z][x]) return;
-    outside[z][x] = true;
-    q.push({x, z});
+    const index = z * GRID_SIZE + x;
+    if (outside[index] || blocked[index]) return;
+    outside[index] = 1;
+    queue[queueTail++] = index;
   }
 
-  while (q.length) {
-    const p = q.shift();
-    const dirs = [
-      {dx:1,dz:0},
-      {dx:-1,dz:0},
-      {dx:0,dz:1},
-      {dx:0,dz:-1}
-    ];
-
-    for (const d of dirs) {
-      const nx = p.x + d.dx;
-      const nz = p.z + d.dz;
-      if (!inBounds(nx, nz)) continue;
-      if (outside[nz][nx]) continue;
-      if (blocked[nz][nx]) continue;
-
-      outside[nz][nx] = true;
-      q.push({x:nx, z:nz});
-    }
+  for (let head = 0; head < queueTail; head++) {
+    const index = queue[head];
+    const x = index % GRID_SIZE;
+    const z = (index / GRID_SIZE) | 0;
+    enqueueOutside(x + 1, z);
+    enqueueOutside(x - 1, z);
+    enqueueOutside(x, z + 1);
+    enqueueOutside(x, z - 1);
   }
 
   for (let z = 0; z < GRID_SIZE; z++) {
     for (let x = 0; x < GRID_SIZE; x++) {
-      if (!outside[z][x]) {
+      if (!outside[z * GRID_SIZE + x]) {
         if (land[z][x] !== actor.landId) addGlowCell(x, z);
         land[z][x] = actor.landId;
       }
@@ -206,6 +197,7 @@ function claimArea(actor) {
   refreshBoardCells(glowCells);
   createLandClaimGlow(actor, glowCells);
   updateScoreUI();
+  performanceMetrics.lastClaimMs = performance.now() - claimStartedAt;
 }
 
 // ===================== 영역 점령 발광 이펙트 =====================
@@ -220,7 +212,7 @@ function createLandClaimGlow(actor, claimedCells) {
   group.userData.tiles = [];
 
   // 너무 넓은 영역을 한 번에 먹어도 렉이 걸리지 않게 최대 표시 수를 제한한다.
-  const maxGlowTiles = 180;
+  const maxGlowTiles = performanceConfig.glowTiles;
   const step = Math.max(1, Math.ceil(claimedCells.length / maxGlowTiles));
 
   const pulseMat = new THREE.MeshBasicMaterial({
