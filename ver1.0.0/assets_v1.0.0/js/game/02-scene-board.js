@@ -36,7 +36,7 @@ function init() {
 
   createBoard();
   createPlayers();
-  isDarkMode = localStorage.getItem("blockLandDarkMode") === "1";
+  isDarkMode = safeLocalStorageGet("blockLandDarkMode") === "1";
   applyTheme();
   buildLobbyPalettes();
   updateGameModeUI();

@@ -11,6 +11,24 @@
 */
 
 // ===================== 기본 설정 =====================
+function safeLocalStorageGet(key, fallback = null) {
+  try {
+    const value = localStorage.getItem(key);
+    return value === null ? fallback : value;
+  } catch (error) {
+    return fallback;
+  }
+}
+
+function safeLocalStorageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 const GRID_SIZE = 31;
 const HALF = Math.floor(GRID_SIZE / 2);
 const CELL = 1;
@@ -28,10 +46,8 @@ const PERFORMANCE_PRESETS = {
 };
 
 function getInitialPerformanceLevel() {
-  try {
-    const saved = localStorage.getItem(PERFORMANCE_STORAGE_KEY);
-    if (PERFORMANCE_PRESETS[saved]) return saved;
-  } catch (e) {}
+  const saved = safeLocalStorageGet(PERFORMANCE_STORAGE_KEY);
+  if (PERFORMANCE_PRESETS[saved]) return saved;
   const lowPowerDevice = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4)
     || (navigator.deviceMemory && navigator.deviceMemory <= 4)
     || /Android|iPad|Tablet/i.test(navigator.userAgent || "");
@@ -41,8 +57,7 @@ function getInitialPerformanceLevel() {
 let performanceLevel = getInitialPerformanceLevel();
 let performanceConfig = PERFORMANCE_PRESETS[performanceLevel];
 let performanceFrameCounter = 0;
-let performanceHudEnabled = false;
-try { performanceHudEnabled = localStorage.getItem(PERFORMANCE_HUD_STORAGE_KEY) === "1"; } catch (e) {}
+let performanceHudEnabled = safeLocalStorageGet(PERFORMANCE_HUD_STORAGE_KEY) === "1";
 const performanceMetrics = {
   fps: 0,
   frameMs: 0,
@@ -165,7 +180,7 @@ function setPerformanceHudEnabled(enabled, persist = true) {
   performanceMetrics.sampleStartedAt = 0;
   performanceMetrics.sampleFrames = 0;
   if (persist) {
-    try { localStorage.setItem(PERFORMANCE_HUD_STORAGE_KEY, performanceHudEnabled ? "1" : "0"); } catch (e) {}
+    safeLocalStorageSet(PERFORMANCE_HUD_STORAGE_KEY, performanceHudEnabled ? "1" : "0");
   }
   updatePerformanceHudUI();
 }
@@ -255,7 +270,7 @@ function setPerformanceLevel(level, options = {}) {
   performanceAutoTune.emergency30Fps = false;
   performanceAutoTune.emergencyStartedAt = 0;
   performanceAutoTune.nextRecoveryProbeAt = 0;
-  try { localStorage.setItem(PERFORMANCE_STORAGE_KEY, level); } catch (e) {}
+  safeLocalStorageSet(PERFORMANCE_STORAGE_KEY, level);
   if (document.body) {
     document.body.classList.toggle("performance-low", level === "low");
     document.body.classList.toggle("performance-medium", level === "medium");
@@ -539,7 +554,7 @@ let aiClearedDifficulties = loadAiDifficultyClears();
 
 function loadAiDifficultyClears() {
   try {
-    const raw = localStorage.getItem(AI_DIFFICULTY_PROGRESS_STORAGE_KEY);
+    const raw = safeLocalStorageGet(AI_DIFFICULTY_PROGRESS_STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
     return new Set(Array.isArray(parsed) ? parsed.filter(level => AI_DIFFICULTY_ORDER.includes(level)) : []);
   } catch (e) {
@@ -549,7 +564,7 @@ function loadAiDifficultyClears() {
 
 function saveAiDifficultyClears() {
   try {
-    localStorage.setItem(AI_DIFFICULTY_PROGRESS_STORAGE_KEY, JSON.stringify(Array.from(aiClearedDifficulties)));
+    safeLocalStorageSet(AI_DIFFICULTY_PROGRESS_STORAGE_KEY, JSON.stringify(Array.from(aiClearedDifficulties)));
   } catch (e) {}
 }
 
@@ -677,7 +692,7 @@ let pendingSkinUnlockNotice = "";
 
 function loadUnlockedSkins() {
   try {
-    const raw = localStorage.getItem(AI_SKIN_UNLOCK_STORAGE_KEY);
+    const raw = safeLocalStorageGet(AI_SKIN_UNLOCK_STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
     const skins = new Set(Array.isArray(parsed) ? parsed : []);
     if (skins.has("chocolate")) skins.add("chess");
@@ -689,7 +704,7 @@ function loadUnlockedSkins() {
 
 function saveUnlockedSkins() {
   try {
-    localStorage.setItem(AI_SKIN_UNLOCK_STORAGE_KEY, JSON.stringify(Array.from(unlockedSkins)));
+    safeLocalStorageSet(AI_SKIN_UNLOCK_STORAGE_KEY, JSON.stringify(Array.from(unlockedSkins)));
   } catch (e) {}
 }
 
@@ -783,7 +798,7 @@ function unlockSkinByAiClear(level) {
 
 function loadAiLocalRecords() {
   try {
-    const raw = localStorage.getItem(AI_LOCAL_RECORD_STORAGE_KEY);
+    const raw = safeLocalStorageGet(AI_LOCAL_RECORD_STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
     return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
   } catch (e) {
@@ -793,7 +808,7 @@ function loadAiLocalRecords() {
 
 function saveAiLocalRecords(records) {
   try {
-    localStorage.setItem(AI_LOCAL_RECORD_STORAGE_KEY, JSON.stringify(records || {}));
+    safeLocalStorageSet(AI_LOCAL_RECORD_STORAGE_KEY, JSON.stringify(records || {}));
   } catch (e) {}
 }
 
@@ -971,10 +986,7 @@ function updateAiRecordPanel() {
   const rankingWing = document.getElementById("aiRankingWing");
   const rankingWingText = document.getElementById("aiRankingWingText");
   const popupTitle = document.getElementById("aiRecordPopupTitle");
-  const rankingTitle = document.getElementById("aiRankingTitle");
   const rankingStatus = document.getElementById("aiRankingStatus");
-  const rankingSoonLabel = document.getElementById("aiRankingSoonLabel");
-  const rankingSoonText = document.getElementById("aiRankingSoonText");
   const title = document.getElementById("aiRecordTitle");
   const diff = document.getElementById("aiRecordDifficulty");
   const bestTimeLabel = document.getElementById("aiRecordBestTimeLabel");
@@ -992,10 +1004,7 @@ function updateAiRecordPanel() {
   if (rankingWing) rankingWing.setAttribute("aria-label", text.rankingTitle);
   if (rankingWingText) rankingWingText.textContent = text.rankingTab;
   if (popupTitle) popupTitle.textContent = text.rankingTitle;
-  if (rankingTitle) rankingTitle.textContent = text.rankingTitle;
   if (rankingStatus) rankingStatus.textContent = text.rankingStatus;
-  if (rankingSoonLabel) rankingSoonLabel.textContent = text.rankingSoonLabel;
-  if (rankingSoonText) rankingSoonText.textContent = text.rankingSoonText;
   if (title) title.textContent = text.title;
   if (diff) diff.textContent = getAiDifficultyLabel(level);
   if (carouselLabel) carouselLabel.textContent = getAiDifficultyLabel(level);
@@ -2036,10 +2045,10 @@ let lobbyBgmStarted = false;
 let ingameBgmStarted = false;
 let isPaused = false;
 let pauseStartedAt = 0;
-let bgmVolume = parseFloat(localStorage.getItem("degulDegulBgmVolume") || "0.42");
+let bgmVolume = parseFloat(safeLocalStorageGet("degulDegulBgmVolume", "0.42"));
 if (!Number.isFinite(bgmVolume)) bgmVolume = 0.42;
 bgmVolume = Math.max(0, Math.min(1, bgmVolume));
-let sfxVolume = parseFloat(localStorage.getItem("degulDegulSfxVolume") || "0.8");
+let sfxVolume = parseFloat(safeLocalStorageGet("degulDegulSfxVolume", "0.8"));
 if (!Number.isFinite(sfxVolume)) sfxVolume = 0.8;
 sfxVolume = Math.max(0, Math.min(1, sfxVolume));
 let activeClaimGlowEffects = [];
@@ -2075,7 +2084,7 @@ const DEGUL_LANG_STORAGE_KEY = "degulDegulLanguage";
 function detectInitialLanguage() {
   let savedLang = "";
   try {
-    savedLang = localStorage.getItem(DEGUL_LANG_STORAGE_KEY) || "";
+    savedLang = safeLocalStorageGet(DEGUL_LANG_STORAGE_KEY, "");
   } catch (e) {}
   if (DEGUL_LANG_ORDER.includes(savedLang)) return savedLang;
 
@@ -3621,7 +3630,7 @@ function toggleLanguageMenu(event) {
 function selectLanguage(lang) {
   if (!DEGUL_LANG_ORDER.includes(lang)) return;
   currentLang = lang;
-  try { localStorage.setItem(DEGUL_LANG_STORAGE_KEY, currentLang); } catch (e) {}
+  safeLocalStorageSet(DEGUL_LANG_STORAGE_KEY, currentLang);
   const wrap = document.getElementById("languageSelectWrap");
   if (wrap) wrap.classList.remove("open");
   applyLanguage();
@@ -3656,19 +3665,19 @@ function closePrivacyPopup(event) {
 function agreePrivacyPolicy() {
   const overlay = document.getElementById("privacyOverlay");
   const isFirstVisitConsent = overlay && overlay.dataset.firstVisit === "1";
-  localStorage.setItem("degulDegulPrivacyConsent", "1");
-  localStorage.setItem("degulDegulPrivacyConsentAt", new Date().toISOString());
+  safeLocalStorageSet("degulDegulPrivacyConsent", "1");
+  safeLocalStorageSet("degulDegulPrivacyConsentAt", new Date().toISOString());
   closePrivacyPopup();
 
   // 첫 방문 동의 완료 직후에는 데굴데굴 룰 안내 UI를 한 번 이어서 보여준다.
-  if (isFirstVisitConsent && localStorage.getItem("degulDegulFirstRuleGuideShown") !== "1") {
-    localStorage.setItem("degulDegulFirstRuleGuideShown", "1");
+  if (isFirstVisitConsent && safeLocalStorageGet("degulDegulFirstRuleGuideShown") !== "1") {
+    safeLocalStorageSet("degulDegulFirstRuleGuideShown", "1");
     window.setTimeout(() => openHelpPopup(), 180);
   }
 }
 
 function showPrivacyConsentIfNeeded() {
-  if (localStorage.getItem("degulDegulPrivacyConsent") === "1") return;
+  if (safeLocalStorageGet("degulDegulPrivacyConsent") === "1") return;
   window.setTimeout(() => openPrivacyPopup(true), 350);
 }
 

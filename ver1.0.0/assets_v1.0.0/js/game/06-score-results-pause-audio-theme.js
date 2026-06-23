@@ -546,8 +546,8 @@ function goMainFromPauseMenu() {
 
 function setBgmVolumeFromSlider(value) {
   bgmVolume = Math.max(0, Math.min(1, Number(value) / 100));
-  if (bgmVolume > 0) localStorage.setItem("degulDegulPrevBgmVolume", String(bgmVolume));
-  localStorage.setItem("degulDegulBgmVolume", String(bgmVolume));
+  if (bgmVolume > 0) safeLocalStorageSet("degulDegulPrevBgmVolume", String(bgmVolume));
+  safeLocalStorageSet("degulDegulBgmVolume", String(bgmVolume));
   const lobbyBgm = document.getElementById("lobbyBgm");
   const ingameBgm = document.getElementById("ingameBgm");
   if (lobbyBgm) lobbyBgm.volume = bgmVolume;
@@ -558,8 +558,8 @@ function setBgmVolumeFromSlider(value) {
 function setSfxVolumeFromSlider(value) {
   sfxVolume = Math.max(0, Math.min(1, Number(value) / 100));
   if (!Number.isFinite(sfxVolume)) sfxVolume = 0.8;
-  if (sfxVolume > 0) localStorage.setItem("degulDegulPrevSfxVolume", String(sfxVolume));
-  localStorage.setItem("degulDegulSfxVolume", String(sfxVolume));
+  if (sfxVolume > 0) safeLocalStorageSet("degulDegulPrevSfxVolume", String(sfxVolume));
+  safeLocalStorageSet("degulDegulSfxVolume", String(sfxVolume));
   if (typeof DegulSfx !== "undefined" && typeof DegulSfx.applyMasterVolume === "function") {
     DegulSfx.applyMasterVolume();
   }
@@ -568,10 +568,10 @@ function setSfxVolumeFromSlider(value) {
 
 function toggleBgmMute() {
   if (bgmVolume > 0) {
-    localStorage.setItem("degulDegulPrevBgmVolume", String(bgmVolume));
+    safeLocalStorageSet("degulDegulPrevBgmVolume", String(bgmVolume));
     setBgmVolumeFromSlider(0);
   } else {
-    const restored = parseFloat(localStorage.getItem("degulDegulPrevBgmVolume") || "0.42");
+    const restored = parseFloat(safeLocalStorageGet("degulDegulPrevBgmVolume", "0.42"));
     setBgmVolumeFromSlider(Math.round(Math.max(0.01, Math.min(1, restored)) * 100));
     tryStartLobbyBgm();
   }
@@ -579,10 +579,10 @@ function toggleBgmMute() {
 
 function toggleSfxMute() {
   if (sfxVolume > 0) {
-    localStorage.setItem("degulDegulPrevSfxVolume", String(sfxVolume));
+    safeLocalStorageSet("degulDegulPrevSfxVolume", String(sfxVolume));
     setSfxVolumeFromSlider(0);
   } else {
-    const restored = parseFloat(localStorage.getItem("degulDegulPrevSfxVolume") || "0.8");
+    const restored = parseFloat(safeLocalStorageGet("degulDegulPrevSfxVolume", "0.8"));
     setSfxVolumeFromSlider(Math.round(Math.max(0.01, Math.min(1, restored)) * 100));
   }
 }
@@ -895,7 +895,7 @@ function toggleDarkMode() {
       return;
     }
     isDarkMode = !isDarkMode;
-    localStorage.setItem("blockLandDarkMode", isDarkMode ? "1" : "0");
+    safeLocalStorageSet("blockLandDarkMode", isDarkMode ? "1" : "0");
     applyTheme();
     updateSettingsThemeUI();
   });
