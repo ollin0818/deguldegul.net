@@ -29,7 +29,7 @@
 
 <link rel="icon" type="image/webp" sizes="512x512" href="assets_v1.0.0/images/favicon.webp" />
 <link rel="apple-touch-icon" href="assets_v1.0.0/images/favicon.png" />
-<link rel="stylesheet" href="assets_v1.0.0/css/degul-legacy-ver210.min.css?v=101-mobile-phone-gate">
+<link rel="stylesheet" href="assets_v1.0.0/css/degul-legacy-ver210.min.css?v=102-ai-ranking">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-volume-slider.min.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-qhd-uniform.min.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-auth.min.css?v=3">
@@ -357,18 +357,18 @@
       </div>
       <div class="aiRecordTabs" role="tablist" aria-label="기록 메뉴">
         <button class="aiRecordTab active" id="aiRecordLocalTab" type="button" role="tab" aria-selected="true" onclick="setAiRecordPopupTab('record')">내 기록</button>
-        <button class="aiRecordTab" id="aiRecordRankingTab" type="button" role="tab" aria-selected="false" onclick="setAiRecordPopupTab('ranking')">랭킹 준비 중</button>
+        <button class="aiRecordTab" id="aiRecordRankingTab" type="button" role="tab" aria-selected="false" onclick="setAiRecordPopupTab('ranking')">AI 랭킹</button>
       </div>
+      <div class="aiRecordDifficultyCarousel" role="group" aria-label="AI 난이도별 기록 선택">
+        <button class="aiRecordCarouselArrow prev" id="aiRecordDifficultyPrev" type="button" onclick="shiftAiRecordDifficulty(-1)" aria-label="이전 AI 난이도">‹</button>
+        <button class="aiRecordDifficultyCurrent" id="aiRecordDifficultyCurrent" type="button" onclick="shiftAiRecordDifficulty(1)" aria-label="다음 AI 난이도">
+          <small>DIFFICULTY</small>
+          <strong id="aiRecordDifficultyCarouselLabel">Easy</strong>
+        </button>
+        <button class="aiRecordCarouselArrow next" id="aiRecordDifficultyNext" type="button" onclick="shiftAiRecordDifficulty(1)" aria-label="다음 AI 난이도">›</button>
+      </div>
+      <div class="aiRecordDifficultyDots" id="aiRecordDifficultyDots" role="group" aria-label="AI 난이도 바로 선택"></div>
       <div class="aiRecordPanel" id="aiRecordPanel" aria-live="polite">
-        <div class="aiRecordDifficultyCarousel" role="group" aria-label="AI 난이도별 기록 선택">
-          <button class="aiRecordCarouselArrow prev" id="aiRecordDifficultyPrev" type="button" onclick="shiftAiRecordDifficulty(-1)" aria-label="이전 AI 난이도">‹</button>
-          <button class="aiRecordDifficultyCurrent" id="aiRecordDifficultyCurrent" type="button" onclick="shiftAiRecordDifficulty(1)" aria-label="다음 AI 난이도">
-            <small>DIFFICULTY</small>
-            <strong id="aiRecordDifficultyCarouselLabel">Easy</strong>
-          </button>
-          <button class="aiRecordCarouselArrow next" id="aiRecordDifficultyNext" type="button" onclick="shiftAiRecordDifficulty(1)" aria-label="다음 AI 난이도">›</button>
-        </div>
-        <div class="aiRecordDifficultyDots" id="aiRecordDifficultyDots" role="group" aria-label="AI 난이도 바로 선택"></div>
         <div class="aiRecordHeader">
           <strong id="aiRecordTitle">내 AI대전 기록</strong>
           <span id="aiRecordDifficulty">Easy</span>
@@ -394,12 +394,33 @@
       </div>
       <div class="aiRecordPanel aiRankingPanel" id="aiRankingPanel" aria-live="polite" hidden>
         <div class="aiRecordHeader">
-          <strong id="aiRankingTitle">온라인 랭킹</strong>
-          <span id="aiRankingStatus">준비 중</span>
+          <strong id="aiRankingTitle">AI 랭킹</strong>
+          <span id="aiRankingStatus">TOP 100</span>
         </div>
-        <div class="aiRecordItem empty">
-          <b id="aiRankingSoonLabel">Cloudflare D1 랭킹 시스템 예정</b>
-          <span id="aiRankingSoonText">배포 후 TOP 100 랭킹으로 연결됩니다.</span>
+        <div class="aiRankingModeTabs" role="tablist" aria-label="랭킹 게임 모드">
+          <button class="active" id="aiRankingSpeedMode" type="button" onclick="setAiRankingMode('speed')">스피드 모드</button>
+          <button id="aiRankingItemMode" type="button" onclick="setAiRankingMode('item')">아이템 모드</button>
+        </div>
+        <div class="aiRankingMine">
+          <div class="aiRecordItem">
+            <b id="aiRankingMyRankLabel">내 순위</b>
+            <span id="aiRankingMyRank">미등록</span>
+          </div>
+          <div class="aiRecordItem">
+            <b id="aiRankingMyBestLabel">내 최고 기록</b>
+            <span id="aiRankingMyBest">미등록</span>
+          </div>
+        </div>
+        <div class="aiRankingTable">
+          <div class="aiRankingTableHead" aria-hidden="true">
+            <span id="aiRankingHeadRank">순위</span>
+            <span id="aiRankingHeadPlayer">닉네임</span>
+            <span id="aiRankingHeadTime">클리어 시간</span>
+            <span id="aiRankingHeadTerritory">점령률</span>
+          </div>
+          <div class="aiRankingList" id="aiRankingList">
+            <div class="aiRankingEmpty">불러오는 중</div>
+          </div>
         </div>
       </div>
     </div>
@@ -972,11 +993,11 @@
 <script src="assets_v1.0.0/js/degul-inline-01.min.js?v=100"></script>
 
 <script src="assets_v1.0.0/vendor/three-0.160.0.min.js"></script>
-<script src="assets_v1.0.0/js/game/01-foundation.min.js?v=101-mobile-phone-gate"></script>
+<script src="assets_v1.0.0/js/game/01-foundation.min.js?v=102-ai-ranking"></script>
 <script src="assets_v1.0.0/js/game/02-scene-board.min.js?v=100-performance-pass"></script>
 <script src="assets_v1.0.0/js/game/03-actors-loop-ai-movement.min.js?v=100-performance-pass"></script>
 <script src="assets_v1.0.0/js/game/04-territory-items.min.js?v=100-performance-pass"></script>
-<script src="assets_v1.0.0/js/game/05-lobby-countdown.min.js?v=100-performance-pass"></script>
+<script src="assets_v1.0.0/js/game/05-lobby-countdown.min.js?v=101-ai-ranking"></script>
 <script src="assets_v1.0.0/js/game/06-score-results-pause-audio-theme.min.js?v=100-performance-pass"></script>
 <script src="assets_v1.0.0/js/game/07-utils.min.js?v=100-performance-pass"></script>
 <script src="assets_v1.0.0/js/game/08-bootstrap.min.js?v=100-performance-pass"></script>
@@ -985,7 +1006,8 @@
 
 
 <script src="assets_v1.0.0/js/degul-inline-04.min.js?v=100"></script>
-<script src="assets_v1.0.0/js/degul-auth.min.js?v=3"></script>
+<script src="assets_v1.0.0/js/degul-auth.min.js?v=4"></script>
+<script src="assets_v1.0.0/js/degul-ai-ranking.min.js?v=1"></script>
 
 
 <div class="degulTutorialLayer" id="degulTutorialLayer" aria-hidden="true">

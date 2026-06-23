@@ -805,9 +805,9 @@ function getAiRecordText(key) {
       wing: "AI대전 기록",
       wingSub: "랭킹",
       localTab: "내 기록",
-      rankingTab: "랭킹 준비 중",
-      rankingTitle: "온라인 랭킹",
-      rankingStatus: "준비 중",
+      rankingTab: "AI 랭킹",
+      rankingTitle: "AI 랭킹",
+      rankingStatus: "TOP 100",
       rankingSoonLabel: "Cloudflare D1 랭킹 시스템 예정",
       rankingSoonText: "배포 후 TOP 100 랭킹으로 연결됩니다.",
       bestTime: "최고 클리어 타임",
@@ -833,9 +833,9 @@ function getAiRecordText(key) {
       wing: "AI Records",
       wingSub: "Ranking",
       localTab: "My Records",
-      rankingTab: "Ranking Soon",
-      rankingTitle: "Online Ranking",
-      rankingStatus: "Soon",
+      rankingTab: "AI Ranking",
+      rankingTitle: "AI Ranking",
+      rankingStatus: "TOP 100",
       rankingSoonLabel: "Cloudflare D1 ranking system planned",
       rankingSoonText: "After deployment, this will connect to the TOP 100 ranking.",
       bestTime: "Best Clear Time",
@@ -861,9 +861,9 @@ function getAiRecordText(key) {
       wing: "AI記録",
       wingSub: "ランキング",
       localTab: "自分の記録",
-      rankingTab: "ランキング準備中",
-      rankingTitle: "オンラインランキング",
-      rankingStatus: "準備中",
+      rankingTab: "AIランキング",
+      rankingTitle: "AIランキング",
+      rankingStatus: "TOP 100",
       rankingSoonLabel: "Cloudflare D1ランキング予定",
       rankingSoonText: "デプロイ後、TOP 100ランキングに接続します。",
       bestTime: "最速クリア",
@@ -889,9 +889,9 @@ function getAiRecordText(key) {
       wing: "AI记录",
       wingSub: "排行",
       localTab: "我的记录",
-      rankingTab: "排行榜准备中",
-      rankingTitle: "在线排行榜",
-      rankingStatus: "准备中",
+      rankingTab: "AI排行榜",
+      rankingTitle: "AI排行榜",
+      rankingStatus: "TOP 100",
       rankingSoonLabel: "计划接入 Cloudflare D1 排行系统",
       rankingSoonText: "部署后将连接 TOP 100 排行榜。",
       bestTime: "最快通关",
@@ -944,6 +944,9 @@ function setAiRecordDifficulty(levelOrIndex) {
   if (requestedIndex < 0 || requestedIndex >= AI_DIFFICULTY_ORDER.length) return;
   aiRecordDifficultyIndex = requestedIndex;
   updateAiRecordPanel();
+  if (typeof window.DegulAiRanking?.refresh === "function") {
+    window.DegulAiRanking.refresh();
+  }
 }
 
 function shiftAiRecordDifficulty(direction) {
@@ -951,6 +954,9 @@ function shiftAiRecordDifficulty(direction) {
   if (!total) return;
   aiRecordDifficultyIndex = (aiRecordDifficultyIndex + direction + total) % total;
   updateAiRecordPanel();
+  if (typeof window.DegulAiRanking?.refresh === "function") {
+    window.DegulAiRanking.refresh();
+  }
 }
 
 function updateAiRecordPanel() {
@@ -1043,6 +1049,9 @@ function setAiRecordPopupTab(tab) {
     rankingTab.classList.toggle("active", isRanking);
     rankingTab.setAttribute("aria-selected", isRanking ? "true" : "false");
   }
+  if (isRanking && typeof window.DegulAiRanking?.refresh === "function") {
+    window.DegulAiRanking.refresh();
+  }
 }
 
 function openAiRecordPopup() {
@@ -1058,6 +1067,9 @@ function openAiRecordPopup() {
 }
 
 function openAiRankingPopup() {
+  if (!AI_DIFFICULTY_ORDER[aiRecordDifficultyIndex]) {
+    aiRecordDifficultyIndex = Math.max(0, AI_DIFFICULTY_ORDER.indexOf(aiDifficulty));
+  }
   updateAiRecordPanel();
   setAiRecordPopupTab("ranking");
   const overlay = document.getElementById("aiRecordOverlay");
@@ -1121,6 +1133,15 @@ function recordAiMatchResult(winner, reasonText) {
   records[aiDifficulty] = current;
   saveAiLocalRecords(records);
   updateAiRecordPanel();
+
+  if (typeof window.DegulAiRanking?.finishMatch === "function") {
+    const totalCells = Math.max(1, GRID_SIZE * GRID_SIZE);
+    window.DegulAiRanking.finishMatch({
+      won: playerWon,
+      clearTimeMs: Math.round(elapsedMs),
+      territoryBasisPoints: Math.round((countLand(P1_LAND) / totalCells) * 10000)
+    });
+  }
 }
 
 function handleAiClearReward(winner) {

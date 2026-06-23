@@ -3,6 +3,7 @@
   "name": "deguldegul-api",
   "main": "src/index.js",
   "compatibility_date": "2026-06-23",
+  "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "routes": [
     {
@@ -20,5 +21,12 @@
       "database_id": "b7b1cea3-738d-48c6-92f1-b7f7581ffdeb",
       "migrations_dir": "migrations"
     }
-  ]
+  ],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1
+    }
+  }
 }

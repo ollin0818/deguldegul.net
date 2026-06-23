@@ -530,8 +530,12 @@
   }
 
   window.DegulAuth = {
-    getUser: () => currentUser ? { nickname: currentUser.nickname } : null,
+    getUser: () => currentUser ? {
+      nickname: currentUser.nickname,
+      profileColor: currentUser.profileColor
+    } : null,
     refresh: ensureSession,
+    request: api,
     requireNickname,
     openProfile: () => requireNickname("profile")
   };

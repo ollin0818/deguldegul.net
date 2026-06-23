@@ -2796,7 +2796,9 @@ body.dark-mode #pauseOverlay {
 .aiRecordOverlay.show { display: flex; }
 .aiRecordPopup {
   position: relative;
-  width: min(520px, calc(100vw - 44px));
+  width: min(700px, calc(100vw - 44px));
+  max-height: min(760px, calc(100vh - 44px));
+  overflow: auto;
   padding: 24px;
   border-radius: 24px;
   background: rgba(255,255,255,0.94);
@@ -2928,6 +2930,130 @@ body.dark-mode #pauseOverlay {
   white-space: normal;
   line-height: 1.35;
 }
+.aiRankingModeTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.aiRankingModeTabs button {
+  min-height: 36px;
+  padding: 0 12px !important;
+  border-radius: 11px !important;
+  border: 1px solid rgba(15,23,42,0.08) !important;
+  background: rgba(248,250,252,0.86) !important;
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+}
+.aiRankingModeTabs button.active {
+  color: #0a58ca !important;
+  border-color: rgba(10,132,255,0.38) !important;
+  background: rgba(10,132,255,0.13) !important;
+}
+.aiRankingMine {
+  display: grid;
+  grid-template-columns: minmax(0, .65fr) minmax(0, 1.35fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.aiRankingTable {
+  overflow: hidden;
+  border: 1px solid rgba(15,23,42,0.08);
+  border-radius: 14px;
+  background: rgba(248,250,252,0.60);
+}
+.aiRankingTableHead,
+.aiRankingRow {
+  display: grid;
+  grid-template-columns: 52px minmax(140px, 1fr) 92px 70px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+}
+.aiRankingTableHead {
+  color: #64748b;
+  background: rgba(226,232,240,0.68);
+  font-size: 10px;
+  font-weight: 950;
+}
+.aiRankingList {
+  max-height: 330px;
+  overflow: auto;
+}
+.aiRankingRow {
+  min-height: 42px;
+  color: #111827;
+  border-top: 1px solid rgba(15,23,42,0.06);
+  font-size: 12px;
+}
+.aiRankingRow.mine {
+  background: rgba(10,132,255,0.10);
+  box-shadow: inset 3px 0 #0a84ff;
+}
+.aiRankingRank {
+  color: #0a58ca;
+  font-size: 12px;
+  font-weight: 950;
+}
+.aiRankingPlayer {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+}
+.aiRankingPlayer b {
+  overflow: hidden;
+  min-width: 0;
+  color: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 900;
+}
+.aiRankingAvatar {
+  --ranking-profile-color: #64beff;
+  position: relative;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: linear-gradient(145deg, rgba(255,255,255,.40), transparent 40%), var(--ranking-profile-color);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.70), inset -4px -5px 7px rgba(15,23,42,.18);
+}
+.aiRankingAvatar::before,
+.aiRankingAvatar::after {
+  content: "";
+  position: absolute;
+  top: 9px;
+  width: 3px;
+  height: 7px;
+  border-radius: 999px;
+  background: #050814;
+}
+.aiRankingAvatar::before { left: 7px; }
+.aiRankingAvatar::after { right: 7px; }
+.aiRankingGhost {
+  flex: none;
+  font-style: normal;
+  font-size: 14px;
+  line-height: 1;
+}
+.aiRankingTime,
+.aiRankingTerritory {
+  color: #334155;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+}
+.aiRankingEmpty {
+  padding: 28px 14px;
+  color: #64748b;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 850;
+}
+.aiRankingEmpty.error { color: #dc2626; }
 .aiRecordHeader {
   display: flex;
   align-items: center;
@@ -3055,10 +3181,50 @@ body.dark-mode .aiRecordItem {
   background: rgba(255,255,255,0.06);
   border-color: rgba(255,255,255,0.10);
 }
+body.dark-mode .aiRankingModeTabs button {
+  color: var(--text-sub) !important;
+  border-color: rgba(255,255,255,0.10) !important;
+  background: rgba(255,255,255,0.06) !important;
+}
+body.dark-mode .aiRankingModeTabs button.active {
+  color: #dbeafe !important;
+  border-color: rgba(147,197,253,0.38) !important;
+  background: rgba(10,132,255,0.24) !important;
+}
+body.dark-mode .aiRankingTable {
+  border-color: rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+}
+body.dark-mode .aiRankingTableHead {
+  color: var(--text-sub);
+  background: rgba(255,255,255,0.08);
+}
+body.dark-mode .aiRankingRow {
+  color: var(--text-main);
+  border-color: rgba(255,255,255,0.07);
+}
+body.dark-mode .aiRankingRow.mine { background: rgba(10,132,255,0.18); }
+body.dark-mode .aiRankingRank { color: #93c5fd; }
+body.dark-mode .aiRankingTime,
+body.dark-mode .aiRankingTerritory { color: #dbeafe; }
+body.dark-mode .aiRankingEmpty { color: var(--text-sub); }
 @media (max-width: 720px) {
   .matchSelectWrap { grid-template-columns: 1fr; }
   .aiDifficultyWrap { grid-template-columns: repeat(2, 1fr); }
   .aiRecordGrid { grid-template-columns: 1fr; }
+  .aiRankingTableHead,
+  .aiRankingRow {
+    grid-template-columns: 42px minmax(110px, 1fr) 78px 58px;
+    gap: 5px;
+    padding-inline: 7px;
+  }
+  .aiRankingPlayer b,
+  .aiRankingRow { font-size: 11px; }
+  .aiRankingAvatar { flex-basis: 21px; width: 21px; height: 21px; }
+  .aiRankingAvatar::before,
+  .aiRankingAvatar::after { top: 8px; height: 6px; }
+  .aiRankingAvatar::before { left: 6px; }
+  .aiRankingAvatar::after { right: 6px; }
   .lobbyWingStack {
     top: auto;
     right: 12px;

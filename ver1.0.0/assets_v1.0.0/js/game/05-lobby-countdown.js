@@ -521,6 +521,13 @@ function startCountdown() {
       gameEnding = false;
       gameResultLocked = false;
       keys = {};
+      if (matchMode === "ai" && typeof window.DegulAiRanking?.beginMatch === "function") {
+        window.DegulAiRanking.beginMatch({
+          difficulty: aiDifficulty,
+          mode: gameMode === "item" ? "item" : "speed",
+          ghostMode: !!ghostModeEnabled
+        });
+      }
       playIngameBgm();
       startItemSpawner();
     }
@@ -551,6 +558,9 @@ function clearSceneExtras() {
 }
 
 function resetMatch() {
+  if (typeof window.DegulAiRanking?.cancelMatch === "function") {
+    window.DegulAiRanking.cancelMatch();
+  }
   clearFrameTasks();
   clearCountdownTimer();
   DegulSfx.stopAll();

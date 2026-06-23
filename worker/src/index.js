@@ -6,6 +6,11 @@ import {
   registerNickname,
   updateProfileColor
 } from "./auth.js";
+import {
+  createAiGameSession,
+  getAiRanking,
+  submitAiRankingResult
+} from "./ai-ranking.js";
 
 function allowedOrigins(env) {
   return new Set(
@@ -179,6 +184,103 @@ async function handleProfile(request, env) {
   });
 }
 
+async function requireRankingUser(request, env) {
+  const session = await requireSession(request, env);
+  if (!session) {
+    return {
+      response: errorResponse(
+        request,
+        env,
+        401,
+        "invalid_session",
+        "로그인 정보가 없거나 만료되었습니다."
+      )
+    };
+  }
+
+  if (!session.row.nickname) {
+    return {
+      response: errorResponse(
+        request,
+        env,
+        403,
+        "nickname_required",
+        "AI 랭킹을 이용하려면 닉네임을 먼저 등록해주세요."
+      )
+    };
+  }
+
+  return { session };
+}
+
+async function handleAiGameSession(request, env) {
+  const auth = await requireRankingUser(request, env);
+  if (auth.response) return auth.response;
+
+  const body = await readJson(request);
+  if (!body) {
+    return errorResponse(
+      request,
+      env,
+      400,
+      "invalid_request",
+      "게임 설정을 확인해주세요."
+    );
+  }
+
+  const result = await createAiGameSession(env, auth.session.row.uid, body);
+  if (!result.ok) {
+    return errorResponse(request, env, 400, result.code, result.message);
+  }
+
+  return json(request, env, result, 201);
+}
+
+async function handleAiResult(request, env) {
+  const auth = await requireRankingUser(request, env);
+  if (auth.response) return auth.response;
+
+  const body = await readJson(request);
+  if (!body) {
+    return errorResponse(
+      request,
+      env,
+      400,
+      "invalid_request",
+      "제출할 게임 기록을 확인해주세요."
+    );
+  }
+
+  const result = await submitAiRankingResult(env, auth.session.row.uid, body);
+  if (!result.ok) {
+    const status = result.code === "duplicate_submission"
+      ? 409
+      : (result.code === "game_session_expired" ? 410 : 400);
+    return errorResponse(request, env, status, result.code, result.message);
+  }
+
+  return json(request, env, result, 201);
+}
+
+async function handleAiRanking(request, env) {
+  const auth = await requireRankingUser(request, env);
+  if (auth.response) return auth.response;
+
+  const url = new URL(request.url);
+  const result = await getAiRanking(
+    env,
+    auth.session.row.uid,
+    url.searchParams.get("difficulty"),
+    url.searchParams.get("mode")
+  );
+
+  if (!result.ok) {
+    return errorResponse(request, env, 400, result.code, result.message);
+  }
+
+  return json(request, env, result);
+}
+
 export default {
   async fetch(request, env) {
     if (!isOriginAllowed(request, env)) {
@@ -217,10 +319,23 @@ export default {
       if (pathname === "/api/auth/profile" && request.method === "POST") {
         return handleProfile(request, env);
       }
+      if (pathname === "/api/ai/sessions" && request.method === "POST") {
+        return handleAiGameSession(request, env);
+      }
+      if (pathname === "/api/ai/results" && request.method === "POST") {
+        return handleAiResult(request, env);
+      }
+      if (pathname === "/api/ai/rankings" && request.method === "GET") {
+        return handleAiRanking(request, env);
+      }
 
       return errorResponse(request, env, 404, "not_found", "API 경로를 찾을 수 없습니다.");
     } catch (error) {
-      console.error("Unhandled API error", error);
+      console.error(JSON.stringify({
+        message: "Unhandled API error",
+        path: pathname,
+        error: error instanceof Error ? error.message : String(error)
+      }));
       return errorResponse(
         request,
         env,
