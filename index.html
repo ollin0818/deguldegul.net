@@ -30,7 +30,7 @@
 <link rel="stylesheet" href="assets_v218/css/degul-legacy-ver210.css?v=101-mobile-phone-gate">
 <link rel="stylesheet" href="assets_v218/css/degul-volume-slider.css">
 <link rel="stylesheet" href="assets_v218/css/degul-qhd-uniform.css">
-<link rel="stylesheet" href="assets_v218/css/degul-auth.css?v=2">
+<link rel="stylesheet" href="assets_v218/css/degul-auth.css?v=3">
 </head>
 <body>
 <div id="dominanceEdgeOverlay" aria-hidden="true"></div>
@@ -226,8 +226,7 @@
     <button class="lobbyPrivacyButton" id="privacyToggle" type="button" onclick="openPrivacyPopup(false)" aria-label="개인정보 및 광고 안내 열기" title="개인정보 및 광고 안내">🛡</button>
     <button class="lobbySettingsButton" id="lobbySettingsButton" type="button" onclick="openSettingsPopup()" aria-label="설정 열기" title="설정">⚙</button>
     <button class="lobbyAuthProfileButton" id="lobbyAuthProfileButton" type="button" hidden aria-label="온라인 프로필 열기">
-      <span class="lobbyAuthProfileAvatar" id="lobbyAuthProfileAvatar" aria-hidden="true">?</span>
-      <span class="lobbyAuthProfileNickname" id="lobbyAuthProfileNickname"></span>
+      <span class="profileBlockCharacter profileBlockCharacterSmall" id="lobbyAuthProfileAvatar" aria-hidden="true"><i></i><i></i></span>
     </button>
     <div class="lobbyKicker">2인용 territory rolling game</div>
     <div class="mobileRecommendNotice" id="mobileRecommendNotice">모바일 환경에서는 PC 또는 패드로 플레이하길 권장드립니다.</div>
@@ -729,18 +728,26 @@
     <div class="guestAuthBadge">PLAYER PROFILE</div>
     <h2 id="guestAuthTitle">플레이어 닉네임 설정</h2>
     <p class="guestAuthPurpose" id="guestAuthPurpose">AI 기록과 랭킹, 온라인 대전에 사용할 닉네임을 설정해주세요.</p>
+    <div class="guestAuthCharacterEditor">
+      <div class="profileBlockCharacter profileBlockCharacterLarge" id="guestAuthCharacterPreview" aria-hidden="true"><i></i><i></i></div>
+      <label class="guestAuthColorPicker" for="guestProfileColorInput">
+        <span id="guestAuthColorLabel">프로필 블록 색상</span>
+        <input id="guestProfileColorInput" type="color" value="#64beff">
+      </label>
+    </div>
     <div class="guestAuthState" id="guestAuthState">서버 연결 중</div>
     <form class="guestAuthForm" id="guestAuthForm">
       <input class="guestAuthInput" id="guestNicknameInput" type="text" minlength="2" maxlength="12" autocomplete="nickname" enterkeyhint="done" aria-label="닉네임" placeholder="닉네임 2~12자">
       <button class="guestAuthSubmit" id="guestNicknameSubmit" type="submit">닉네임 등록</button>
     </form>
     <div class="guestAuthUser" id="guestAuthUser" hidden>
-      <div class="guestAuthAvatar" id="guestAuthAvatar" aria-hidden="true">?</div>
+      <div class="profileBlockCharacter profileBlockCharacterMedium" id="guestAuthAvatar" aria-hidden="true"><i></i><i></i></div>
       <div class="guestAuthUserText">
         <strong id="guestAuthNickname"></strong>
         <span id="guestAuthUserHint">AI 기록과 온라인 프로필에 사용됩니다.</span>
       </div>
     </div>
+    <button class="guestAuthColorSaveButton" id="guestAuthColorSaveButton" type="button" hidden>색상 저장</button>
     <div class="guestAuthMessage" id="guestAuthMessage" aria-live="polite"></div>
   </div>
 </div>
@@ -966,7 +973,7 @@
 
 
 <script src="assets_v218/js/degul-inline-04.js"></script>
-<script src="assets_v218/js/degul-auth.js?v=2"></script>
+<script src="assets_v218/js/degul-auth.js?v=3"></script>
 
 
 <div class="degulTutorialLayer" id="degulTutorialLayer" aria-hidden="true">

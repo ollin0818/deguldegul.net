@@ -3,7 +3,8 @@ import {
   findSessionUser,
   getBearerToken,
   publicUser,
-  registerNickname
+  registerNickname,
+  updateProfileColor
 } from "./auth.js";
 
 function allowedOrigins(env) {
@@ -128,10 +129,46 @@ async function handleNickname(request, env) {
     );
   }
 
-  const result = await registerNickname(env, session, body.nickname);
+  const result = await registerNickname(env, session, body.nickname, body.profileColor);
   if (!result.ok) {
     const status = result.code === "nickname_taken" ? 409 : 400;
     return errorResponse(request, env, status, result.code, result.message);
+  }
+
+  return json(request, env, {
+    ok: true,
+    authenticated: true,
+    needsNickname: false,
+    user: result.user
+  });
+}
+
+async function handleProfile(request, env) {
+  const session = await requireSession(request, env);
+  if (!session) {
+    return errorResponse(
+      request,
+      env,
+      401,
+      "invalid_session",
+      "로그인 정보가 없거나 만료되었습니다."
+    );
+  }
+
+  const body = await readJson(request);
+  if (!body || typeof body.profileColor !== "string") {
+    return errorResponse(
+      request,
+      env,
+      400,
+      "invalid_request",
+      "프로필 색상을 선택해주세요."
+    );
+  }
+
+  const result = await updateProfileColor(env, session, body.profileColor);
+  if (!result.ok) {
+    return errorResponse(request, env, 400, result.code, result.message);
   }
 
   return json(request, env, {
@@ -176,6 +213,9 @@ export default {
       }
       if (pathname === "/api/auth/nickname" && request.method === "POST") {
         return handleNickname(request, env);
+      }
+      if (pathname === "/api/auth/profile" && request.method === "POST") {
+        return handleProfile(request, env);
       }
 
       return errorResponse(request, env, 404, "not_found", "API 경로를 찾을 수 없습니다.");

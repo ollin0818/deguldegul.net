@@ -200,6 +200,23 @@ button.guestAuthSubmit:disabled {
   color: #dc2626;
 }
 
+button.guestAuthColorSaveButton {
+  width: 100% !important;
+  height: 44px !important;
+  margin-top: 10px;
+  padding: 0 16px !important;
+  border-radius: 14px !important;
+  background: #111827 !important;
+  color: #fff !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  box-shadow: none !important;
+}
+
+button.guestAuthColorSaveButton[hidden] {
+  display: none !important;
+}
+
 .guestAuthUser {
   display: flex;
   align-items: center;
@@ -281,6 +298,11 @@ body.dark-mode button.guestAuthSubmit {
   color: #111827 !important;
 }
 
+body.dark-mode button.guestAuthColorSaveButton {
+  background: #f5f7fb !important;
+  color: #111827 !important;
+}
+
 body.dark-mode #lobby .lobbyCard button.guestAuthCloseButton,
 body.dark-mode button.guestAuthCloseButton {
   background: rgba(255, 255, 255, 0.12) !important;
@@ -308,4 +330,101 @@ body.dark-mode button.guestAuthCloseButton {
   button.guestAuthSubmit {
     width: 100% !important;
   }
+}
+
+/* ===== Profile character color editor + icon row alignment ===== */
+.lobbyAuthProfileButton {
+  top: 22px !important;
+  right: 22px !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+}
+
+.lobbyAuthProfileNickname { display: none !important; }
+
+.guestAuthCharacterEditor {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+  margin: 0 0 18px;
+  padding: 17px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  background: rgba(248, 250, 252, 0.82);
+}
+
+.guestAuthColorPicker {
+  display: grid;
+  gap: 9px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.guestAuthColorPicker input[type="color"] {
+  box-sizing: border-box;
+  width: 100%;
+  height: 46px;
+  padding: 4px;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+}
+
+.profileBlockCharacter {
+  --profile-color: #64beff;
+  position: relative;
+  display: block;
+  overflow: hidden;
+  flex: 0 0 auto;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.38), transparent 38%), var(--profile-color);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.72), inset -9px -10px 16px rgba(15, 23, 42, 0.12), 0 12px 25px rgba(15, 23, 42, 0.16);
+}
+
+.profileBlockCharacter i {
+  position: absolute;
+  top: 50%;
+  box-sizing: border-box;
+  width: 12%;
+  height: 27%;
+  border: 2px solid rgba(248, 251, 255, 0.96);
+  border-radius: 999px;
+  background: #050814;
+  transform: translateY(-48%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.24);
+}
+
+.profileBlockCharacter i:first-child { left: 31%; }
+.profileBlockCharacter i:last-child { right: 31%; }
+.profileBlockCharacterSmall { width: 28px; height: 28px; border-radius: 9px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72), inset -4px -5px 8px rgba(15, 23, 42, 0.12); }
+.profileBlockCharacterSmall i { min-width: 4px; min-height: 8px; border-width: 1px; }
+.profileBlockCharacterMedium { width: 46px; height: 46px; border-radius: 14px; }
+.profileBlockCharacterLarge { width: 92px; height: 92px; margin: 0 auto; border-radius: 25px; transform: rotate(-3deg); }
+
+body.dark-mode .guestAuthCharacterEditor { border-color: rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.06); }
+body.dark-mode .guestAuthColorPicker { color: #d7dce7; }
+body.dark-mode .guestAuthColorPicker input[type="color"] { border-color: rgba(255, 255, 255, 0.14); background: rgba(8, 12, 22, 0.72); }
+
+body.tablet-device.mobile-landscape #lobby .lobbyAuthProfileButton,
+body.device-layout-forced-tablet.mobile-landscape #lobby .lobbyAuthProfileButton {
+  top: 22px !important;
+  right: 22px !important;
+  left: auto !important;
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+}
+
+@media (max-width: 520px) {
+  .guestAuthCharacterEditor { grid-template-columns: 88px minmax(0, 1fr); gap: 13px; padding: 13px; }
+  .profileBlockCharacterLarge { width: 76px; height: 76px; border-radius: 21px; }
 }

@@ -7,6 +7,7 @@ Cloudflare Workers와 D1을 사용하는 게스트 로그인 API입니다.
 - `src/index.js`: HTTP API 라우팅과 CORS 처리
 - `src/auth.js`: UID, 세션, 닉네임 처리
 - `migrations/0001_auth.sql`: `users`, `sessions` 테이블
+- `migrations/0002_profile_color.sql`: 블록 프로필 색상
 - `wrangler.jsonc`: Worker, D1 바인딩, `/api/*` 라우트
 - `.dev.vars.example`: 로컬 전용 비밀키 예시
 
@@ -59,6 +60,7 @@ npm run deploy
 - `POST /api/auth/guest`: 새 게스트 UID와 세션 생성
 - `GET /api/auth/session`: 저장된 세션으로 자동 로그인
 - `POST /api/auth/nickname`: 닉네임 최초 등록
+- `POST /api/auth/profile`: 등록 후 프로필 색상 변경
 - `GET /api/health`: Worker 상태 확인
 
 클라이언트 응답에는 UID가 포함되지 않습니다.

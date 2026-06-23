@@ -1,5 +1,6 @@
 const NICKNAME_MIN_LENGTH = 2;
 const NICKNAME_MAX_LENGTH = 12;
+const DEFAULT_PROFILE_COLOR = "#64beff";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 180;
 const encoder = new TextEncoder();
 
@@ -35,6 +36,18 @@ export function validateNickname(value) {
   }
 
   return { ok: true, nickname, key: nicknameKey(nickname) };
+}
+
+export function validateProfileColor(value) {
+  const color = String(value || DEFAULT_PROFILE_COLOR).trim().toLowerCase();
+  if (!/^#[0-9a-f]{6}$/.test(color)) {
+    return {
+      ok: false,
+      code: "invalid_profile_color",
+      message: "프로필 색상 형식이 올바르지 않습니다."
+    };
+  }
+  return { ok: true, color };
 }
 
 function bytesToBase64Url(bytes) {
@@ -79,6 +92,7 @@ export function getBearerToken(request) {
 export function publicUser(row) {
   return {
     nickname: row.nickname || null,
+    profileColor: row.profile_color || DEFAULT_PROFILE_COLOR,
     createdAt: row.created_at
   };
 }
@@ -92,6 +106,7 @@ export async function findSessionUser(env, token) {
     SELECT
       users.uid,
       users.nickname,
+      users.profile_color,
       users.created_at,
       users.status,
       sessions.session_hash,
@@ -145,27 +160,31 @@ export async function createGuestSession(env) {
     expiresAt,
     user: {
       nickname: null,
+      profileColor: DEFAULT_PROFILE_COLOR,
       createdAt: now
     }
   };
 }
 
-export async function registerNickname(env, session, rawNickname) {
+export async function registerNickname(env, session, rawNickname, rawProfileColor) {
   const validation = validateNickname(rawNickname);
   if (!validation.ok) return validation;
+  const colorValidation = validateProfileColor(rawProfileColor);
+  if (!colorValidation.ok) return colorValidation;
 
   const now = Math.floor(Date.now() / 1000);
 
   try {
     const result = await env.DB.prepare(`
       UPDATE users
-      SET nickname = ?, nickname_key = ?, updated_at = ?, last_seen_at = ?
+      SET nickname = ?, nickname_key = ?, profile_color = ?, updated_at = ?, last_seen_at = ?
       WHERE uid = ?
         AND nickname IS NULL
         AND status = 'active'
     `).bind(
       validation.nickname,
       validation.key,
+      colorValidation.color,
       now,
       now,
       session.row.uid
@@ -194,6 +213,38 @@ export async function registerNickname(env, session, rawNickname) {
     ok: true,
     user: {
       nickname: validation.nickname,
+      profileColor: colorValidation.color,
+      createdAt: session.row.created_at
+    }
+  };
+}
+
+export async function updateProfileColor(env, session, rawProfileColor) {
+  const validation = validateProfileColor(rawProfileColor);
+  if (!validation.ok) return validation;
+
+  const now = Math.floor(Date.now() / 1000);
+  const result = await env.DB.prepare(`
+    UPDATE users
+    SET profile_color = ?, updated_at = ?, last_seen_at = ?
+    WHERE uid = ?
+      AND nickname IS NOT NULL
+      AND status = 'active'
+  `).bind(validation.color, now, now, session.row.uid).run();
+
+  if (result.meta.changes !== 1) {
+    return {
+      ok: false,
+      code: "nickname_required",
+      message: "닉네임을 먼저 등록해주세요."
+    };
+  }
+
+  return {
+    ok: true,
+    user: {
+      nickname: session.row.nickname,
+      profileColor: validation.color,
       createdAt: session.row.created_at
     }
   };

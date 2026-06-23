@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import {
   nicknameKey,
   normalizeNickname,
-  validateNickname
+  validateNickname,
+  validateProfileColor
 } from "../src/auth.js";
 
 test("nickname whitespace is normalized", () => {
@@ -19,4 +20,13 @@ test("nickname length must be between 2 and 12 characters", () => {
 test("nickname duplicate key ignores case and Unicode composition", () => {
   assert.equal(nicknameKey("Player"), nicknameKey("player"));
   assert.equal(nicknameKey("가"), nicknameKey("\u1100\u1161"));
+});
+
+test("profile color accepts only six-digit hex colors", () => {
+  assert.deepEqual(validateProfileColor("#64BEFF"), {
+    ok: true,
+    color: "#64beff"
+  });
+  assert.equal(validateProfileColor("red").ok, false);
+  assert.equal(validateProfileColor("#fff").ok, false);
 });

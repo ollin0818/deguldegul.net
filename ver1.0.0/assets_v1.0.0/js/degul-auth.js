@@ -15,6 +15,7 @@
   let modalReason = "profile";
   let pendingAction = null;
   let pendingAllowLocalFallback = false;
+  let selectedProfileColor = "#64beff";
 
   const texts = {
     ko: {
@@ -30,6 +31,9 @@
       ready: "프로필 등록 완료",
       placeholder: "닉네임 2~12자",
       submit: "닉네임 등록",
+      colorLabel: "프로필 블록 색상",
+      saveColor: "색상 저장",
+      colorSaved: "프로필 색상을 저장했습니다.",
       hint: "닉네임은 2~12자이며 다른 사용자와 중복할 수 없습니다.",
       loggedIn: "AI 기록과 온라인 프로필에 사용됩니다.",
       unavailable: "로그인 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.",
@@ -50,6 +54,9 @@
       ready: "Profile ready",
       placeholder: "Nickname, 2–12 characters",
       submit: "Save nickname",
+      colorLabel: "Profile block color",
+      saveColor: "Save color",
+      colorSaved: "Profile color saved.",
       hint: "Nicknames must be 2–12 characters and unique.",
       loggedIn: "Used for AI records and your online profile.",
       unavailable: "The login server is unavailable. Please try again shortly.",
@@ -70,6 +77,9 @@
       ready: "プロフィール登録完了",
       placeholder: "ニックネーム 2～12文字",
       submit: "ニックネーム登録",
+      colorLabel: "プロフィールブロックの色",
+      saveColor: "色を保存",
+      colorSaved: "プロフィールカラーを保存しました。",
       hint: "2～12文字で、他のユーザーと同じ名前は使えません。",
       loggedIn: "AI記録とオンラインプロフィールに使用されます。",
       unavailable: "ログインサーバーに接続できません。しばらくしてから再試行してください。",
@@ -90,6 +100,9 @@
       ready: "资料设置完成",
       placeholder: "昵称，2至12个字符",
       submit: "保存昵称",
+      colorLabel: "资料方块颜色",
+      saveColor: "保存颜色",
+      colorSaved: "资料颜色已保存。",
       hint: "昵称须为2至12个字符，且不能与他人重复。",
       loggedIn: "用于AI记录和在线资料。",
       unavailable: "无法连接登录服务器，请稍后重试。",
@@ -125,7 +138,10 @@
       userHint: document.getElementById("guestAuthUserHint"),
       profile: document.getElementById("lobbyAuthProfileButton"),
       profileAvatar: document.getElementById("lobbyAuthProfileAvatar"),
-      profileNickname: document.getElementById("lobbyAuthProfileNickname")
+      characterPreview: document.getElementById("guestAuthCharacterPreview"),
+      colorInput: document.getElementById("guestProfileColorInput"),
+      colorLabel: document.getElementById("guestAuthColorLabel"),
+      colorSave: document.getElementById("guestAuthColorSaveButton")
     };
   }
 
@@ -186,11 +202,22 @@
   function updateProfileButton() {
     const el = elements();
     const nickname = currentUser?.nickname || "";
+    const profileColor = currentUser?.profileColor || selectedProfileColor;
     if (!el.profile) return;
     el.profile.hidden = !nickname;
     el.profile.setAttribute("aria-label", text().profileAria);
-    if (el.profileNickname) el.profileNickname.textContent = nickname;
-    if (el.profileAvatar) el.profileAvatar.textContent = Array.from(nickname || "?")[0] || "?";
+    el.profile.title = nickname;
+    if (el.profileAvatar) el.profileAvatar.style.setProperty("--profile-color", profileColor);
+  }
+
+  function updateCharacterColors(color) {
+    selectedProfileColor = color || "#64beff";
+    const el = elements();
+    el.characterPreview?.style.setProperty("--profile-color", selectedProfileColor);
+    el.avatar?.style.setProperty("--profile-color", selectedProfileColor);
+    if (el.colorInput && el.colorInput.value !== selectedProfileColor) {
+      el.colorInput.value = selectedProfileColor;
+    }
   }
 
   function renderModal(mode) {
@@ -205,11 +232,16 @@
     el.close.setAttribute("aria-label", copy.closeAria);
     el.input.placeholder = copy.placeholder;
     el.submit.textContent = copy.submit;
+    el.colorLabel.textContent = copy.colorLabel;
+    el.colorSave.textContent = copy.saveColor;
     el.submit.disabled = busy || mode === "loading";
+    el.colorSave.disabled = busy || mode === "loading";
     el.input.disabled = busy || mode === "loading";
     el.form.hidden = mode !== "nickname";
     el.user.hidden = mode !== "ready";
+    el.colorSave.hidden = mode !== "ready";
     el.state.classList.toggle("ready", mode === "ready");
+    updateCharacterColors(currentUser?.profileColor || selectedProfileColor);
 
     if (mode === "loading") {
       el.state.textContent = copy.connecting;
@@ -220,7 +252,6 @@
     } else if (mode === "ready") {
       el.state.textContent = copy.ready;
       el.nickname.textContent = nickname;
-      el.avatar.textContent = Array.from(nickname || "?")[0] || "?";
       el.userHint.textContent = copy.loggedIn;
       setMessage("", false);
     } else {
@@ -284,6 +315,7 @@
       const data = await api("/api/auth/guest", { method: "POST" });
       if (data.sessionToken) storeToken(data.sessionToken);
       currentUser = data.user;
+      selectedProfileColor = currentUser?.profileColor || selectedProfileColor;
       updateProfileButton();
       return currentUser;
     })();
@@ -361,7 +393,10 @@
       await ensureSession();
       const data = await api("/api/auth/nickname", {
         method: "POST",
-        body: JSON.stringify({ nickname })
+        body: JSON.stringify({
+          nickname,
+          profileColor: selectedProfileColor
+        })
       });
       currentUser = data.user;
       el.input.value = "";
@@ -378,6 +413,31 @@
     } finally {
       busy = false;
       if (elements().overlay?.classList.contains("show")) renderModal(currentUser?.nickname ? "ready" : "nickname");
+    }
+  }
+
+  async function saveProfileColor() {
+    if (busy || !currentUser?.nickname) return;
+    busy = true;
+    let saved = false;
+    let errorMessage = "";
+    renderModal("ready");
+    try {
+      const data = await api("/api/auth/profile", {
+        method: "POST",
+        body: JSON.stringify({ profileColor: selectedProfileColor })
+      });
+      currentUser = data.user;
+      updateCharacterColors(currentUser.profileColor);
+      updateProfileButton();
+      saved = true;
+    } catch (error) {
+      errorMessage = error.message || text().unavailable;
+    } finally {
+      busy = false;
+      renderModal("ready");
+      if (saved) setMessage(text().colorSaved, false);
+      else if (errorMessage) setMessage(errorMessage, true);
     }
   }
 
@@ -452,6 +512,8 @@
     el.form.addEventListener("submit", submitNickname);
     el.close.addEventListener("click", () => closeModal(true));
     el.profile?.addEventListener("click", () => requireNickname("profile"));
+    el.colorInput?.addEventListener("input", event => updateCharacterColors(event.target.value));
+    el.colorSave?.addEventListener("click", saveProfileColor);
     document.getElementById("privacyAgreeBtn")?.addEventListener("click", handlePrivacyAgreement, true);
     document.addEventListener("keydown", event => {
       if (event.key === "Escape" && el.overlay.classList.contains("show")) closeModal(true);
