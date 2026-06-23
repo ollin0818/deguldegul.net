@@ -241,7 +241,7 @@
     el.user.hidden = mode !== "ready";
     el.colorSave.hidden = mode !== "ready";
     el.state.classList.toggle("ready", mode === "ready");
-    updateCharacterColors(currentUser?.profileColor || selectedProfileColor);
+    updateCharacterColors(selectedProfileColor || currentUser?.profileColor);
 
     if (mode === "loading") {
       el.state.textContent = copy.connecting;
@@ -303,6 +303,7 @@
         try {
           const data = await api("/api/auth/session", { method: "GET" });
           currentUser = data.user;
+          selectedProfileColor = currentUser?.profileColor || selectedProfileColor;
           updateProfileButton();
           if (currentUser?.nickname) announceReady();
           return currentUser;
@@ -419,14 +420,18 @@
 
   async function saveProfileColor() {
     if (busy || !currentUser?.nickname) return;
+    const requestedColor = selectedProfileColor;
+    const el = elements();
     busy = true;
     let saved = false;
     let errorMessage = "";
-    renderModal("ready");
+    el.colorSave.disabled = true;
+    el.colorInput.disabled = true;
+    setMessage("", false);
     try {
       const data = await api("/api/auth/profile", {
         method: "POST",
-        body: JSON.stringify({ profileColor: selectedProfileColor })
+        body: JSON.stringify({ profileColor: requestedColor })
       });
       currentUser = data.user;
       updateCharacterColors(currentUser.profileColor);
@@ -434,6 +439,7 @@
       saved = true;
     } catch (error) {
       errorMessage = error.message || text().unavailable;
+      updateCharacterColors(requestedColor);
     } finally {
       busy = false;
       renderModal("ready");
@@ -509,6 +515,7 @@
   function openProfileEditor() {
     modalReason = "profile";
     if (currentUser?.nickname) {
+      selectedProfileColor = currentUser.profileColor || selectedProfileColor;
       showModal("profile");
       return true;
     }
