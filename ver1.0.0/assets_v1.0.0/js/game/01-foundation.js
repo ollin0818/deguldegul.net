@@ -2250,7 +2250,8 @@ function updateDeviceLayoutChoicePrompt() {
     "将应用适合当前屏幕的布局。"
   );
 
-  const shouldAsk = !detectMobilePhoneDevice()
+  const isMobilePhone = detectMobilePhoneDevice();
+  const shouldAsk = !isMobilePhone
     && (isBelowFhdDisplay() || isBelowFhdViewport())
     && !forcedDeviceLayout;
   overlay.classList.toggle("show", shouldAsk);
@@ -2275,40 +2276,49 @@ function detectTabletDevice() {
 
 function detectNativeTabletDevice() {
   const ua = navigator.userAgent || "";
+  const uaDataReportsMobile = navigator.userAgentData?.mobile === true;
   const isIPad = /iPad/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
-  const isAndroidTablet = /Android/i.test(ua) && !/Mobile/i.test(ua);
-  const largeTouchScreen = hasTouchInput() && Math.min(window.screen?.width || window.innerWidth, window.screen?.height || window.innerHeight) >= 600;
+  const isAndroidTablet = /Android/i.test(ua) && !/Mobile/i.test(ua) && !uaDataReportsMobile;
+  const largeTouchScreen = hasTouchInput()
+    && !uaDataReportsMobile
+    && Math.min(window.screen?.width || window.innerWidth, window.screen?.height || window.innerHeight) >= 700;
   return isIPad || isAndroidTablet || largeTouchScreen;
 }
 
 function detectMobileDevice() {
   if (forcedDeviceLayout === "tablet") return true;
   if (forcedDeviceLayout === "pc") return false;
-  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (hasTouchInput() && Math.min(window.innerWidth, window.innerHeight) <= 900);
+  return navigator.userAgentData?.mobile === true
+    || /Android|iPhone|iPad|iPod|Mobile|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    || (hasTouchInput() && Math.min(window.innerWidth, window.innerHeight) <= 900);
 }
 
 function detectMobilePhoneDevice() {
   const ua = navigator.userAgent || "";
-  const explicitPhone = /iPhone|iPod/i.test(ua) || (/Android/i.test(ua) && /Mobile/i.test(ua));
+  const explicitPhone = navigator.userAgentData?.mobile === true
+    || /iPhone|iPod|IEMobile|Opera Mini/i.test(ua)
+    || (/Android/i.test(ua) && /Mobile/i.test(ua));
   const shortestPhysicalSide = Math.min(
     Number(window.screen?.width) || window.innerWidth,
     Number(window.screen?.height) || window.innerHeight
   );
-  const smallTouchScreen = hasTouchInput() && shortestPhysicalSide < 600;
+  const shortestViewportSide = Math.min(window.innerWidth, window.innerHeight);
+  const smallTouchScreen = hasTouchInput()
+    && Math.min(shortestPhysicalSide, shortestViewportSide) < 700;
   return !detectNativeTabletDevice() && (explicitPhone || smallTouchScreen);
 }
 
 function updateMobileUIState() {
   applyForcedDeviceLayoutClass();
-  updateDeviceLayoutChoicePrompt();
-  const isTabletDevice = detectTabletDevice();
-  isMobileDevice = detectMobileDevice();
   isMobilePhoneBlocked = detectMobilePhoneDevice();
   if (isMobilePhoneBlocked && forcedDeviceLayout) {
     forcedDeviceLayout = "";
     autoPcLayoutApplied = false;
     applyForcedDeviceLayoutClass();
   }
+  updateDeviceLayoutChoicePrompt();
+  const isTabletDevice = detectTabletDevice();
+  isMobileDevice = detectMobileDevice();
   const isLandscape = window.innerWidth >= window.innerHeight;
   document.body.classList.toggle("tablet-device", isTabletDevice && !isMobilePhoneBlocked);
   document.body.classList.toggle("mobile-device", isMobileDevice);

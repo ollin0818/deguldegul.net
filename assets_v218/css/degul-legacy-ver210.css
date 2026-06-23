@@ -6816,7 +6816,8 @@ body.mobile-phone-blocked #mobilePhoneBlockOverlay {
 }
 
 body.mobile-phone-blocked #mobileOrientationOverlay,
-body.mobile-phone-blocked #mobileControlLayer {
+body.mobile-phone-blocked #mobileControlLayer,
+body.mobile-phone-blocked #deviceLayoutChoiceOverlay {
   display: none !important;
 }
 
