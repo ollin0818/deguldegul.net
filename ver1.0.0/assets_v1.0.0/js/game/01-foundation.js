@@ -960,7 +960,7 @@ function shiftAiRecordDifficulty(direction) {
 }
 
 function updateAiRecordPanel() {
-  const panel = document.getElementById("aiRecordPanel");
+  const panel = document.getElementById("aiRankingPanel");
   if (!panel) return;
 
   const level = getAiRecordDifficultyForView();
@@ -968,13 +968,9 @@ function updateAiRecordPanel() {
   const text = getAiRecordText();
   const typeLabels = text.types || {};
 
-  const wing = document.getElementById("aiRecordWing");
   const rankingWing = document.getElementById("aiRankingWing");
-  const wingText = document.getElementById("aiRecordWingText");
   const rankingWingText = document.getElementById("aiRankingWingText");
   const popupTitle = document.getElementById("aiRecordPopupTitle");
-  const localTab = document.getElementById("aiRecordLocalTab");
-  const rankingTab = document.getElementById("aiRecordRankingTab");
   const rankingTitle = document.getElementById("aiRankingTitle");
   const rankingStatus = document.getElementById("aiRankingStatus");
   const rankingSoonLabel = document.getElementById("aiRankingSoonLabel");
@@ -993,13 +989,9 @@ function updateAiRecordPanel() {
   const carouselCurrent = document.getElementById("aiRecordDifficultyCurrent");
   const carouselDots = document.getElementById("aiRecordDifficultyDots");
 
-  if (wing) wing.setAttribute("aria-label", text.popupTitle);
   if (rankingWing) rankingWing.setAttribute("aria-label", text.rankingTitle);
-  if (wingText) wingText.textContent = text.wing;
-  if (rankingWingText) rankingWingText.textContent = text.wingSub;
-  if (popupTitle) popupTitle.textContent = text.popupTitle;
-  if (localTab) localTab.textContent = text.localTab;
-  if (rankingTab) rankingTab.textContent = text.rankingTab;
+  if (rankingWingText) rankingWingText.textContent = text.rankingTab;
+  if (popupTitle) popupTitle.textContent = text.rankingTitle;
   if (rankingTitle) rankingTitle.textContent = text.rankingTitle;
   if (rankingStatus) rankingStatus.textContent = text.rankingStatus;
   if (rankingSoonLabel) rankingSoonLabel.textContent = text.rankingSoonLabel;
@@ -1031,39 +1023,18 @@ function updateAiRecordPanel() {
 }
 
 function setAiRecordPopupTab(tab) {
-  const isRanking = tab === "ranking";
   const text = getAiRecordText();
   const popupTitle = document.getElementById("aiRecordPopupTitle");
-  const recordPanel = document.getElementById("aiRecordPanel");
   const rankingPanel = document.getElementById("aiRankingPanel");
-  const localTab = document.getElementById("aiRecordLocalTab");
-  const rankingTab = document.getElementById("aiRecordRankingTab");
-  if (popupTitle) popupTitle.textContent = isRanking ? text.rankingTitle : text.popupTitle;
-  if (recordPanel) recordPanel.hidden = isRanking;
-  if (rankingPanel) rankingPanel.hidden = !isRanking;
-  if (localTab) {
-    localTab.classList.toggle("active", !isRanking);
-    localTab.setAttribute("aria-selected", isRanking ? "false" : "true");
-  }
-  if (rankingTab) {
-    rankingTab.classList.toggle("active", isRanking);
-    rankingTab.setAttribute("aria-selected", isRanking ? "true" : "false");
-  }
-  if (isRanking && typeof window.DegulAiRanking?.refresh === "function") {
+  if (popupTitle) popupTitle.textContent = text.rankingTitle;
+  if (rankingPanel) rankingPanel.hidden = false;
+  if (typeof window.DegulAiRanking?.refresh === "function") {
     window.DegulAiRanking.refresh();
   }
 }
 
 function openAiRecordPopup() {
-  if (!AI_DIFFICULTY_ORDER[aiRecordDifficultyIndex]) {
-    aiRecordDifficultyIndex = Math.max(0, AI_DIFFICULTY_ORDER.indexOf(aiDifficulty));
-  }
-  updateAiRecordPanel();
-  setAiRecordPopupTab("record");
-  const overlay = document.getElementById("aiRecordOverlay");
-  if (!overlay) return;
-  overlay.classList.add("show");
-  overlay.setAttribute("aria-hidden", "false");
+  openAiRankingPopup();
 }
 
 function openAiRankingPopup() {

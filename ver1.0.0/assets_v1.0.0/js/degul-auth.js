@@ -337,6 +337,7 @@
   async function requireNickname(reason, action, options = {}) {
     if (currentUser?.nickname) {
       if (typeof action === "function") action();
+      else if (reason === "profile") showModal("profile");
       return true;
     }
 
@@ -505,13 +506,21 @@
     if (elements().overlay?.classList.contains("show")) renderModal(modalMode);
   }
 
+  function openProfileEditor() {
+    modalReason = "profile";
+    if (currentUser?.nickname) {
+      showModal("profile");
+      return true;
+    }
+    return requireNickname("profile");
+  }
+
   function init() {
     const el = elements();
     if (!el.overlay || !el.form) return;
 
     el.form.addEventListener("submit", submitNickname);
     el.close.addEventListener("click", () => closeModal(true));
-    el.profile?.addEventListener("click", () => requireNickname("profile"));
     el.colorInput?.addEventListener("input", event => updateCharacterColors(event.target.value));
     el.colorSave?.addEventListener("click", saveProfileColor);
     document.getElementById("privacyAgreeBtn")?.addEventListener("click", handlePrivacyAgreement, true);
@@ -537,7 +546,7 @@
     refresh: ensureSession,
     request: api,
     requireNickname,
-    openProfile: () => requireNickname("profile")
+    openProfile: openProfileEditor
   };
 
   if (document.readyState === "loading") {

@@ -29,10 +29,10 @@
 
 <link rel="icon" type="image/webp" sizes="512x512" href="assets_v1.0.0/images/favicon.webp" />
 <link rel="apple-touch-icon" href="assets_v1.0.0/images/favicon.png" />
-<link rel="stylesheet" href="assets_v1.0.0/css/degul-legacy-ver210.min.css?v=102-ai-ranking">
+<link rel="stylesheet" href="assets_v1.0.0/css/degul-legacy-ver210.min.css?v=103-ranking-ui">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-volume-slider.min.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-qhd-uniform.min.css?v=100">
-<link rel="stylesheet" href="assets_v1.0.0/css/degul-auth.min.css?v=3">
+<link rel="stylesheet" href="assets_v1.0.0/css/degul-auth.min.css?v=4">
 </head>
 <body>
 <div id="dominanceEdgeOverlay" aria-hidden="true"></div>
@@ -227,7 +227,7 @@
     </div>
     <button class="lobbyPrivacyButton" id="privacyToggle" type="button" onclick="openPrivacyPopup(false)" aria-label="개인정보 및 광고 안내 열기" title="개인정보 및 광고 안내">🛡</button>
     <button class="lobbySettingsButton" id="lobbySettingsButton" type="button" onclick="openSettingsPopup()" aria-label="설정 열기" title="설정">⚙</button>
-    <button class="lobbyAuthProfileButton" id="lobbyAuthProfileButton" type="button" hidden aria-label="온라인 프로필 열기">
+    <button class="lobbyAuthProfileButton" id="lobbyAuthProfileButton" type="button" hidden onclick="window.DegulAuth?.openProfile()" aria-label="온라인 프로필 열기">
       <span class="profileBlockCharacter profileBlockCharacterSmall" id="lobbyAuthProfileAvatar" aria-hidden="true"><i></i><i></i></span>
     </button>
     <div class="lobbyKicker">2인용 territory rolling game</div>
@@ -336,28 +336,24 @@
       <span class="onlineArrowText onlineTextBack">로컬 대전 설정 돌아가기</span>
     </button>
 
-    <div class="lobbyWingStack" aria-label="기록과 랭킹">
-      <button class="lobbyWingTab record" id="aiRecordWing" type="button" onclick="openAiRecordPopup()" aria-label="AI대전 기록 열기">
-        <span class="lobbyWingIcon" aria-hidden="true">📊</span>
-        <span class="lobbyWingLabel" id="aiRecordWingText">AI대전 기록</span>
-      </button>
+    <div class="lobbyWingStack" aria-label="AI 랭킹">
       <button class="lobbyWingTab ranking" id="aiRankingWing" type="button" onclick="openAiRankingPopup()" aria-label="랭킹 열기">
         <span class="lobbyWingIcon" aria-hidden="true">🏆</span>
-        <span class="lobbyWingLabel" id="aiRankingWingText">랭킹</span>
+        <span class="lobbyWingLabel" id="aiRankingWingText">AI 랭킹</span>
       </button>
     </div>
   </div>
 
   <div class="aiRecordOverlay" id="aiRecordOverlay" aria-hidden="true" onclick="closeAiRecordPopup(event)">
     <div class="aiRecordPopup" role="dialog" aria-modal="true" aria-labelledby="aiRecordPopupTitle" onclick="event.stopPropagation()">
-      <button class="aiRecordCloseButton" type="button" onclick="closeAiRecordPopup()" aria-label="AI대전 기록 닫기">×</button>
+      <button class="aiRecordCloseButton" type="button" onclick="closeAiRecordPopup()" aria-label="AI 랭킹 닫기">×</button>
       <div class="aiRecordPopupHeader">
-        <div class="aiRecordPopupBadge">RECORD</div>
-        <h2 id="aiRecordPopupTitle">AI대전 기록</h2>
-      </div>
-      <div class="aiRecordTabs" role="tablist" aria-label="기록 메뉴">
-        <button class="aiRecordTab active" id="aiRecordLocalTab" type="button" role="tab" aria-selected="true" onclick="setAiRecordPopupTab('record')">내 기록</button>
-        <button class="aiRecordTab" id="aiRecordRankingTab" type="button" role="tab" aria-selected="false" onclick="setAiRecordPopupTab('ranking')">AI 랭킹</button>
+        <div>
+          <div class="aiRecordPopupBadge">WORLD LEADERBOARD</div>
+          <h2 id="aiRecordPopupTitle">AI 랭킹</h2>
+          <p id="aiRankingDescription">난이도와 모드별 전 세계 TOP 100</p>
+        </div>
+        <span class="aiRankingLiveBadge" id="aiRankingStatus">TOP 100</span>
       </div>
       <div class="aiRecordDifficultyCarousel" role="group" aria-label="AI 난이도별 기록 선택">
         <button class="aiRecordCarouselArrow prev" id="aiRecordDifficultyPrev" type="button" onclick="shiftAiRecordDifficulty(-1)" aria-label="이전 AI 난이도">‹</button>
@@ -368,45 +364,18 @@
         <button class="aiRecordCarouselArrow next" id="aiRecordDifficultyNext" type="button" onclick="shiftAiRecordDifficulty(1)" aria-label="다음 AI 난이도">›</button>
       </div>
       <div class="aiRecordDifficultyDots" id="aiRecordDifficultyDots" role="group" aria-label="AI 난이도 바로 선택"></div>
-      <div class="aiRecordPanel" id="aiRecordPanel" aria-live="polite">
-        <div class="aiRecordHeader">
-          <strong id="aiRecordTitle">내 AI대전 기록</strong>
-          <span id="aiRecordDifficulty">Easy</span>
-        </div>
-        <div class="aiRecordGrid">
-          <div class="aiRecordItem" id="aiRecordBestTimeBox">
-            <b id="aiRecordBestTimeLabel">최고 클리어 타임</b>
-            <span id="aiRecordBestTime">미클리어</span>
-          </div>
-          <div class="aiRecordItem" id="aiRecordStreakBox">
-            <b id="aiRecordStreakLabel">최고 연승</b>
-            <span id="aiRecordStreak">0</span>
-          </div>
-          <div class="aiRecordItem" id="aiRecordWinTypeBox">
-            <b id="aiRecordWinTypeLabel">최근 승리 방식</b>
-            <span id="aiRecordWinType">-</span>
-          </div>
-          <div class="aiRecordItem" id="aiRecordWinModeBox">
-            <b id="aiRecordWinModeLabel">최근 승리 모드</b>
-            <span id="aiRecordWinMode">-</span>
-          </div>
-        </div>
-      </div>
-      <div class="aiRecordPanel aiRankingPanel" id="aiRankingPanel" aria-live="polite" hidden>
-        <div class="aiRecordHeader">
-          <strong id="aiRankingTitle">AI 랭킹</strong>
-          <span id="aiRankingStatus">TOP 100</span>
-        </div>
+      <div class="aiRecordPanel aiRankingPanel" id="aiRankingPanel" aria-live="polite">
         <div class="aiRankingModeTabs" role="tablist" aria-label="랭킹 게임 모드">
-          <button class="active" id="aiRankingSpeedMode" type="button" onclick="setAiRankingMode('speed')">스피드 모드</button>
-          <button id="aiRankingItemMode" type="button" onclick="setAiRankingMode('item')">아이템 모드</button>
+          <button class="active" id="aiRankingSpeedMode" type="button" onclick="setAiRankingMode('speed')"><span aria-hidden="true">⚡</span> 스피드</button>
+          <button id="aiRankingItemMode" type="button" onclick="setAiRankingMode('item')"><span aria-hidden="true">🎁</span> 아이템</button>
         </div>
         <div class="aiRankingMine">
-          <div class="aiRecordItem">
+          <div class="aiRankingMineIcon" aria-hidden="true">★</div>
+          <div class="aiRankingMineMain">
             <b id="aiRankingMyRankLabel">내 순위</b>
-            <span id="aiRankingMyRank">미등록</span>
+            <strong id="aiRankingMyRank">미등록</strong>
           </div>
-          <div class="aiRecordItem">
+          <div class="aiRankingMineBest">
             <b id="aiRankingMyBestLabel">내 최고 기록</b>
             <span id="aiRankingMyBest">미등록</span>
           </div>
@@ -422,6 +391,30 @@
             <div class="aiRankingEmpty">불러오는 중</div>
           </div>
         </div>
+        <section class="aiRankingLocalSummary" aria-labelledby="aiRecordTitle">
+          <div class="aiRankingLocalHeader">
+            <strong id="aiRecordTitle">내 AI대전 기록</strong>
+            <span id="aiRecordDifficulty">Easy</span>
+          </div>
+          <div class="aiRecordGrid">
+            <div class="aiRecordItem" id="aiRecordBestTimeBox">
+              <b id="aiRecordBestTimeLabel">최고 클리어 타임</b>
+              <span id="aiRecordBestTime">미클리어</span>
+            </div>
+            <div class="aiRecordItem" id="aiRecordStreakBox">
+              <b id="aiRecordStreakLabel">최고 연승</b>
+              <span id="aiRecordStreak">0</span>
+            </div>
+            <div class="aiRecordItem" id="aiRecordWinTypeBox">
+              <b id="aiRecordWinTypeLabel">최근 승리 방식</b>
+              <span id="aiRecordWinType">-</span>
+            </div>
+            <div class="aiRecordItem" id="aiRecordWinModeBox">
+              <b id="aiRecordWinModeLabel">최근 승리 모드</b>
+              <span id="aiRecordWinMode">-</span>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   </div>
@@ -993,7 +986,7 @@
 <script src="assets_v1.0.0/js/degul-inline-01.min.js?v=100"></script>
 
 <script src="assets_v1.0.0/vendor/three-0.160.0.min.js"></script>
-<script src="assets_v1.0.0/js/game/01-foundation.min.js?v=102-ai-ranking"></script>
+<script src="assets_v1.0.0/js/game/01-foundation.min.js?v=103-ranking-ui"></script>
 <script src="assets_v1.0.0/js/game/02-scene-board.min.js?v=100-performance-pass"></script>
 <script src="assets_v1.0.0/js/game/03-actors-loop-ai-movement.min.js?v=100-performance-pass"></script>
 <script src="assets_v1.0.0/js/game/04-territory-items.min.js?v=100-performance-pass"></script>
@@ -1006,8 +999,8 @@
 
 
 <script src="assets_v1.0.0/js/degul-inline-04.min.js?v=100"></script>
-<script src="assets_v1.0.0/js/degul-auth.min.js?v=4"></script>
-<script src="assets_v1.0.0/js/degul-ai-ranking.min.js?v=1"></script>
+<script src="assets_v1.0.0/js/degul-auth.min.js?v=5"></script>
+<script src="assets_v1.0.0/js/degul-ai-ranking.min.js?v=2"></script>
 
 
 <div class="degulTutorialLayer" id="degulTutorialLayer" aria-hidden="true">

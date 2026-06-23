@@ -2796,11 +2796,11 @@ body.dark-mode #pauseOverlay {
 .aiRecordOverlay.show { display: flex; }
 .aiRecordPopup {
   position: relative;
-  width: min(700px, calc(100vw - 44px));
-  max-height: min(760px, calc(100vh - 44px));
+  width: min(620px, calc(100vw - 32px));
+  max-height: min(720px, calc(100vh - 32px));
   overflow: auto;
-  padding: 24px;
-  border-radius: 24px;
+  padding: 20px;
+  border-radius: 26px;
   background: rgba(255,255,255,0.94);
   border: 1px solid rgba(15,23,42,0.10);
   box-shadow: 0 28px 70px rgba(15,23,42,0.24), inset 0 0 0 1px rgba(255,255,255,0.70);
@@ -2819,20 +2819,55 @@ body.dark-mode #pauseOverlay {
   font-weight: 900 !important;
   cursor: pointer;
 }
-.aiRecordPopupHeader { padding-right: 40px; margin-bottom: 16px; }
+.aiRecordPopupHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding-right: 42px;
+  margin-bottom: 14px;
+}
 .aiRecordPopupBadge {
   display: inline-block;
-  margin-bottom: 8px;
-  font-size: 11px;
+  margin-bottom: 5px;
+  font-size: 10px;
   font-weight: 950;
-  color: #0a84ff;
+  color: #7c3aed;
+  letter-spacing: .12em;
 }
 .aiRecordPopupHeader h2 {
   margin: 0;
-  font-size: 28px;
+  font-size: 27px;
   line-height: 1;
   color: #111827;
   font-weight: 950;
+}
+.aiRecordPopupHeader p {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 750;
+}
+.aiRankingLiveBadge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  color: #0f766e;
+  background: rgba(20,184,166,.12);
+  font-size: 10px;
+  font-weight: 950;
+}
+.aiRankingLiveBadge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: #14b8a6;
+  box-shadow: 0 0 0 4px rgba(20,184,166,.12);
 }
 .aiRecordTabs {
   display: grid;
@@ -2861,14 +2896,14 @@ body.dark-mode #pauseOverlay {
 }
 .aiRecordDifficultyCarousel {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
   align-items: stretch;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 7px;
+  margin-bottom: 5px;
 }
 .aiRecordCarouselArrow,
 .aiRecordDifficultyCurrent {
-  min-height: 54px;
+  min-height: 46px;
   border: 1px solid rgba(15,23,42,0.08) !important;
   background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(238,246,255,0.92)) !important;
   color: #315d7d !important;
@@ -2896,7 +2931,7 @@ body.dark-mode #pauseOverlay {
   color: #79a8c7;
 }
 .aiRecordDifficultyCurrent strong {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 950;
   color: #315d7d;
 }
@@ -2906,7 +2941,7 @@ body.dark-mode #pauseOverlay {
   justify-content: center;
   gap: 6px;
   min-height: 14px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 .aiRecordDifficultyDot {
   width: 7px !important;
@@ -2934,68 +2969,131 @@ body.dark-mode #pauseOverlay {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  padding: 3px;
+  border-radius: 14px;
+  background: rgba(226,232,240,.70);
 }
 .aiRankingModeTabs button {
-  min-height: 36px;
+  min-height: 34px;
   padding: 0 12px !important;
   border-radius: 11px !important;
-  border: 1px solid rgba(15,23,42,0.08) !important;
-  background: rgba(248,250,252,0.86) !important;
+  border: 0 !important;
+  background: transparent !important;
   color: #64748b !important;
   font-size: 12px !important;
   font-weight: 900 !important;
+  box-shadow: none !important;
 }
+#aiRankingSpeedMode::before { content: "⚡ "; }
+#aiRankingItemMode::before { content: "🎁 "; }
 .aiRankingModeTabs button.active {
-  color: #0a58ca !important;
-  border-color: rgba(10,132,255,0.38) !important;
-  background: rgba(10,132,255,0.13) !important;
+  color: #1e3a8a !important;
+  background: #fff !important;
+  box-shadow: 0 4px 12px rgba(15,23,42,.10) !important;
 }
 .aiRankingMine {
   display: grid;
-  grid-template-columns: minmax(0, .65fr) minmax(0, 1.35fr);
-  gap: 8px;
+  grid-template-columns: 36px minmax(80px, .55fr) minmax(0, 1.45fr);
+  align-items: center;
+  gap: 10px;
   margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(59,130,246,.18);
+  border-radius: 15px;
+  background: linear-gradient(135deg, rgba(219,234,254,.78), rgba(238,242,255,.72));
+}
+.aiRankingMineIcon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  color: #fff;
+  background: linear-gradient(145deg, #3b82f6, #6366f1);
+  font-size: 15px;
+  box-shadow: 0 7px 15px rgba(59,130,246,.24);
+}
+.aiRankingMineMain,
+.aiRankingMineBest {
+  min-width: 0;
+}
+.aiRankingMineMain b,
+.aiRankingMineBest b {
+  display: block;
+  margin-bottom: 2px;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .04em;
+}
+.aiRankingMineMain strong {
+  color: #1d4ed8;
+  font-size: 18px;
+  font-weight: 950;
+}
+.aiRankingMineBest span {
+  display: block;
+  overflow: hidden;
+  color: #172554;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 950;
 }
 .aiRankingTable {
   overflow: hidden;
   border: 1px solid rgba(15,23,42,0.08);
-  border-radius: 14px;
-  background: rgba(248,250,252,0.60);
+  border-radius: 16px;
+  background: rgba(248,250,252,0.72);
 }
 .aiRankingTableHead,
 .aiRankingRow {
   display: grid;
-  grid-template-columns: 52px minmax(140px, 1fr) 92px 70px;
+  grid-template-columns: 54px minmax(140px, 1fr) 94px 66px;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+  padding: 8px 12px;
 }
 .aiRankingTableHead {
   color: #64748b;
-  background: rgba(226,232,240,0.68);
-  font-size: 10px;
+  background: rgba(226,232,240,0.76);
+  font-size: 9px;
   font-weight: 950;
 }
 .aiRankingList {
-  max-height: 330px;
+  max-height: 292px;
   overflow: auto;
 }
 .aiRankingRow {
-  min-height: 42px;
+  min-height: 44px;
   color: #111827;
   border-top: 1px solid rgba(15,23,42,0.06);
   font-size: 12px;
+  transition: background .15s ease;
+}
+.aiRankingRow:hover {
+  background: rgba(226,232,240,.52);
 }
 .aiRankingRow.mine {
   background: rgba(10,132,255,0.10);
   box-shadow: inset 3px 0 #0a84ff;
 }
 .aiRankingRank {
-  color: #0a58ca;
-  font-size: 12px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 34px;
+  min-height: 24px;
+  border-radius: 8px;
+  color: #475569;
+  background: rgba(226,232,240,.85);
+  font-size: 11px;
   font-weight: 950;
 }
+.aiRankingRow.rank-1 .aiRankingRank { color: #854d0e; background: linear-gradient(135deg,#fef3c7,#fde68a); }
+.aiRankingRow.rank-2 .aiRankingRank { color: #475569; background: linear-gradient(135deg,#f8fafc,#cbd5e1); }
+.aiRankingRow.rank-3 .aiRankingRank { color: #9a3412; background: linear-gradient(135deg,#ffedd5,#fdba74); }
 .aiRankingPlayer {
   display: flex;
   min-width: 0;
@@ -3046,6 +3144,13 @@ body.dark-mode #pauseOverlay {
   font-variant-numeric: tabular-nums;
   font-weight: 900;
 }
+.aiRankingTime { color: #1e3a8a; font-size: 12px; }
+.aiRankingTerritory {
+  display: inline-flex;
+  justify-content: flex-end;
+  color: #0f766e;
+  font-size: 11px;
+}
 .aiRankingEmpty {
   padding: 28px 14px;
   color: #64748b;
@@ -3054,6 +3159,45 @@ body.dark-mode #pauseOverlay {
   font-weight: 850;
 }
 .aiRankingEmpty.error { color: #dc2626; }
+.aiRankingLocalSummary {
+  margin-top: 10px;
+  padding: 9px;
+  border: 1px solid rgba(15,23,42,.06);
+  border-radius: 14px;
+  background: rgba(248,250,252,.74);
+}
+.aiRankingLocalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  padding: 0 2px;
+}
+.aiRankingLocalHeader strong {
+  color: #475569;
+  font-size: 10px;
+  font-weight: 950;
+}
+.aiRankingLocalHeader span {
+  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 900;
+}
+.aiRankingLocalSummary .aiRecordGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+.aiRankingLocalSummary .aiRecordItem {
+  padding: 6px 7px;
+  border-radius: 9px;
+  background: rgba(255,255,255,.72);
+}
+.aiRankingLocalSummary .aiRecordItem b {
+  font-size: 8px;
+}
+.aiRankingLocalSummary .aiRecordItem span {
+  font-size: 10px;
+}
 .aiRecordHeader {
   display: flex;
   align-items: center;
@@ -3183,14 +3327,23 @@ body.dark-mode .aiRecordItem {
 }
 body.dark-mode .aiRankingModeTabs button {
   color: var(--text-sub) !important;
-  border-color: rgba(255,255,255,0.10) !important;
-  background: rgba(255,255,255,0.06) !important;
+  background: transparent !important;
 }
 body.dark-mode .aiRankingModeTabs button.active {
   color: #dbeafe !important;
-  border-color: rgba(147,197,253,0.38) !important;
-  background: rgba(10,132,255,0.24) !important;
+  background: rgba(30,41,59,.96) !important;
 }
+body.dark-mode .aiRankingModeTabs { background: rgba(255,255,255,.07); }
+body.dark-mode .aiRecordPopupHeader p { color: var(--text-sub); }
+body.dark-mode .aiRankingLiveBadge { color: #99f6e4; background: rgba(20,184,166,.16); }
+body.dark-mode .aiRankingMine {
+  border-color: rgba(96,165,250,.20);
+  background: linear-gradient(135deg, rgba(30,58,138,.30), rgba(49,46,129,.22));
+}
+body.dark-mode .aiRankingMineMain b,
+body.dark-mode .aiRankingMineBest b { color: #94a3b8; }
+body.dark-mode .aiRankingMineMain strong { color: #93c5fd; }
+body.dark-mode .aiRankingMineBest span { color: #dbeafe; }
 body.dark-mode .aiRankingTable {
   border-color: rgba(255,255,255,0.10);
   background: rgba(255,255,255,0.04);
@@ -3208,10 +3361,18 @@ body.dark-mode .aiRankingRank { color: #93c5fd; }
 body.dark-mode .aiRankingTime,
 body.dark-mode .aiRankingTerritory { color: #dbeafe; }
 body.dark-mode .aiRankingEmpty { color: var(--text-sub); }
+body.dark-mode .aiRankingLocalSummary {
+  border-color: rgba(255,255,255,.08);
+  background: rgba(255,255,255,.04);
+}
+body.dark-mode .aiRankingLocalSummary .aiRecordItem {
+  background: rgba(255,255,255,.05);
+}
 @media (max-width: 720px) {
   .matchSelectWrap { grid-template-columns: 1fr; }
   .aiDifficultyWrap { grid-template-columns: repeat(2, 1fr); }
   .aiRecordGrid { grid-template-columns: 1fr; }
+  .aiRankingLocalSummary .aiRecordGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .aiRankingTableHead,
   .aiRankingRow {
     grid-template-columns: 42px minmax(110px, 1fr) 78px 58px;

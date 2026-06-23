@@ -8,6 +8,7 @@
     ko: {
       title: "AI 랭킹",
       tab: "AI 랭킹",
+      description: "난이도와 모드별 전 세계 TOP 100",
       loading: "불러오는 중",
       ready: "TOP 100",
       unavailable: "랭킹을 불러오지 못했습니다.",
@@ -26,6 +27,7 @@
     en: {
       title: "AI Ranking",
       tab: "AI Ranking",
+      description: "Global TOP 100 by difficulty and mode",
       loading: "Loading",
       ready: "TOP 100",
       unavailable: "Could not load the ranking.",
@@ -44,6 +46,7 @@
     ja: {
       title: "AIランキング",
       tab: "AIランキング",
+      description: "難易度・モード別 世界TOP 100",
       loading: "読み込み中",
       ready: "TOP 100",
       unavailable: "ランキングを読み込めませんでした。",
@@ -62,6 +65,7 @@
     zh: {
       title: "AI排行榜",
       tab: "AI排行榜",
+      description: "按难度和模式划分的全球TOP 100",
       loading: "加载中",
       ready: "TOP 100",
       unavailable: "无法加载排行榜。",
@@ -226,6 +230,7 @@
     data.top.forEach(row => {
       const item = document.createElement("div");
       item.className = "aiRankingRow";
+      if (row.rank <= 3) item.classList.add(`rank-${row.rank}`);
       if (data.me && row.rank === data.me.rank && row.nickname === data.me.nickname) {
         item.classList.add("mine");
       }
@@ -313,6 +318,7 @@
     const labels = {
       aiRankingTitle: text.title,
       aiRecordRankingTab: text.tab,
+      aiRankingDescription: text.description,
       aiRankingSpeedMode: text.speed,
       aiRankingItemMode: text.item,
       aiRankingMyRankLabel: text.myRank,
