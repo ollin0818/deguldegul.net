@@ -3,6 +3,79 @@ const NICKNAME_MAX_LENGTH = 12;
 const DEFAULT_PROFILE_COLOR = "#64beff";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 180;
 const encoder = new TextEncoder();
+const BLOCKED_NICKNAME_FRAGMENTS = Object.freeze([
+  "씨발",
+  "시발",
+  "씹새",
+  "개새끼",
+  "새끼",
+  "병신",
+  "지랄",
+  "존나",
+  "좆",
+  "보지",
+  "자지",
+  "섹스",
+  "야동",
+  "강간",
+  "창녀",
+  "fuck",
+  "shit",
+  "cunt",
+  "pussy",
+  "porn",
+  "whore",
+  "slut",
+  "nigger",
+  "faggot",
+  "ちんこ",
+  "まんこ",
+  "セックス",
+  "せっくす",
+  "レイプ",
+  "れいぷ",
+  "エロ",
+  "えろ",
+  "操你妈",
+  "肏",
+  "屌",
+  "鸡巴",
+  "陰莖",
+  "阴茎",
+  "陰道",
+  "阴道",
+  "色情",
+  "強姦",
+  "强奸",
+  "傻逼"
+]);
+const BLOCKED_NICKNAME_EXACT = new Set([
+  "ㅅㅂ",
+  "ㅂㅅ",
+  "sex",
+  "sexy",
+  "dick",
+  "dicks",
+  "rape",
+  "rapist",
+  "bitch",
+  "bitches",
+  "くそ",
+  "しね"
+]);
+const ASCII_DISGUISE_MAP = Object.freeze({
+  "0": "o",
+  "1": "i",
+  "3": "e",
+  "4": "a",
+  "5": "s",
+  "7": "t",
+  "8": "b",
+  "9": "g",
+  "@": "a",
+  "$": "s",
+  "!": "i"
+});
 
 export function normalizeNickname(value) {
   return String(value ?? "")
@@ -13,6 +86,21 @@ export function normalizeNickname(value) {
 
 export function nicknameKey(value) {
   return normalizeNickname(value).toLowerCase();
+}
+
+export function nicknameModerationKey(value) {
+  return normalizeNickname(value)
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[01345789@$!]/g, character => ASCII_DISGUISE_MAP[character] || character)
+    .replace(/[\p{White_Space}\p{Punctuation}\p{Symbol}\p{Mark}_]+/gu, "");
+}
+
+export function containsBlockedNicknameTerm(value) {
+  const key = nicknameModerationKey(value);
+  if (!key) return false;
+  if (BLOCKED_NICKNAME_EXACT.has(key)) return true;
+  return BLOCKED_NICKNAME_FRAGMENTS.some(term => key.includes(term));
 }
 
 export function validateNickname(value) {
@@ -32,6 +120,14 @@ export function validateNickname(value) {
       ok: false,
       code: "invalid_nickname",
       message: "닉네임에 사용할 수 없는 문자가 포함되어 있습니다."
+    };
+  }
+
+  if (containsBlockedNicknameTerm(nickname)) {
+    return {
+      ok: false,
+      code: "inappropriate_nickname",
+      message: "선정적이거나 비속어가 포함된 닉네임은 사용할 수 없습니다."
     };
   }
 
