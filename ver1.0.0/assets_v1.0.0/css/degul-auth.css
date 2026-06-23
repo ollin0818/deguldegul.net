@@ -1,0 +1,166 @@
+.guestAuthPanel {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 15px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.72);
+  text-align: left;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.62);
+}
+
+.guestAuthHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.guestAuthHeader strong {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.guestAuthState {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.guestAuthState.ready {
+  color: #15803d;
+}
+
+.guestAuthForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.guestAuthInput {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  padding: 0 13px;
+  border: 1px solid rgba(15, 23, 42, 0.15);
+  border-radius: 13px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.9);
+  color: #111827;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.guestAuthInput:focus {
+  border-color: rgba(0, 122, 255, 0.7);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.13);
+}
+
+#lobby .lobbyCard button.guestAuthSubmit,
+button.guestAuthSubmit {
+  min-width: 88px !important;
+  height: 42px !important;
+  padding: 0 15px !important;
+  border-radius: 13px !important;
+  background: #111827 !important;
+  color: #fff !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  box-shadow: none !important;
+}
+
+#lobby .lobbyCard button.guestAuthSubmit:disabled,
+button.guestAuthSubmit:disabled {
+  cursor: wait !important;
+  opacity: 0.55 !important;
+}
+
+.guestAuthMessage {
+  min-height: 17px;
+  margin-top: 7px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.guestAuthMessage.error {
+  color: #dc2626;
+}
+
+.guestAuthUser {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+}
+
+.guestAuthAvatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #8fd0ff, #4aaef5);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 950;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45);
+}
+
+.guestAuthUserText strong,
+.guestAuthUserText span {
+  display: block;
+}
+
+.guestAuthUserText strong {
+  color: #111827;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.guestAuthUserText span {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+body.dark-mode .guestAuthPanel {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-mode .guestAuthHeader strong,
+body.dark-mode .guestAuthUserText strong {
+  color: #f5f7fb;
+}
+
+body.dark-mode .guestAuthInput {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(8, 12, 22, 0.72);
+  color: #f5f7fb;
+}
+
+body.dark-mode #lobby .lobbyCard button.guestAuthSubmit,
+body.dark-mode button.guestAuthSubmit {
+  background: #f5f7fb !important;
+  color: #111827 !important;
+}
+
+@media (max-width: 520px) {
+  .guestAuthForm {
+    grid-template-columns: 1fr;
+  }
+
+  #lobby .lobbyCard button.guestAuthSubmit,
+  button.guestAuthSubmit {
+    width: 100% !important;
+  }
+}

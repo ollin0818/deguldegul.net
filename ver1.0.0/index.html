@@ -30,6 +30,7 @@
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-legacy-ver210.min.css?v=101-mobile-phone-gate">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-volume-slider.min.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-qhd-uniform.min.css?v=100">
+<link rel="stylesheet" href="assets_v1.0.0/css/degul-auth.min.css?v=1">
 </head>
 <body>
 <div id="dominanceEdgeOverlay" aria-hidden="true"></div>
@@ -304,6 +305,24 @@
             <div class="onlineMatchBadge">COMING SOON</div>
             <h2>온라인 대전 준비 중</h2>
             <p class="onlineMatchLead">안정적인 온라인 대전을 준비하고 있습니다.</p>
+            <div class="guestAuthPanel" id="guestAuthPanel">
+              <div class="guestAuthHeader">
+                <strong id="guestAuthTitle">게스트 로그인</strong>
+                <span class="guestAuthState" id="guestAuthState">서버 연결 중</span>
+              </div>
+              <form class="guestAuthForm" id="guestAuthForm" hidden>
+                <input class="guestAuthInput" id="guestNicknameInput" type="text" minlength="2" maxlength="12" autocomplete="nickname" enterkeyhint="done" aria-label="닉네임" placeholder="닉네임 2~12자">
+                <button class="guestAuthSubmit" id="guestNicknameSubmit" type="submit">등록</button>
+              </form>
+              <div class="guestAuthUser" id="guestAuthUser" hidden>
+                <div class="guestAuthAvatar" id="guestAuthAvatar" aria-hidden="true">?</div>
+                <div class="guestAuthUserText">
+                  <strong id="guestAuthNickname"></strong>
+                  <span id="guestAuthUserHint">재접속 시 자동으로 로그인됩니다.</span>
+                </div>
+              </div>
+              <div class="guestAuthMessage" id="guestAuthMessage" aria-live="polite"></div>
+            </div>
             <div class="onlineColorSelectBox onlineMatchPreviewDisabled" aria-disabled="true">
               <div class="onlineColorPreview" id="onlineColorPreview" aria-hidden="true"></div>
               <div class="onlineColorInfo">
@@ -949,6 +968,7 @@
 
 
 <script src="assets_v1.0.0/js/degul-inline-04.min.js?v=100"></script>
+<script src="assets_v1.0.0/js/degul-auth.min.js?v=1"></script>
 
 
 <div class="degulTutorialLayer" id="degulTutorialLayer" aria-hidden="true">
