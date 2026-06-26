@@ -423,16 +423,17 @@ let lastRenderedFrameAt = 0;
 function getTargetRenderFps() {
   if (document.hidden) return 0;
   if (gamePhase === GAME_PHASE.PLAYING) {
-    return performanceAutoTune.emergency30Fps ? 30 : performanceConfig.fps;
+    const configuredFps = performanceAutoTune.emergency30Fps ? 30 : performanceConfig.fps;
+    return isTabletPerformanceMode() ? Math.min(40, configuredFps) : configuredFps;
   }
-  if (gamePhase === GAME_PHASE.COUNTDOWN) return Math.min(30, performanceConfig.fps);
+  if (gamePhase === GAME_PHASE.COUNTDOWN) return Math.min(isTabletPerformanceMode() ? 24 : 30, performanceConfig.fps);
   if (gamePhase === GAME_PHASE.PAUSED) return 2;
   if (gamePhase === GAME_PHASE.ENDED) {
     const deathMotionActive = players && players.some(player => player && player.dying && player.alive !== false);
-    if (deathMotionActive || deathCameraFocus) return performanceLevel === "low" ? 30 : 60;
+    if (deathMotionActive || deathCameraFocus) return isTabletPerformanceMode() ? 30 : (performanceLevel === "low" ? 30 : 60);
     return 10;
   }
-  return 15;
+  return isTabletPerformanceMode() ? 10 : 15;
 }
 
 function animate() {
@@ -468,7 +469,8 @@ function animate() {
   }
 
   updateExtremeAiBackgroundGrid();
-  if (performanceLevel === "high" || performanceFrameCounter % 2 === 0) updateGhostVisionOverlay();
+  const ghostVisionInterval = isTabletPerformanceMode() ? 3 : (performanceLevel === "high" ? 1 : 2);
+  if (performanceFrameCounter % ghostVisionInterval === 0) updateGhostVisionOverlay();
   updateFrameTasks(now);
   renderer.render(scene, camera);
   updatePerformanceMetrics(now);

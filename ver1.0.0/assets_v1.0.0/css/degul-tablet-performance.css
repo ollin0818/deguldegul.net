@@ -1,0 +1,92 @@
+/* Tablet-only performance reductions. PC layout and desktop visual quality stay unchanged. */
+body.tablet-device .lobbyRollingPattern,
+body.device-layout-forced-tablet .lobbyRollingPattern,
+body.tablet-performance-mode .lobbyRollingPattern {
+  opacity: 0.42;
+  perspective: none;
+}
+
+body.tablet-device .bgRollingBlock:nth-child(n+13),
+body.device-layout-forced-tablet .bgRollingBlock:nth-child(n+13),
+body.tablet-performance-mode .bgRollingBlock:nth-child(n+13) {
+  display: none;
+}
+
+body.tablet-device .bgRollingBlock,
+body.device-layout-forced-tablet .bgRollingBlock,
+body.tablet-performance-mode .bgRollingBlock {
+  animation-duration: calc(var(--duration) * 1.45);
+}
+
+body.tablet-device .bgRollingBlock .cubeBody,
+body.device-layout-forced-tablet .bgRollingBlock .cubeBody,
+body.tablet-performance-mode .bgRollingBlock .cubeBody {
+  animation: none;
+  box-shadow:
+    0 8px 18px rgba(15,23,42,0.08),
+    inset 0 0 0 1px rgba(255,255,255,0.68);
+}
+
+body.tablet-device .bgRollingBlock .cubeBody::after,
+body.device-layout-forced-tablet .bgRollingBlock .cubeBody::after,
+body.tablet-performance-mode .bgRollingBlock .cubeBody::after,
+body.tablet-device .bgRollingBlock::after,
+body.device-layout-forced-tablet .bgRollingBlock::after,
+body.tablet-performance-mode .bgRollingBlock::after {
+  display: none;
+}
+
+body.tablet-device .lobbyCard,
+body.device-layout-forced-tablet .lobbyCard,
+body.tablet-performance-mode .lobbyCard,
+body.tablet-device .siteInfoDialog,
+body.device-layout-forced-tablet .siteInfoDialog,
+body.tablet-performance-mode .siteInfoDialog,
+body.tablet-device .pauseMenuCard,
+body.device-layout-forced-tablet .pauseMenuCard,
+body.tablet-performance-mode .pauseMenuCard,
+body.tablet-device .guestAuthDialog,
+body.device-layout-forced-tablet .guestAuthDialog,
+body.tablet-performance-mode .guestAuthDialog,
+body.tablet-device .degulTutorialTip,
+body.device-layout-forced-tablet .degulTutorialTip,
+body.tablet-performance-mode .degulTutorialTip {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 10px 26px rgba(15,23,42,0.14) !important;
+}
+
+body.tablet-device .mobilePad,
+body.device-layout-forced-tablet .mobilePad,
+body.tablet-performance-mode .mobilePad,
+body.tablet-device .mobileActionBtn,
+body.device-layout-forced-tablet .mobileActionBtn,
+body.tablet-performance-mode .mobileActionBtn,
+body.tablet-device .scoreCard,
+body.device-layout-forced-tablet .scoreCard,
+body.tablet-performance-mode .scoreCard,
+body.tablet-device .buffPill,
+body.device-layout-forced-tablet .buffPill,
+body.tablet-performance-mode .buffPill {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  transition-duration: .08s !important;
+}
+
+body.tablet-device .titleRollChar,
+body.device-layout-forced-tablet .titleRollChar,
+body.tablet-performance-mode .titleRollChar,
+body.tablet-device .tabletFinger,
+body.device-layout-forced-tablet .tabletFinger,
+body.tablet-performance-mode .tabletFinger,
+body.tablet-device .tabletMiniBlock,
+body.device-layout-forced-tablet .tabletMiniBlock,
+body.tablet-performance-mode .tabletMiniBlock {
+  animation-duration: 2.4s !important;
+}
+
+body.tablet-device .dominanceEdgeActive,
+body.device-layout-forced-tablet .dominanceEdgeActive,
+body.tablet-performance-mode .dominanceEdgeActive {
+  animation: none !important;
+}

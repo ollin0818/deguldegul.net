@@ -38,6 +38,7 @@ const TILE_GAP = CELL - TILE_VISUAL_SIZE;
 const MOVE_TIME = 145;
 
 const PERFORMANCE_STORAGE_KEY = "degulDegulPerformanceLevel";
+const PERFORMANCE_TABLET_STORAGE_KEY = "degulDegulTabletPerformanceLevel";
 const PERFORMANCE_HUD_STORAGE_KEY = "degulDegulPerformanceHud";
 const PERFORMANCE_PRESETS = {
   low: { fps: 45, pixelRatio: 1, glowTiles: 36, effectInterval: 2, specialTileInterval: 4, backgroundInterval: 5, ghostFogDots: 20, enableSpecialTileAnimation: false },
@@ -45,15 +46,54 @@ const PERFORMANCE_PRESETS = {
   high: { fps: 60, pixelRatio: 2, glowTiles: 180, effectInterval: 1, specialTileInterval: 1, backgroundInterval: 1, ghostFogDots: 80, enableSpecialTileAnimation: true }
 };
 
+function getForcedDeviceLayoutForPerformance() {
+  try {
+    return forcedDeviceLayout || "";
+  } catch (error) {
+    return "";
+  }
+}
+
+function detectNativeTabletForPerformance() {
+  const ua = navigator.userAgent || "";
+  const uaDataReportsMobile = navigator.userAgentData?.mobile === true;
+  const touchPoints = Number(navigator.maxTouchPoints) || 0;
+  const hasCoarsePointer = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+  const shortestScreenSide = Math.min(
+    Number(window.screen?.width) || window.innerWidth,
+    Number(window.screen?.height) || window.innerHeight,
+    window.innerWidth,
+    window.innerHeight
+  );
+  const isIPad = /iPad/i.test(ua) || (/Macintosh/i.test(ua) && touchPoints > 1);
+  const isAndroidTablet = /Android/i.test(ua) && !/Mobile/i.test(ua) && !uaDataReportsMobile;
+  const largeTouchScreen = (touchPoints > 0 || hasCoarsePointer) && !uaDataReportsMobile && shortestScreenSide >= 700;
+  return isIPad || isAndroidTablet || largeTouchScreen;
+}
+
+function isTabletPerformanceMode() {
+  const forcedLayout = getForcedDeviceLayoutForPerformance();
+  if (forcedLayout === "tablet") return true;
+  if (forcedLayout === "pc") return false;
+  return detectNativeTabletForPerformance();
+}
+
+function getPerformanceStorageKeyForCurrentDevice() {
+  return isTabletPerformanceMode() ? PERFORMANCE_TABLET_STORAGE_KEY : PERFORMANCE_STORAGE_KEY;
+}
+
 function getInitialPerformanceLevel() {
-  const saved = safeLocalStorageGet(PERFORMANCE_STORAGE_KEY);
+  const storageKey = getPerformanceStorageKeyForCurrentDevice();
+  const saved = safeLocalStorageGet(storageKey);
   if (PERFORMANCE_PRESETS[saved]) return saved;
+  if (storageKey === PERFORMANCE_TABLET_STORAGE_KEY) return "low";
   const lowPowerDevice = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4)
     || (navigator.deviceMemory && navigator.deviceMemory <= 4)
     || /Android|iPad|Tablet/i.test(navigator.userAgent || "");
   return lowPowerDevice ? "low" : "medium";
 }
 
+let performanceStorageKey = getPerformanceStorageKeyForCurrentDevice();
 let performanceLevel = getInitialPerformanceLevel();
 let performanceConfig = PERFORMANCE_PRESETS[performanceLevel];
 let performanceFrameCounter = 0;
@@ -270,15 +310,31 @@ function setPerformanceLevel(level, options = {}) {
   performanceAutoTune.emergency30Fps = false;
   performanceAutoTune.emergencyStartedAt = 0;
   performanceAutoTune.nextRecoveryProbeAt = 0;
-  safeLocalStorageSet(PERFORMANCE_STORAGE_KEY, level);
+  performanceStorageKey = getPerformanceStorageKeyForCurrentDevice();
+  if (options.persist !== false) safeLocalStorageSet(performanceStorageKey, level);
   if (document.body) {
     document.body.classList.toggle("performance-low", level === "low");
     document.body.classList.toggle("performance-medium", level === "medium");
     document.body.classList.toggle("performance-high", level === "high");
+    document.body.classList.toggle("tablet-performance-mode", performanceStorageKey === PERFORMANCE_TABLET_STORAGE_KEY);
   }
   if (typeof ghostVisionFogDots !== "undefined") resetGhostVisionFogDots();
   applyRendererPerformanceConfig();
   updatePerformanceSettingsUI();
+}
+
+function syncPerformanceLevelForCurrentDevice() {
+  const nextStorageKey = getPerformanceStorageKeyForCurrentDevice();
+  if (nextStorageKey === performanceStorageKey) {
+    if (document.body) document.body.classList.toggle("tablet-performance-mode", nextStorageKey === PERFORMANCE_TABLET_STORAGE_KEY);
+    return;
+  }
+  performanceStorageKey = nextStorageKey;
+  const saved = safeLocalStorageGet(nextStorageKey);
+  const nextLevel = PERFORMANCE_PRESETS[saved]
+    ? saved
+    : (nextStorageKey === PERFORMANCE_TABLET_STORAGE_KEY ? "low" : "medium");
+  setPerformanceLevel(nextLevel, { persist: false });
 }
 
 // ===================== 효과음 매니저 =====================
@@ -2326,6 +2382,7 @@ function updateMobileUIState() {
   document.body.classList.toggle("mobile-landscape", isMobileDevice && isLandscape);
   document.body.classList.toggle("mobile-portrait", isMobileDevice && !isLandscape);
   document.body.classList.toggle("mobile-phone-blocked", isMobilePhoneBlocked);
+  syncPerformanceLevelForCurrentDevice();
 
   const phoneBlockOverlay = document.getElementById("mobilePhoneBlockOverlay");
   if (phoneBlockOverlay) phoneBlockOverlay.setAttribute("aria-hidden", isMobilePhoneBlocked ? "false" : "true");
