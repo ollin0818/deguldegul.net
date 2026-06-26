@@ -3,15 +3,130 @@
 
   const API_BASE = window.location.protocol === "file:" ? "https://deguldegul.net/api/online" : "/api/online";
   const SESSION_KEY = "degulDegulOnlineRoomSessionV1";
+  const QUICK_TICKET_KEY = "degulDegulQuickMatchTicketV1";
   const DEFAULT_SKIN = "sky";
   let session = loadSession();
   let onlineMode = false;
   let pollTimer = null;
+  let quickPollTimer = null;
+  let quickTicket = loadQuickTicket();
+  let quickMatching = !!quickTicket;
+  let quickMatchState = quickMatching ? "waiting" : "idle";
+  let realtimeSocket = null;
+  let realtimeInputSeq = 0;
+  let realtimePingTimer = null;
+  let realtimeRttMs = 0;
+  let realtimeSnapshotTick = -1;
+  let realtimeStarted = false;
+  let realtimeResultKey = "";
+  let onlineInputPatched = false;
   let selectedSkin = session?.skin || DEFAULT_SKIN;
   let suppressPanelSync = false;
+  const ONLINE_TEXT = {
+    ko: {
+      wsOpen: "실시간 서버에 연결했습니다.",
+      wsClosed: "실시간 연결이 끊겼습니다. 재접속 중입니다.",
+      wsError: "실시간 연결 오류가 발생했습니다.",
+      forfeited: "상대 연결이 끊겨 경기가 종료되었습니다.",
+      wall: "경계 밖으로 이동했습니다.",
+      selfTrail: "자기 흔적을 밟았습니다.",
+      opponentTrail: "상대 흔적을 밟았습니다.",
+      collision: "두 플레이어가 충돌했습니다. 무승부!",
+      land: "서버가 60% 이상 점령을 확인했습니다.",
+      draw: "무승부",
+      winner: slot => `${slot}P 승리`,
+      quick: "빠른 대전",
+      quickCancel: "매칭 취소",
+      quickSub: "상대 자동 찾기",
+      quickCancelSub: "탭해서 취소",
+      quickWaiting: "상대를 찾는 중입니다.",
+      quickWaitingLead: "비슷한 시간에 접속한 플레이어와 자동으로 연결합니다.",
+      quickMatched: "상대를 찾았습니다. 곧 시작합니다.",
+      quickMatchedLead: "매칭되었습니다. 서버 카운트다운을 준비합니다.",
+      quickCanceled: "빠른 대전을 취소했습니다."
+    },
+    en: {
+      wsOpen: "Connected to the realtime server.",
+      wsClosed: "Realtime connection lost. Reconnecting.",
+      wsError: "Realtime connection error.",
+      forfeited: "The match ended because the opponent disconnected.",
+      wall: "Moved outside the board.",
+      selfTrail: "Stepped on own trail.",
+      opponentTrail: "Cut the opponent trail.",
+      collision: "Both players collided. Draw!",
+      land: "The server confirmed 60% territory capture.",
+      draw: "Draw",
+      winner: slot => `${slot}P Win`,
+      quick: "Quick Match",
+      quickCancel: "Cancel Match",
+      quickSub: "Find opponent",
+      quickCancelSub: "Tap to cancel",
+      quickWaiting: "Finding an opponent.",
+      quickWaitingLead: "You will be paired with a player who joins around the same time.",
+      quickMatched: "Opponent found. Starting soon.",
+      quickMatchedLead: "Matched. Preparing the server countdown.",
+      quickCanceled: "Quick match canceled."
+    },
+    ja: {
+      wsOpen: "リアルタイムサーバーに接続しました。",
+      wsClosed: "リアルタイム接続が切れました。再接続します。",
+      wsError: "リアルタイム接続エラーが発生しました。",
+      forfeited: "相手の切断により試合が終了しました。",
+      wall: "ボード外へ移動しました。",
+      selfTrail: "自分の軌跡を踏みました。",
+      opponentTrail: "相手の軌跡を切りました。",
+      collision: "2人のプレイヤーが衝突しました。引き分け！",
+      land: "サーバーが60%以上の占領を確認しました。",
+      draw: "引き分け",
+      winner: slot => `${slot}P 勝利`,
+      quick: "クイック対戦",
+      quickCancel: "マッチング取消",
+      quickSub: "相手を自動検索",
+      quickCancelSub: "タップして取消",
+      quickWaiting: "相手を探しています。",
+      quickWaitingLead: "同じ時間帯に接続したプレイヤーと自動でつなぎます。",
+      quickMatched: "相手が見つかりました。まもなく開始します。",
+      quickMatchedLead: "マッチしました。サーバーカウントダウンを準備します。",
+      quickCanceled: "クイック対戦をキャンセルしました。"
+    },
+    zh: {
+      wsOpen: "已连接实时服务器。",
+      wsClosed: "实时连接已断开，正在重连。",
+      wsError: "实时连接发生错误。",
+      forfeited: "对手断线，比赛已结束。",
+      wall: "移动到了棋盘外。",
+      selfTrail: "踩到了自己的轨迹。",
+      opponentTrail: "切断了对手轨迹。",
+      collision: "两名玩家相撞。平局！",
+      land: "服务器确认占领超过60%。",
+      draw: "平局",
+      winner: slot => `${slot}P 胜利`,
+      quick: "快速对战",
+      quickCancel: "取消匹配",
+      quickSub: "自动寻找对手",
+      quickCancelSub: "点击取消",
+      quickWaiting: "正在寻找对手。",
+      quickWaitingLead: "系统会自动连接同一时间加入的玩家。",
+      quickMatched: "已找到对手，即将开始。",
+      quickMatchedLead: "匹配成功，正在准备服务器倒计时。",
+      quickCanceled: "已取消快速对战。"
+    }
+  };
 
   function $(id) {
     return document.getElementById(id);
+  }
+
+  function getLang() {
+    try {
+      if (typeof currentLang === "string" && ONLINE_TEXT[currentLang]) return currentLang;
+    } catch {}
+    return "ko";
+  }
+
+  function onlineText(key, ...args) {
+    const value = (ONLINE_TEXT[getLang()] || ONLINE_TEXT.ko)[key] || ONLINE_TEXT.ko[key] || key;
+    return typeof value === "function" ? value(...args) : value;
   }
 
   function getNickname() {
@@ -78,6 +193,22 @@
     } catch {}
   }
 
+  function loadQuickTicket() {
+    try {
+      return sessionStorage.getItem(QUICK_TICKET_KEY) || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function saveQuickTicket(ticket) {
+    quickTicket = ticket || "";
+    try {
+      if (quickTicket) sessionStorage.setItem(QUICK_TICKET_KEY, quickTicket);
+      else sessionStorage.removeItem(QUICK_TICKET_KEY);
+    } catch {}
+  }
+
   async function api(path, options = {}) {
     const response = await fetch(`${API_BASE}${path}`, {
       method: options.method || "GET",
@@ -112,14 +243,44 @@
       const strong = button.querySelector("strong");
       const span = button.querySelector("span");
       if (strong) strong.textContent = "온라인 매칭";
-      if (span) span.textContent = "방 코드로 입장";
+      if (span) span.textContent = "빠른 대전";
       button.setAttribute("aria-pressed", onlineMode ? "true" : "false");
     }
-    if (title) title.textContent = "온라인 매칭";
-    if (lead) lead.textContent = "방을 만들거나 6자리 코드로 친구 방에 입장하세요.";
-    if (onlineMode && !session) setStatus("방을 만들거나 코드로 입장하세요.");
+    if (title) title.textContent = onlineText("quick");
+    if (lead) lead.textContent = getLang() === "ko"
+      ? "모드와 색상을 고른 뒤 바로 상대를 찾아 대전하세요."
+      : "Choose your mode and color, then find an opponent instantly.";
+    updateQuickMatchUI();
+    if (onlineMode && !session && !quickMatching) setStatus(getLang() === "ko" ? "빠른 대전 또는 방 코드로 시작하세요." : "Start with Quick Match or a room code.");
     if (!session) updateOpponentPanel(null);
     applyOnlineRoomLayout();
+  }
+
+  function updateQuickMatchUI(state = quickMatchState) {
+    const compact = $("onlineRoomCompact");
+    const quickButton = $("onlineQuickMatchButton");
+    const quickText = quickButton?.querySelector(".onlineQuickText");
+    const quickSubtext = quickButton?.querySelector(".onlineQuickSubtext");
+    const searchingPanel = $("onlineQuickSearchingPanel");
+    const searchingTitle = $("onlineQuickSearchingTitle");
+    const searchingLead = $("onlineQuickSearchingLead");
+    const isWaiting = state === "waiting";
+    const isMatched = state === "matched";
+
+    if (compact) {
+      compact.classList.toggle("quick-matching", isWaiting || isMatched);
+      compact.classList.toggle("quick-matched", isMatched);
+    }
+    if (quickButton) {
+      quickButton.setAttribute("aria-busy", isWaiting ? "true" : "false");
+      quickButton.disabled = isMatched;
+      quickButton.classList.toggle("matching", isWaiting || isMatched);
+      if (quickText) quickText.textContent = isWaiting ? onlineText("quickCancel") : onlineText("quick");
+      if (quickSubtext) quickSubtext.textContent = isWaiting ? onlineText("quickCancelSub") : onlineText("quickSub");
+    }
+    if (searchingPanel) searchingPanel.hidden = !(isWaiting || isMatched);
+    if (searchingTitle) searchingTitle.textContent = isMatched ? onlineText("quickMatched") : onlineText("quickWaiting");
+    if (searchingLead) searchingLead.textContent = isMatched ? onlineText("quickMatchedLead") : onlineText("quickWaitingLead");
   }
 
   function applyOnlineRoomLayout() {
@@ -194,6 +355,8 @@
       const button = $(id);
       if (button) button.disabled = !!isBusy;
     });
+    const quickButton = $("onlineQuickMatchButton");
+    if (quickButton) quickButton.disabled = !!isBusy && !quickMatching;
   }
 
   function renderSkins() {
@@ -255,6 +418,7 @@
     } else {
       setStatus("상대 입장을 기다리는 중입니다.");
     }
+    maybeConnectRealtime(room);
   }
 
   async function refreshRoom() {
@@ -281,7 +445,220 @@
     pollTimer = null;
   }
 
+  function startQuickPolling() {
+    stopQuickPolling();
+    if (!quickTicket) return;
+    quickPollTimer = window.setInterval(() => requestQuickMatch(true), 1400);
+  }
+
+  function stopQuickPolling() {
+    if (quickPollTimer) window.clearInterval(quickPollTimer);
+    quickPollTimer = null;
+  }
+
+  function getRealtimeUrl() {
+    if (!session?.roomCode || !session?.playerId) return "";
+    const path = `/rooms/${encodeURIComponent(session.roomCode)}/play?playerId=${encodeURIComponent(session.playerId)}`;
+    if (window.location.protocol === "file:") return `wss://deguldegul.net/api/online${path}`;
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    return `${protocol}//${window.location.host}/api/online${path}`;
+  }
+
+  function maybeConnectRealtime(room) {
+    if (!onlineMode || !session || !room) return;
+    const p1Ready = !!(room.players?.[1] || room.players?.["1"])?.ready;
+    const p2Ready = !!(room.players?.[2] || room.players?.["2"])?.ready;
+    if (!p1Ready || !p2Ready) return;
+    connectRealtime();
+  }
+
+  function connectRealtime() {
+    if (!session || realtimeSocket && (realtimeSocket.readyState === WebSocket.OPEN || realtimeSocket.readyState === WebSocket.CONNECTING)) return;
+    patchOnlineInput();
+    const url = getRealtimeUrl();
+    if (!url) return;
+    realtimeSocket = new WebSocket(url);
+    realtimeSocket.addEventListener("open", () => {
+      setStatus(onlineText("wsOpen"));
+      startRealtimePing();
+    });
+    realtimeSocket.addEventListener("message", event => {
+      const message = JSON.parse(event.data || "{}");
+      handleRealtimeMessage(message);
+    });
+    realtimeSocket.addEventListener("close", () => {
+      stopRealtimePing();
+      if (onlineMode && session) {
+        setStatus(onlineText("wsClosed"), true);
+        window.setTimeout(connectRealtime, 1200);
+      }
+    });
+    realtimeSocket.addEventListener("error", () => setStatus(onlineText("wsError"), true));
+  }
+
+  function startRealtimePing() {
+    stopRealtimePing();
+    realtimePingTimer = window.setInterval(() => {
+      if (!realtimeSocket || realtimeSocket.readyState !== WebSocket.OPEN) return;
+      realtimeSocket.send(JSON.stringify({ type: "ping", clientNow: performance.now() }));
+    }, 1200);
+  }
+
+  function stopRealtimePing() {
+    if (realtimePingTimer) window.clearInterval(realtimePingTimer);
+    realtimePingTimer = null;
+  }
+
+  function handleRealtimeMessage(message) {
+    if (message.type === "pong") {
+      realtimeRttMs = Math.max(0, Math.round(performance.now() - Number(message.clientNow || 0)));
+      return;
+    }
+    if (message.type === "room") {
+      renderRoom(message.room);
+      return;
+    }
+    if (message.type === "snapshot") {
+      applyServerSnapshot(message);
+    }
+  }
+
+  function sendDirection(direction) {
+    if (!realtimeSocket || realtimeSocket.readyState !== WebSocket.OPEN) return;
+    realtimeInputSeq += 1;
+    realtimeSocket.send(JSON.stringify({
+      type: "input",
+      seq: realtimeInputSeq,
+      direction,
+      clientNow: performance.now()
+    }));
+  }
+
+  function patchOnlineInput() {
+    if (onlineInputPatched) return;
+    onlineInputPatched = true;
+    const previousHandleInput = typeof handleInput === "function" ? handleInput : null;
+    if (previousHandleInput) {
+      handleInput = function () {
+        if (window.DegulOnlineRoom?.isRealtimeActive?.()) return;
+        return previousHandleInput.apply(this, arguments);
+      };
+    }
+    window.addEventListener("keydown", event => {
+      if (!window.DegulOnlineRoom?.isRealtimeActive?.()) return;
+      const key = event.key;
+      if (key === "w" || key === "W" || key === "ArrowUp") sendDirection("up");
+      else if (key === "s" || key === "S" || key === "ArrowDown") sendDirection("down");
+      else if (key === "a" || key === "A" || key === "ArrowLeft") sendDirection("left");
+      else if (key === "d" || key === "D" || key === "ArrowRight") sendDirection("right");
+    }, true);
+  }
+
+  function applyServerSnapshot(packet) {
+    const snapshot = packet.state;
+    if (!snapshot || snapshot.tick < realtimeSnapshotTick) return;
+    realtimeSnapshotTick = snapshot.tick;
+    if (snapshot.phase === "countdown") showServerCountdown(packet);
+    if (snapshot.phase === "playing") showServerPlaying(snapshot);
+    applyAuthoritativeState(snapshot);
+    if (snapshot.phase === "ended") showServerResult(snapshot.result);
+  }
+
+  function showServerCountdown(packet) {
+    if (!realtimeStarted) {
+      realtimeStarted = true;
+      realtimeResultKey = "";
+      try { matchMode = "pvp"; } catch {}
+      try { resetMatch(); } catch {}
+      try { pauseLobbyBgm(); } catch {}
+    }
+    const lobby = $("lobby");
+    const countdown = $("countdownOverlay");
+    const countNumber = $("countNumber");
+    if (lobby) lobby.style.display = "none";
+    if (countdown) {
+      countdown.style.display = "flex";
+      countdown.classList.toggle("classic-mode", true);
+      countdown.classList.toggle("item-mode", false);
+    }
+    const left = Number(packet.countdownRemainingMs || 0);
+    const value = left > 1000 ? Math.ceil(left / 1000) : (left > 0 ? (typeof tr === "function" ? tr("start") : "START") : "");
+    if (countNumber) countNumber.textContent = value;
+    try { setGamePhase(GAME_PHASE.COUNTDOWN); } catch {}
+  }
+
+  function showServerPlaying(snapshot) {
+    const countdown = $("countdownOverlay");
+    if (countdown) countdown.style.display = "none";
+    try { setGamePhase(GAME_PHASE.PLAYING); } catch {}
+    try {
+      if (!matchStartedAt) matchStartedAt = performance.now() - Math.max(0, Date.now() - Number(snapshot.startAt || Date.now()));
+      playIngameBgm();
+    } catch {}
+  }
+
+  function applyAuthoritativeState(snapshot) {
+    try {
+      if (Array.isArray(snapshot.land) && Array.isArray(land)) {
+        for (let z = 0; z < snapshot.land.length; z++) {
+          for (let x = 0; x < snapshot.land[z].length; x++) land[z][x] = snapshot.land[z][x];
+        }
+        refreshBoardColors();
+      }
+      syncActorFromSnapshot(p1, snapshot.players?.[1] || snapshot.players?.["1"]);
+      syncActorFromSnapshot(p2, snapshot.players?.[2] || snapshot.players?.["2"]);
+      updateScoreUIThrottled(true);
+    } catch (error) {
+      console.warn("Failed to apply online snapshot", error);
+    }
+  }
+
+  function syncActorFromSnapshot(actor, data) {
+    if (!actor || !data) return;
+    if (typeof clearTrail === "function") clearTrail(actor);
+    actor.x = data.x;
+    actor.z = data.z;
+    actor.dir = data.dir || actor.dir;
+    actor.nextDir = data.nextDir || actor.nextDir;
+    actor.alive = data.alive !== false;
+    if (actor.mesh) {
+      const y = actor.mesh.userData?.baseY || 0.42;
+      actor.mesh.position.set(toWorld(actor.x), y, toWorld(actor.z));
+      actor.mesh.visible = actor.alive;
+    }
+    if (Array.isArray(data.trail)) {
+      for (const point of data.trail) addTrail(actor, point.x, point.z);
+    }
+  }
+
+  function showServerResult(result) {
+    if (!result) return;
+    const key = `${result.endedAt || 0}:${result.tick || 0}:${result.reason || ""}`;
+    if (realtimeResultKey === key) return;
+    realtimeResultKey = key;
+    try {
+      setGamePhase(GAME_PHASE.ENDED);
+      matchEndedAt = performance.now();
+      pauseIngameBgm(true);
+    } catch {}
+    const winner = Number(result.winnerSlot) === 1 ? p1 : Number(result.winnerSlot) === 2 ? p2 : null;
+    const reason = getResultReasonText(result);
+    if (typeof showResultPopup === "function") showResultPopup(winner, reason);
+  }
+
+  function getResultReasonText(result) {
+    if (!result) return "";
+    if (result.reason === "forfeit") return onlineText("forfeited");
+    if (result.reason === "wall") return onlineText("wall");
+    if (result.reason === "self_trail") return onlineText("selfTrail");
+    if (result.reason === "opponent_trail") return onlineText("opponentTrail");
+    if (result.reason === "collision") return onlineText("collision");
+    if (result.reason === "land") return onlineText("land");
+    return result.winnerSlot ? onlineText("winner", result.winnerSlot) : onlineText("draw");
+  }
+
   async function createRoom() {
+    await cancelQuickMatch(false);
     setBusy(true);
     try {
       selectedSkin = getCurrentSelectedSkin();
@@ -307,6 +684,7 @@
   }
 
   async function joinRoom() {
+    await cancelQuickMatch(false);
     const input = $("onlineRoomCodeInput");
     const code = normalizeCode(input?.value);
     if (input) input.value = code;
@@ -336,6 +714,86 @@
     } finally {
       setBusy(false);
     }
+  }
+
+  async function requestQuickMatch(isPoll = false) {
+    if (session) return;
+    if (!isPoll && quickMatching) {
+      await cancelQuickMatch(true);
+      return;
+    }
+    quickMatching = true;
+    quickMatchState = "waiting";
+    applyOnlineRoomText();
+    setBusy(true);
+    try {
+      selectedSkin = getCurrentSelectedSkin();
+      const data = await api("/quick", {
+        method: "POST",
+        body: {
+          nickname: getNickname(),
+          skin: selectedSkin,
+          ticket: quickTicket || undefined
+        }
+      });
+      if (data.status === "waiting") {
+        saveQuickTicket(data.ticket);
+        quickMatchState = "waiting";
+        updateQuickMatchUI("waiting");
+        setStatus(onlineText("quickWaiting"));
+        startQuickPolling();
+        return;
+      }
+      if (data.status === "matched") {
+        stopQuickPolling();
+        saveQuickTicket("");
+        quickMatchState = "matched";
+        updateQuickMatchUI("matched");
+        setStatus(onlineText("quickMatched"));
+        window.setTimeout(() => {
+          quickMatching = false;
+          quickMatchState = "idle";
+          saveSession({
+            roomCode: data.roomCode || data.room?.code,
+            playerId: data.playerId,
+            slot: data.slot,
+            skin: selectedSkin
+          });
+          onlineMode = true;
+          renderRoom(data.room);
+          startPolling();
+          maybeConnectRealtime(data.room);
+        }, 720);
+      }
+    } catch (error) {
+      if (!isPoll) setStatus(error.message, true);
+      if (!isPoll) {
+        quickMatching = false;
+        quickMatchState = "idle";
+        saveQuickTicket("");
+        stopQuickPolling();
+      }
+    } finally {
+      setBusy(false);
+      applyOnlineRoomText();
+    }
+  }
+
+  async function cancelQuickMatch(showStatus = true) {
+    stopQuickPolling();
+    if (quickTicket) {
+      try {
+        await api("/quick/cancel", {
+          method: "POST",
+          body: { ticket: quickTicket }
+        });
+      } catch {}
+    }
+    saveQuickTicket("");
+    quickMatching = false;
+    quickMatchState = "idle";
+    applyOnlineRoomText();
+    if (showStatus) setStatus(onlineText("quickCanceled"));
   }
 
   async function toggleReady() {
@@ -383,6 +841,11 @@
       });
     } catch {}
     stopPolling();
+    stopRealtimePing();
+    if (realtimeSocket) realtimeSocket.close(1000, "leave");
+    realtimeSocket = null;
+    realtimeStarted = false;
+    realtimeResultKey = "";
     saveSession(null);
     onlineMode = true;
     renderRoom(null);
@@ -393,6 +856,7 @@
   function bind() {
     applyOnlineRoomText();
     $("onlineCreateRoomButton")?.addEventListener("click", createRoom);
+    $("onlineQuickMatchButton")?.addEventListener("click", () => requestQuickMatch(false));
     $("onlineJoinRoomButton")?.addEventListener("click", joinRoom);
     $("onlineReadyButton")?.addEventListener("click", toggleReady);
     $("onlineLeaveRoomButton")?.addEventListener("click", leaveRoom);
@@ -422,6 +886,12 @@
     } else {
       applyOnlineRoomLayout();
       renderRoom(null);
+      if (quickTicket) {
+        quickMatching = true;
+        applyOnlineRoomText();
+        setStatus(onlineText("quickWaiting"));
+        startQuickPolling();
+      }
     }
   }
 
@@ -431,7 +901,8 @@
     leaveRoom,
     refreshRoom,
     setOnlineMode,
-    applyOnlineRoomText
+    applyOnlineRoomText,
+    isRealtimeActive: () => !!(onlineMode && session && realtimeSocket && realtimeSocket.readyState === WebSocket.OPEN && realtimeStarted)
   };
 
   const previousUpdateSiteInfoLanguage = window.updateSiteInfoLanguage;

@@ -1,6 +1,11 @@
+import { DegulServerGame } from "./shared-game-engine.js";
+
 const ROOM_CODE_PATTERN = /^[A-Z0-9]{6}$/;
 const PLAYER_ID_PATTERN = /^[a-f0-9-]{36}$/i;
 const ROOM_TTL_MS = 1000 * 60 * 60 * 3;
+const DISCONNECT_FORFEIT_MS = 12_000;
+const SNAPSHOT_INTERVAL_MS = 145;
+const QUICK_MATCH_TTL_MS = 45_000;
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
@@ -61,6 +66,10 @@ function roomStub(env, code) {
   return env.ONLINE_ROOM.getByName(`room:${code}`);
 }
 
+function matchmakerStub(env) {
+  return env.ONLINE_MATCHMAKER.getByName("quick:v1");
+}
+
 async function forwardToRoom(env, code, path, request) {
   if (!ROOM_CODE_PATTERN.test(code)) return error(400, "invalid_room_code", "6자리 방 코드가 필요합니다.");
   const url = new URL(request.url);
@@ -72,6 +81,7 @@ export class OnlineRoom {
   constructor(state, env) {
     this.state = state;
     this.env = env;
+    this.tickTimer = null;
   }
 
   async fetch(request) {
@@ -97,6 +107,9 @@ export class OnlineRoom {
     if (request.method === "POST" && url.pathname === "/leave") {
       return this.leave(await readJson(request));
     }
+    if (request.method === "GET" && url.pathname === "/play") {
+      return this.connect(request);
+    }
     return error(404, "not_found", "온라인 방 API를 찾을 수 없습니다.");
   }
 
@@ -109,6 +122,15 @@ export class OnlineRoom {
     await this.state.storage.put("room", room);
     await this.state.storage.setAlarm(room.updatedAt + ROOM_TTL_MS);
     return room;
+  }
+
+  async loadGame() {
+    return DegulServerGame.hydrateState(await this.state.storage.get("game"));
+  }
+
+  async saveGame(game) {
+    await this.state.storage.put("game", DegulServerGame.serializeState(game));
+    return game;
   }
 
   publicRoom(room) {
@@ -200,6 +222,7 @@ export class OnlineRoom {
       player.ready = body.ready === true;
     });
     if (result instanceof Response) return result;
+    await this.maybeStartGame(result);
     return json({ ok: true, room: this.publicRoom(result) });
   }
 
@@ -217,6 +240,13 @@ export class OnlineRoom {
     if (!room) return json({ ok: true });
     const slot = this.findPlayerSlot(room, body.playerId);
     if (slot) {
+      const game = await this.loadGame();
+      if (game.phase === "countdown" || game.phase === "playing") {
+        DegulServerGame.forfeit(game, slot, Date.now());
+        await this.saveGame(game);
+        await this.persistResult(room, game.result);
+        this.broadcast(DegulServerGame.snapshot(game));
+      }
       room.players[slot] = null;
       if (!room.players[1] && !room.players[2]) {
         await this.state.storage.delete("room");
@@ -226,6 +256,178 @@ export class OnlineRoom {
       await this.saveRoom(room);
     }
     return json({ ok: true, room: room ? this.publicRoom(room) : null });
+  }
+
+  async maybeStartGame(room) {
+    if (!room?.players?.[1] || !room?.players?.[2]) return;
+    if (!room.players[1].ready || !room.players[2].ready) return;
+    let game = await this.loadGame();
+    if (game.phase === "waiting" || game.phase === "ended") {
+      game = DegulServerGame.createState({ now: Date.now(), mode: "speed" });
+      DegulServerGame.beginCountdown(game, Date.now());
+      await this.saveGame(game);
+      this.broadcast(DegulServerGame.snapshot(game));
+      this.scheduleTick();
+    }
+  }
+
+  async connect(request) {
+    if (request.headers.get("Upgrade") !== "websocket") {
+      return error(426, "websocket_required", "WebSocket 연결이 필요합니다.");
+    }
+    const url = new URL(request.url);
+    const playerId = url.searchParams.get("playerId") || "";
+    const room = await this.loadRoom();
+    if (!room) return error(404, "room_not_found", "방을 찾을 수 없습니다.");
+    const slot = this.findPlayerSlot(room, playerId);
+    if (!slot) return error(403, "player_not_in_room", "해당 방 참가자가 아닙니다.");
+
+    const pair = new WebSocketPair();
+    const client = pair[0];
+    const server = pair[1];
+    this.state.acceptWebSocket(server, [`slot:${slot}`]);
+    server.serializeAttachment({ playerId, slot, connectedAt: Date.now(), lastPongAt: Date.now() });
+
+    const player = room.players[slot];
+    player.lastSeenAt = Date.now();
+    player.disconnectedAt = 0;
+    await this.saveRoom(room);
+
+    const game = await this.loadGame();
+    this.send(server, { type: "hello", slot, playerId, room: this.publicRoom(room), serverNow: Date.now() });
+    this.send(server, DegulServerGame.snapshot(game));
+    this.broadcastPresence(room);
+    this.scheduleTick();
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  async webSocketMessage(ws, message) {
+    let data;
+    try {
+      data = JSON.parse(String(message));
+    } catch {
+      this.send(ws, { type: "error", code: "bad_json", message: "메시지 형식이 올바르지 않습니다." });
+      return;
+    }
+    const attachment = ws.deserializeAttachment() || {};
+    attachment.lastSeenAt = Date.now();
+    ws.serializeAttachment(attachment);
+
+    if (data.type === "ping") {
+      this.send(ws, { type: "pong", clientNow: data.clientNow || 0, serverNow: Date.now() });
+      return;
+    }
+    if (data.type !== "input") return;
+    const slot = Number(attachment.slot);
+    const game = DegulServerGame.advanceTo(await this.loadGame(), Date.now());
+    const ack = DegulServerGame.setDirection(game, slot, data.direction, data.seq, Date.now());
+    await this.saveGame(game);
+    this.send(ws, { type: "ack", seq: Number(data.seq) || 0, ...ack, serverNow: Date.now() });
+    this.broadcast(DegulServerGame.snapshot(game));
+  }
+
+  async webSocketClose(ws) {
+    await this.markDisconnected(ws);
+  }
+
+  async webSocketError(ws) {
+    await this.markDisconnected(ws);
+  }
+
+  async markDisconnected(ws) {
+    const attachment = ws.deserializeAttachment() || {};
+    const slot = Number(attachment.slot);
+    if (!slot) return;
+    const room = await this.loadRoom();
+    if (!room?.players?.[slot]) return;
+    room.players[slot].disconnectedAt = Date.now();
+    room.players[slot].lastSeenAt = Date.now();
+    await this.saveRoom(room);
+    this.broadcastPresence(room);
+    await this.state.storage.setAlarm(Date.now() + DISCONNECT_FORFEIT_MS);
+  }
+
+  send(ws, payload) {
+    try {
+      ws.send(JSON.stringify(payload));
+    } catch {}
+  }
+
+  broadcast(payload) {
+    const text = JSON.stringify(payload);
+    for (const ws of this.state.getWebSockets()) {
+      try {
+        ws.send(text);
+      } catch {}
+    }
+  }
+
+  broadcastPresence(room) {
+    this.broadcast({ type: "room", room: this.publicRoom(room), serverNow: Date.now() });
+  }
+
+  scheduleTick() {
+    if (this.tickTimer) return;
+    this.tickTimer = setTimeout(() => this.runTick(), SNAPSHOT_INTERVAL_MS);
+  }
+
+  async runTick() {
+    this.tickTimer = null;
+    const game = DegulServerGame.advanceTo(await this.loadGame(), Date.now());
+    await this.saveGame(game);
+    this.broadcast(DegulServerGame.snapshot(game));
+    if (game.phase === "ended" && game.result) {
+      const room = await this.loadRoom();
+      await this.persistResult(room, game.result);
+      return;
+    }
+    if (game.phase === "countdown" || game.phase === "playing") this.scheduleTick();
+  }
+
+  async persistResult(room, result) {
+    if (!result || !this.env.DB) return;
+    const markerKey = `resultSaved:${result.endedAt}:${result.tick}`;
+    const alreadySaved = await this.state.storage.get(markerKey);
+    if (alreadySaved) return;
+    try {
+      await this.env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS online_match_results (
+          id TEXT PRIMARY KEY,
+          room_code TEXT NOT NULL,
+          winner_slot INTEGER NOT NULL,
+          loser_slot INTEGER NOT NULL,
+          reason TEXT NOT NULL,
+          p1_score INTEGER NOT NULL,
+          p2_score INTEGER NOT NULL,
+          p1_percent INTEGER NOT NULL,
+          p2_percent INTEGER NOT NULL,
+          started_at INTEGER,
+          ended_at INTEGER NOT NULL,
+          result_json TEXT NOT NULL
+        )
+      `).run();
+      await this.env.DB.prepare(`
+        INSERT OR IGNORE INTO online_match_results
+        (id, room_code, winner_slot, loser_slot, reason, p1_score, p2_score, p1_percent, p2_percent, started_at, ended_at, result_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        crypto.randomUUID(),
+        room?.code || "",
+        result.winnerSlot,
+        result.loserSlot,
+        result.reason,
+        result.score?.p1 || 0,
+        result.score?.p2 || 0,
+        result.score?.p1Percent || 0,
+        result.score?.p2Percent || 0,
+        room?.createdAt || 0,
+        result.endedAt,
+        JSON.stringify(result)
+      ).run();
+      await this.state.storage.put(markerKey, true);
+    } catch (error) {
+      console.error("Failed to persist online match result", error);
+    }
   }
 
   async updatePlayer(playerId, mutate) {
@@ -252,12 +454,163 @@ export class OnlineRoom {
   async alarm() {
     const room = await this.loadRoom();
     if (!room) return;
+    const game = await this.loadGame();
+    if ((game.phase === "countdown" || game.phase === "playing") && this.state.getWebSockets().length < 2) {
+      const now = Date.now();
+      const staleSlot = [1, 2].find((slot) => {
+        const player = room.players[slot];
+        return player?.disconnectedAt && now - player.disconnectedAt >= DISCONNECT_FORFEIT_MS;
+      });
+      if (staleSlot) {
+        DegulServerGame.forfeit(game, staleSlot, now);
+        await this.saveGame(game);
+        await this.persistResult(room, game.result);
+        this.broadcast(DegulServerGame.snapshot(game));
+      } else {
+        await this.state.storage.setAlarm(now + DISCONNECT_FORFEIT_MS);
+        return;
+      }
+    }
     if (Date.now() - Number(room.updatedAt || 0) >= ROOM_TTL_MS) {
       await this.state.storage.delete("room");
+      await this.state.storage.delete("game");
       await this.state.storage.deleteAlarm();
       return;
     }
     await this.state.storage.setAlarm(Number(room.updatedAt || Date.now()) + ROOM_TTL_MS);
+  }
+}
+
+export class OnlineMatchmaker {
+  constructor(state, env) {
+    this.state = state;
+    this.env = env;
+  }
+
+  async fetch(request) {
+    const url = new URL(request.url);
+    if (request.method === "POST" && url.pathname === "/quick") {
+      return this.quick(await readJson(request), request);
+    }
+    if (request.method === "POST" && url.pathname === "/quick/cancel") {
+      return this.cancel(await readJson(request));
+    }
+    return error(404, "not_found", "빠른대전 API를 찾을 수 없습니다.");
+  }
+
+  async quick(body, request) {
+    const now = Date.now();
+    await this.prune(now);
+
+    const existingTicket = String(body.ticket || "");
+    if (existingTicket) {
+      const result = await this.state.storage.get(`ticket:${existingTicket}`);
+      if (result?.status === "matched") {
+        await this.state.storage.delete(`ticket:${existingTicket}`);
+        return json({ ok: true, status: "matched", ...result.match });
+      }
+      if (result?.status === "waiting") {
+        await this.state.storage.put(`ticket:${existingTicket}`, { ...result, lastSeenAt: now });
+        await this.state.storage.setAlarm(now + QUICK_MATCH_TTL_MS);
+        return json({ ok: true, status: "waiting", ticket: existingTicket });
+      }
+    }
+
+    const current = {
+      ticket: crypto.randomUUID(),
+      nickname: sanitizeNickname(body.nickname),
+      skin: sanitizeSkin(body.skin),
+      createdAt: now,
+      lastSeenAt: now
+    };
+    const waiting = await this.state.storage.get("waiting");
+    if (waiting && waiting.ticket !== current.ticket && now - Number(waiting.createdAt || 0) < QUICK_MATCH_TTL_MS) {
+      await this.state.storage.delete("waiting");
+      const match = await this.createMatchedRoom(waiting, current, request);
+      await this.state.storage.put(`ticket:${waiting.ticket}`, {
+        status: "matched",
+        matchedAt: now,
+        match: match.player1
+      });
+      return json({ ok: true, status: "matched", ...match.player2 });
+    }
+
+    await this.state.storage.put("waiting", current);
+    await this.state.storage.put(`ticket:${current.ticket}`, { status: "waiting", ...current });
+    await this.state.storage.setAlarm(now + QUICK_MATCH_TTL_MS);
+    return json({ ok: true, status: "waiting", ticket: current.ticket });
+  }
+
+  async cancel(body) {
+    const ticket = String(body.ticket || "");
+    if (ticket) {
+      const waiting = await this.state.storage.get("waiting");
+      if (waiting?.ticket === ticket) await this.state.storage.delete("waiting");
+      await this.state.storage.delete(`ticket:${ticket}`);
+    }
+    return json({ ok: true });
+  }
+
+  async createMatchedRoom(first, second, request) {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const code = makeRoomCode();
+      const baseUrl = new URL(request.url);
+      baseUrl.search = `?code=${encodeURIComponent(code)}`;
+
+      const createUrl = new URL(baseUrl);
+      createUrl.pathname = "/create";
+      const createResponse = await roomStub(this.env, code).fetch(new Request(createUrl, {
+        method: "POST",
+        headers: request.headers,
+        body: JSON.stringify({ nickname: first.nickname, skin: first.skin })
+      }));
+      if (createResponse.status === 409) continue;
+      const created = await createResponse.json();
+      if (!createResponse.ok || created?.ok === false) throw new Error("quick_match_create_failed");
+
+      const joinUrl = new URL(baseUrl);
+      joinUrl.pathname = "/join";
+      const joinResponse = await roomStub(this.env, code).fetch(new Request(joinUrl, {
+        method: "POST",
+        headers: request.headers,
+        body: JSON.stringify({ nickname: second.nickname, skin: second.skin })
+      }));
+      const joined = await joinResponse.json();
+      if (!joinResponse.ok || joined?.ok === false) throw new Error("quick_match_join_failed");
+
+      await this.setRoomReady(code, created.playerId, request);
+      const ready2 = await this.setRoomReady(code, joined.playerId, request);
+      const room = ready2.room || joined.room || created.room;
+      return {
+        player1: { room, roomCode: code, playerId: created.playerId, slot: 1 },
+        player2: { room, roomCode: code, playerId: joined.playerId, slot: 2 }
+      };
+    }
+    throw new Error("quick_match_room_code_exhausted");
+  }
+
+  async setRoomReady(code, playerId, request) {
+    const readyUrl = new URL(request.url);
+    readyUrl.pathname = "/ready";
+    readyUrl.search = `?code=${encodeURIComponent(code)}`;
+    const response = await roomStub(this.env, code).fetch(new Request(readyUrl, {
+      method: "POST",
+      headers: request.headers,
+      body: JSON.stringify({ playerId, ready: true })
+    }));
+    return await response.json();
+  }
+
+  async prune(now = Date.now()) {
+    const waiting = await this.state.storage.get("waiting");
+    if (waiting && now - Number(waiting.lastSeenAt || waiting.createdAt || 0) >= QUICK_MATCH_TTL_MS) {
+      await this.state.storage.delete("waiting");
+      await this.state.storage.delete(`ticket:${waiting.ticket}`);
+    }
+  }
+
+  async alarm() {
+    await this.prune(Date.now());
   }
 }
 
@@ -286,7 +639,13 @@ export default {
       return error(503, "room_code_exhausted", "방 코드를 생성하지 못했습니다.");
     }
 
-    const match = url.pathname.match(/^\/api\/online\/rooms\/([A-Z0-9]{6})(?:\/(join|ready|skin|leave))?$/i);
+    if (request.method === "POST" && (url.pathname === "/api/online/quick" || url.pathname === "/api/online/quick/cancel")) {
+      const targetUrl = new URL(request.url);
+      targetUrl.pathname = url.pathname.endsWith("/cancel") ? "/quick/cancel" : "/quick";
+      return matchmakerStub(env).fetch(new Request(targetUrl, request));
+    }
+
+    const match = url.pathname.match(/^\/api\/online\/rooms\/([A-Z0-9]{6})(?:\/(join|ready|skin|leave|play))?$/i);
     if (!match) return error(404, "not_found", "온라인 방 API를 찾을 수 없습니다.");
     const code = match[1].toUpperCase();
     const action = match[2] || "state";

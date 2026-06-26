@@ -16,6 +16,10 @@
       {
         "name": "ONLINE_ROOM",
         "class_name": "OnlineRoom"
+      },
+      {
+        "name": "ONLINE_MATCHMAKER",
+        "class_name": "OnlineMatchmaker"
       }
     ]
   },
@@ -23,6 +27,17 @@
     {
       "tag": "v1",
       "new_sqlite_classes": ["OnlineRoom"]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["OnlineMatchmaker"]
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "degul-online-results",
+      "database_id": "2a2a7768-b42a-4659-a7f1-88bbc68b5a02"
     }
   ]
 }
