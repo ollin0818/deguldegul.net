@@ -35,7 +35,7 @@
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-auth.min.css?v=4">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-tablet-performance.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-ai-history.css?v=100">
-<link rel="stylesheet" href="assets_v1.0.0/css/degul-online-room.css?v=102-quickmatch">
+<link rel="stylesheet" href="assets_v1.0.0/css/degul-online-room.css?v=105-online-card-icons">
 </head>
 <body>
 <div id="dominanceEdgeOverlay" aria-hidden="true"></div>
@@ -253,8 +253,8 @@
         </button>
       </div>
       <button class="matchButton onlineMatchModeButton" id="onlineModeBtn" type="button" onclick="window.DegulOnlineRoom?.setOnlineMode(true); window.setLobbyPanel?.('online')">
-        <strong>온라인 매칭</strong>
-        <span>방 코드로 입장</span>
+        <strong>온라인 대전</strong>
+        <span>빠른 대전</span>
       </button>
     </div>
 
@@ -320,33 +320,59 @@
               <button class="onlineRoomBackButton" id="onlineRoomBackButton" type="button" onclick="window.DegulOnlineRoom?.setOnlineMode(false); window.setLobbyPanel?.('main')">로비</button>
               <span class="onlineMatchBadge">MULTIPLAYER</span>
             </div>
-            <h2 id="onlineRoomTitle">빠른 대전</h2>
-            <p class="onlineMatchLead" id="onlineRoomLead">모드와 색상을 고른 뒤 바로 상대를 찾아 대전하세요.</p>
-
-            <div class="onlineOpponentPanel" id="onlineOpponentPanel" hidden>
-              <span class="onlineOpponentBadge" id="onlineLocalSlot">ONLINE</span>
-              <strong id="onlineOpponentName">상대 대기 중</strong>
-              <em id="onlineOpponentState">방을 만들거나 코드로 입장하세요.</em>
-            </div>
+            <h2 id="onlineRoomTitle">온라인 대전</h2>
+            <p class="onlineMatchLead" id="onlineRoomLead">원하는 방식으로 상대와 실시간 대전을 시작하세요.</p>
 
     <div class="onlineRoomCompact" id="onlineRoomCompact" hidden>
       <div class="onlineRoomEntry" id="onlineRoomEntry">
-        <button class="onlineRoomQuickButton" id="onlineQuickMatchButton" type="button">
-          <span class="onlineQuickIcon" aria-hidden="true"></span>
-          <span class="onlineQuickText">빠른 대전</span>
-          <span class="onlineQuickSubtext">상대 자동 찾기</span>
-        </button>
-        <div class="onlineQuickSearchingPanel" id="onlineQuickSearchingPanel" hidden>
-          <div class="onlineQuickSpinner" aria-hidden="true"></div>
-          <strong id="onlineQuickSearchingTitle">상대를 찾고 있습니다</strong>
-          <span id="onlineQuickSearchingLead">비슷한 시간에 접속한 플레이어와 자동으로 연결합니다.</span>
+        <div class="onlineEntryCards" role="tablist" aria-label="온라인 대전 방식">
+          <button class="onlineEntryCard selected" id="onlineQuickCard" type="button" data-online-entry="quick" role="tab" aria-selected="true">
+            <span class="onlineEntryIcon" aria-hidden="true">⚡</span>
+            <span class="onlineEntryCopy">
+              <strong>빠른대전</strong>
+              <span>상대 자동 찾기</span>
+            </span>
+          </button>
+          <button class="onlineEntryCard" id="onlineCreateCard" type="button" data-online-entry="create" role="tab" aria-selected="false">
+            <span class="onlineEntryIcon" aria-hidden="true">＋</span>
+            <span class="onlineEntryCopy">
+              <strong>방만들기</strong>
+              <span>코드로 초대</span>
+            </span>
+          </button>
+          <button class="onlineEntryCard" id="onlineJoinCard" type="button" data-online-entry="join" role="tab" aria-selected="false">
+            <span class="onlineEntryIcon" aria-hidden="true">↵</span>
+            <span class="onlineEntryCopy">
+              <strong>코드입장</strong>
+              <span>친구 방 참가</span>
+            </span>
+          </button>
         </div>
-        <div class="onlineRoomManualGroup">
+
+        <div class="onlineEntryPanel active" id="onlineQuickPanel" data-online-panel="quick" role="tabpanel">
+          <button class="onlineRoomQuickButton" id="onlineQuickMatchButton" type="button">
+            <span class="onlineQuickIcon" aria-hidden="true"></span>
+            <span class="onlineQuickText">빠른 대전 시작</span>
+            <span class="onlineQuickSubtext">선택한 색상으로 상대 찾기</span>
+          </button>
+          <div class="onlineQuickSearchingPanel" id="onlineQuickSearchingPanel" hidden>
+            <div class="onlineQuickSpinner" aria-hidden="true"></div>
+            <strong id="onlineQuickSearchingTitle">상대를 찾고 있습니다</strong>
+            <span id="onlineQuickSearchingLead">비슷한 시간에 접속한 플레이어와 자동으로 연결합니다.</span>
+          </div>
+        </div>
+
+        <div class="onlineEntryPanel" id="onlineCreatePanel" data-online-panel="create" role="tabpanel" hidden>
           <button class="onlineRoomSecondaryButton onlineRoomCreateButton" id="onlineCreateRoomButton" type="button">방 만들기</button>
+          <span class="onlineEntryHint">방을 만든 뒤 6자리 코드를 친구에게 공유하세요.</span>
+        </div>
+
+        <div class="onlineEntryPanel" id="onlineJoinPanel" data-online-panel="join" role="tabpanel" hidden>
           <div class="onlineRoomJoinLine">
             <input class="onlineRoomCodeInput" id="onlineRoomCodeInput" type="text" inputmode="latin" maxlength="6" autocomplete="off" placeholder="방 코드">
             <button class="onlineRoomSecondaryButton" id="onlineJoinRoomButton" type="button">입장</button>
           </div>
+          <span class="onlineEntryHint">친구가 공유한 6자리 방 코드를 입력하세요.</span>
         </div>
       </div>
 
@@ -377,7 +403,7 @@
           <button class="onlineRoomSecondaryButton danger" id="onlineLeaveRoomButton" type="button">방 나가기</button>
         </div>
       </div>
-      <div class="onlineMatchStatus" id="onlineMatchStatus" aria-live="polite">온라인 방 연결 준비 완료</div>
+      <div class="onlineMatchStatus" id="onlineMatchStatus" aria-live="polite">온라인 대전</div>
     </div>
 
           </div>
@@ -581,7 +607,7 @@
         <div class="updateList">
           <div class="updateItem"><b>ver1.0.0</b><ul><li>단색 블록과 로비 미리보기에 캐릭터 눈 디자인 적용</li><li>한국어·영어·일본어·중국어 UI 번역 누락 보완</li><li>배포용 개인정보처리방침과 실제 버전 업데이트 내역 정비</li></ul></div>
           <div class="updateItem"><b>ver214–217</b><ul><li>준비 완료·결과 UI·우세 외곽선·사망 모션 사운드 추가</li><li>로봇청소기 아이템 획득 및 발동 사운드 추가</li><li>효과음 재생 시점과 중복 재생 방지 로직 개선</li></ul></div>
-          <div class="updateItem"><b>ver200–211</b><ul><li>온라인 대전 준비 패널과 로비 슬라이드 UI 추가</li><li>스킨·AI 난이도 잠금 표시와 캐러셀 UI 개선</li><li>설정창 블록형 볼륨 슬라이더와 PC·태블릿 레이아웃 개선</li></ul></div>
+          <div class="updateItem"><b>ver200–211</b><ul><li>온라인 대전 패널과 로비 슬라이드 UI 추가</li><li>스킨·AI 난이도 잠금 표시와 캐러셀 UI 개선</li><li>설정창 블록형 볼륨 슬라이더와 PC·태블릿 레이아웃 개선</li></ul></div>
         </div>
       </section>
 
@@ -1053,7 +1079,7 @@
 <script src="assets_v1.0.0/js/degul-inline-01.min.js?v=100"></script>
 
 <script src="assets_v1.0.0/vendor/three-0.160.0.min.js"></script>
-<script src="assets_v1.0.0/js/game/01-foundation.min.js?v=105-tablet-performance"></script>
+<script src="assets_v1.0.0/js/game/01-foundation.min.js?v=106-local-test"></script>
 <script src="assets_v1.0.0/js/game/02-scene-board.min.js?v=101-stability-audit"></script>
 <script src="assets_v1.0.0/js/game/03-actors-loop-ai-movement.min.js?v=101-tablet-performance"></script>
 <script src="assets_v1.0.0/js/game/04-territory-items.min.js?v=100-performance-pass"></script>
@@ -1067,10 +1093,10 @@
 
 
 <script src="assets_v1.0.0/js/degul-inline-04.min.js?v=100"></script>
-<script src="assets_v1.0.0/js/degul-auth.min.js?v=6"></script>
-<script src="assets_v1.0.0/js/degul-ai-ranking.min.js?v=2"></script>
+<script src="assets_v1.0.0/js/degul-auth.min.js?v=7-local-test"></script>
+<script src="assets_v1.0.0/js/degul-ai-ranking.min.js?v=3-local-test"></script>
 <script src="assets_v1.0.0/js/degul-test-guard.js?v=100"></script>
-<script src="assets_v1.0.0/js/degul-online-room.js?v=102-realtime"></script>
+<script src="assets_v1.0.0/js/degul-online-room.js?v=104-online-card-icons"></script>
 
 
 <div class="degulTutorialLayer" id="degulTutorialLayer" aria-hidden="true">

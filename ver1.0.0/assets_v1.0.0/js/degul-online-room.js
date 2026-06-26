@@ -12,6 +12,7 @@
   let quickTicket = loadQuickTicket();
   let quickMatching = !!quickTicket;
   let quickMatchState = quickMatching ? "waiting" : "idle";
+  let onlineEntryMode = "quick";
   let realtimeSocket = null;
   let realtimeInputSeq = 0;
   let realtimePingTimer = null;
@@ -35,7 +36,13 @@
       land: "서버가 60% 이상 점령을 확인했습니다.",
       draw: "무승부",
       winner: slot => `${slot}P 승리`,
+      onlineTitle: "온라인 대전",
+      onlineLead: "원하는 방식으로 상대와 실시간 대전을 시작하세요.",
+      onlineButtonTitle: "온라인 대전",
       quick: "빠른 대전",
+      quickStart: "빠른 대전 시작",
+      quickCardTitle: "빠른대전",
+      quickCardSub: "상대 자동 찾기",
       quickCancel: "매칭 취소",
       quickSub: "상대 자동 찾기",
       quickCancelSub: "탭해서 취소",
@@ -43,7 +50,16 @@
       quickWaitingLead: "비슷한 시간에 접속한 플레이어와 자동으로 연결합니다.",
       quickMatched: "상대를 찾았습니다. 곧 시작합니다.",
       quickMatchedLead: "매칭되었습니다. 서버 카운트다운을 준비합니다.",
-      quickCanceled: "빠른 대전을 취소했습니다."
+      quickCanceled: "빠른 대전을 취소했습니다.",
+      createCardTitle: "방만들기",
+      createCardSub: "코드로 초대",
+      createButton: "방 만들기",
+      createHint: "방을 만든 뒤 6자리 코드를 친구에게 공유하세요.",
+      joinCardTitle: "코드입장",
+      joinCardSub: "친구 방 참가",
+      joinButton: "입장",
+      joinHint: "친구가 공유한 6자리 방 코드를 입력하세요.",
+      roomCodePlaceholder: "방 코드"
     },
     en: {
       wsOpen: "Connected to the realtime server.",
@@ -57,7 +73,13 @@
       land: "The server confirmed 60% territory capture.",
       draw: "Draw",
       winner: slot => `${slot}P Win`,
+      onlineTitle: "Online Battle",
+      onlineLead: "Choose how to start a realtime match.",
+      onlineButtonTitle: "Online Battle",
       quick: "Quick Match",
+      quickStart: "Start Quick Match",
+      quickCardTitle: "Quick Match",
+      quickCardSub: "Auto-find opponent",
       quickCancel: "Cancel Match",
       quickSub: "Find opponent",
       quickCancelSub: "Tap to cancel",
@@ -65,7 +87,16 @@
       quickWaitingLead: "You will be paired with a player who joins around the same time.",
       quickMatched: "Opponent found. Starting soon.",
       quickMatchedLead: "Matched. Preparing the server countdown.",
-      quickCanceled: "Quick match canceled."
+      quickCanceled: "Quick match canceled.",
+      createCardTitle: "Create Room",
+      createCardSub: "Invite by code",
+      createButton: "Create Room",
+      createHint: "Create a room, then share the 6-character code with a friend.",
+      joinCardTitle: "Enter Code",
+      joinCardSub: "Join a friend",
+      joinButton: "Join",
+      joinHint: "Enter the 6-character room code your friend shared.",
+      roomCodePlaceholder: "Room Code"
     },
     ja: {
       wsOpen: "リアルタイムサーバーに接続しました。",
@@ -79,7 +110,13 @@
       land: "サーバーが60%以上の占領を確認しました。",
       draw: "引き分け",
       winner: slot => `${slot}P 勝利`,
+      onlineTitle: "オンライン対戦",
+      onlineLead: "好きな方法でリアルタイム対戦を始めましょう。",
+      onlineButtonTitle: "オンライン対戦",
       quick: "クイック対戦",
+      quickStart: "クイック対戦開始",
+      quickCardTitle: "クイック対戦",
+      quickCardSub: "相手を自動検索",
       quickCancel: "マッチング取消",
       quickSub: "相手を自動検索",
       quickCancelSub: "タップして取消",
@@ -87,7 +124,16 @@
       quickWaitingLead: "同じ時間帯に接続したプレイヤーと自動でつなぎます。",
       quickMatched: "相手が見つかりました。まもなく開始します。",
       quickMatchedLead: "マッチしました。サーバーカウントダウンを準備します。",
-      quickCanceled: "クイック対戦をキャンセルしました。"
+      quickCanceled: "クイック対戦をキャンセルしました。",
+      createCardTitle: "部屋作成",
+      createCardSub: "コードで招待",
+      createButton: "部屋を作成",
+      createHint: "部屋を作成したら、6桁のコードを友だちに共有してください。",
+      joinCardTitle: "コード入場",
+      joinCardSub: "友だちの部屋へ",
+      joinButton: "入場",
+      joinHint: "友だちから共有された6桁の部屋コードを入力してください。",
+      roomCodePlaceholder: "部屋コード"
     },
     zh: {
       wsOpen: "已连接实时服务器。",
@@ -101,7 +147,13 @@
       land: "服务器确认占领超过60%。",
       draw: "平局",
       winner: slot => `${slot}P 胜利`,
+      onlineTitle: "在线对战",
+      onlineLead: "选择一种方式开始实时对战。",
+      onlineButtonTitle: "在线对战",
       quick: "快速对战",
+      quickStart: "开始快速对战",
+      quickCardTitle: "快速对战",
+      quickCardSub: "自动寻找对手",
       quickCancel: "取消匹配",
       quickSub: "自动寻找对手",
       quickCancelSub: "点击取消",
@@ -109,7 +161,16 @@
       quickWaitingLead: "系统会自动连接同一时间加入的玩家。",
       quickMatched: "已找到对手，即将开始。",
       quickMatchedLead: "匹配成功，正在准备服务器倒计时。",
-      quickCanceled: "已取消快速对战。"
+      quickCanceled: "已取消快速对战。",
+      createCardTitle: "创建房间",
+      createCardSub: "用代码邀请",
+      createButton: "创建房间",
+      createHint: "创建房间后，将6位代码分享给朋友。",
+      joinCardTitle: "输入代码",
+      joinCardSub: "加入好友房间",
+      joinButton: "进入",
+      joinHint: "请输入朋友分享的6位房间代码。",
+      roomCodePlaceholder: "房间代码"
     }
   };
 
@@ -242,18 +303,59 @@
     if (button) {
       const strong = button.querySelector("strong");
       const span = button.querySelector("span");
-      if (strong) strong.textContent = "온라인 매칭";
-      if (span) span.textContent = "빠른 대전";
+      if (strong) strong.textContent = onlineText("onlineButtonTitle");
+      if (span) span.textContent = onlineText("quick");
       button.setAttribute("aria-pressed", onlineMode ? "true" : "false");
     }
-    if (title) title.textContent = onlineText("quick");
-    if (lead) lead.textContent = getLang() === "ko"
-      ? "모드와 색상을 고른 뒤 바로 상대를 찾아 대전하세요."
-      : "Choose your mode and color, then find an opponent instantly.";
+    if (title) title.textContent = onlineText("onlineTitle");
+    if (lead) lead.textContent = onlineText("onlineLead");
+    setCardText("onlineQuickCard", onlineText("quickCardTitle"), onlineText("quickCardSub"));
+    setCardText("onlineCreateCard", onlineText("createCardTitle"), onlineText("createCardSub"));
+    setCardText("onlineJoinCard", onlineText("joinCardTitle"), onlineText("joinCardSub"));
+    setText("onlineCreateRoomButton", onlineText("createButton"));
+    setText("onlineJoinRoomButton", onlineText("joinButton"));
+    setText("onlineCreatePanel", onlineText("createHint"), ".onlineEntryHint");
+    setText("onlineJoinPanel", onlineText("joinHint"), ".onlineEntryHint");
+    const codeInput = $("onlineRoomCodeInput");
+    if (codeInput) codeInput.placeholder = onlineText("roomCodePlaceholder");
+    applyOnlineEntryMode();
     updateQuickMatchUI();
-    if (onlineMode && !session && !quickMatching) setStatus(getLang() === "ko" ? "빠른 대전 또는 방 코드로 시작하세요." : "Start with Quick Match or a room code.");
+    if (onlineMode && !session && !quickMatching) setStatus(onlineText("onlineTitle"));
     if (!session) updateOpponentPanel(null);
     applyOnlineRoomLayout();
+  }
+
+  function setText(id, text, selector = null) {
+    const target = selector ? $(id)?.querySelector(selector) : $(id);
+    if (target) target.textContent = text;
+  }
+
+  function setCardText(id, titleText, subText) {
+    const card = $(id);
+    if (!card) return;
+    const title = card.querySelector(".onlineEntryCopy strong");
+    const sub = card.querySelector(".onlineEntryCopy > span");
+    if (title) title.textContent = titleText;
+    if (sub) sub.textContent = subText;
+  }
+
+  function applyOnlineEntryMode() {
+    document.querySelectorAll("[data-online-entry]").forEach((button) => {
+      const selected = button.dataset.onlineEntry === onlineEntryMode;
+      button.classList.toggle("selected", selected);
+      button.setAttribute("aria-selected", selected ? "true" : "false");
+    });
+    document.querySelectorAll("[data-online-panel]").forEach((panel) => {
+      const selected = panel.dataset.onlinePanel === onlineEntryMode;
+      panel.hidden = !selected;
+      panel.classList.toggle("active", selected);
+    });
+  }
+
+  function setOnlineEntryMode(mode) {
+    onlineEntryMode = ["quick", "create", "join"].includes(mode) ? mode : "quick";
+    applyOnlineEntryMode();
+    updateQuickMatchUI();
   }
 
   function updateQuickMatchUI(state = quickMatchState) {
@@ -275,7 +377,7 @@
       quickButton.setAttribute("aria-busy", isWaiting ? "true" : "false");
       quickButton.disabled = isMatched;
       quickButton.classList.toggle("matching", isWaiting || isMatched);
-      if (quickText) quickText.textContent = isWaiting ? onlineText("quickCancel") : onlineText("quick");
+      if (quickText) quickText.textContent = isWaiting ? onlineText("quickCancel") : onlineText("quickStart");
       if (quickSubtext) quickSubtext.textContent = isWaiting ? onlineText("quickCancelSub") : onlineText("quickSub");
     }
     if (searchingPanel) searchingPanel.hidden = !(isWaiting || isMatched);
@@ -333,12 +435,13 @@
   function setOnlineMode(enabled) {
     onlineMode = !!enabled;
     suppressPanelSync = false;
+    if (onlineMode) prepareLocalLobbyForOnlineMode();
     applyOnlineRoomLayout();
     if (onlineMode) {
       if (session) refreshRoom();
       else {
         renderRoom(null);
-        setStatus("방을 만들거나 코드로 입장하세요.");
+        setStatus(onlineText("onlineTitle"));
       }
     } else {
       try {
@@ -348,6 +451,34 @@
         window.updateGameModeUI?.();
       } catch {}
     }
+  }
+
+  function prepareLocalLobbyForOnlineMode() {
+    try {
+      if (typeof setMatchMode === "function" && typeof matchMode !== "undefined" && matchMode === "ai") {
+        setMatchMode("pvp");
+      }
+    } catch {}
+    try {
+      if (typeof clearLobbyReadyStartTimer === "function") clearLobbyReadyStartTimer();
+    } catch {}
+    try {
+      if (typeof readyState !== "undefined") readyState = { 1: false, 2: false };
+      if (typeof updateReadyUI === "function") updateReadyUI();
+    } catch {}
+  }
+
+  function patchLocalReadyGuard() {
+    try {
+      if (typeof canAcceptLobbyReadyInput !== "function" || canAcceptLobbyReadyInput.__degulOnlineGuarded) return;
+      const originalCanAcceptLobbyReadyInput = canAcceptLobbyReadyInput;
+      const guarded = function (...args) {
+        if (onlineMode) return false;
+        return originalCanAcceptLobbyReadyInput.apply(this, args);
+      };
+      guarded.__degulOnlineGuarded = true;
+      canAcceptLobbyReadyInput = guarded;
+    } catch {}
   }
 
   function setBusy(isBusy) {
@@ -854,7 +985,11 @@
   }
 
   function bind() {
+    patchLocalReadyGuard();
     applyOnlineRoomText();
+    document.querySelectorAll("[data-online-entry]").forEach((button) => {
+      button.addEventListener("click", () => setOnlineEntryMode(button.dataset.onlineEntry));
+    });
     $("onlineCreateRoomButton")?.addEventListener("click", createRoom);
     $("onlineQuickMatchButton")?.addEventListener("click", () => requestQuickMatch(false));
     $("onlineJoinRoomButton")?.addEventListener("click", joinRoom);

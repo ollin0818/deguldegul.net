@@ -1122,7 +1122,16 @@ function closeAiRecordPopup(event) {
   overlay.setAttribute("aria-hidden", "true");
 }
 
+function isLocalTestMode() {
+  try {
+    return window.DegulTestGuard?.isTestMode?.() === true;
+  } catch {
+    return false;
+  }
+}
+
 function recordAiMatchResult(winner, reasonText) {
+  if (isLocalTestMode()) return;
   if (matchMode !== "ai" || !AI_DIFFICULTY_ORDER.includes(aiDifficulty)) return;
   const records = loadAiLocalRecords();
   const current = records[aiDifficulty] && typeof records[aiDifficulty] === "object" ? records[aiDifficulty] : {};
@@ -1182,6 +1191,7 @@ function recordAiMatchResult(winner, reasonText) {
 
 function handleAiClearReward(winner) {
   pendingSkinUnlockNotice = "";
+  if (isLocalTestMode()) return;
   if (matchMode !== "ai" || !winner || winner.landId !== P1_LAND) return;
 
   const notices = [];
@@ -2659,7 +2669,7 @@ const I18N = {
     muteBgm: "BGM 음소거",
     unmuteSfx: "효과음 음소거 해제",
     muteSfx: "효과음 음소거",
-    onlinePanel: "온라인 대전 준비 중 안내 보기",
+    onlinePanel: "온라인 대전 보기",
     localPanel: "로컬 대전 설정 패널 보기",
     nextAiDifficulty: "다음 AI 난이도"
   },
@@ -2733,7 +2743,7 @@ const I18N = {
     muteBgm: "BGMをミュート",
     unmuteSfx: "効果音のミュートを解除",
     muteSfx: "効果音をミュート",
-    onlinePanel: "オンライン対戦準備中の案内を表示",
+    onlinePanel: "オンライン対戦を見る",
     localPanel: "ローカル対戦設定を表示",
     nextAiDifficulty: "次のAI難易度"
   },
@@ -2807,7 +2817,7 @@ const I18N = {
     muteBgm: "静音BGM",
     unmuteSfx: "取消音效静音",
     muteSfx: "静音音效",
-    onlinePanel: "查看在线对战准备中说明",
+    onlinePanel: "查看在线对战",
     localPanel: "查看本地对战设置",
     nextAiDifficulty: "下一个AI难度"
   },
@@ -2881,7 +2891,7 @@ const I18N = {
     muteBgm: "Mute BGM",
     unmuteSfx: "Unmute SFX",
     muteSfx: "Mute SFX",
-    onlinePanel: "View online battle coming-soon information",
+    onlinePanel: "View online battle",
     localPanel: "View local battle settings",
     nextAiDifficulty: "Next AI difficulty"
   }
@@ -3113,8 +3123,8 @@ function updateSiteInfoLanguage() {
     : "Major features and fixes are listed by the actual deployed version.");
   const updateItems = document.querySelectorAll('[data-site-panel="updates"] .updateItem');
   const updateTexts = ko
-    ? [["ver1.0.0",["단색 블록과 로비 미리보기에 캐릭터 눈 디자인 적용","한국어·영어·일본어·중국어 UI 번역 누락 보완","배포용 개인정보처리방침과 실제 버전 업데이트 내역 정비"]],["ver214–217",["준비 완료·결과 UI·우세 외곽선·사망 모션 사운드 추가","로봇청소기 아이템 획득 및 발동 사운드 추가","효과음 재생 시점과 중복 재생 방지 로직 개선"]],["ver200–211",["온라인 대전 준비 패널과 로비 슬라이드 UI 추가","스킨·AI 난이도 잠금 표시와 캐러셀 UI 개선","설정창 블록형 볼륨 슬라이더와 PC·태블릿 레이아웃 개선"]]]
-    : [["ver1.0.0",["Added character eyes to solid-color blocks and lobby previews","Completed missing Korean, English, Japanese, and Chinese UI translations","Prepared the deployment privacy policy and replaced the update log with actual versions"]],["ver214–217",["Added ready, result UI, dominance edge, and death-motion sounds","Added Robot Vacuum pickup and activation sounds","Improved sound timing and duplicate-play prevention"]],["ver200–211",["Added the online-battle coming-soon panel and lobby slider","Improved skin and AI difficulty locks and carousel UI","Added block-style volume sliders and improved PC/tablet layouts"]]];
+    ? [["ver1.0.0",["단색 블록과 로비 미리보기에 캐릭터 눈 디자인 적용","한국어·영어·일본어·중국어 UI 번역 누락 보완","배포용 개인정보처리방침과 실제 버전 업데이트 내역 정비"]],["ver214–217",["준비 완료·결과 UI·우세 외곽선·사망 모션 사운드 추가","로봇청소기 아이템 획득 및 발동 사운드 추가","효과음 재생 시점과 중복 재생 방지 로직 개선"]],["ver200–211",["온라인 대전 패널과 로비 슬라이드 UI 추가","스킨·AI 난이도 잠금 표시와 캐러셀 UI 개선","설정창 블록형 볼륨 슬라이더와 PC·태블릿 레이아웃 개선"]]]
+    : [["ver1.0.0",["Added character eyes to solid-color blocks and lobby previews","Completed missing Korean, English, Japanese, and Chinese UI translations","Prepared the deployment privacy policy and replaced the update log with actual versions"]],["ver214–217",["Added ready, result UI, dominance edge, and death-motion sounds","Added Robot Vacuum pickup and activation sounds","Improved sound timing and duplicate-play prevention"]],["ver200–211",["Added the online battle panel and lobby slider","Improved skin and AI difficulty locks and carousel UI","Added block-style volume sliders and improved PC/tablet layouts"]]];
   updateItems.forEach((item, index) => {
     const data = updateTexts[index];
     if (!data) return;
@@ -3235,37 +3245,37 @@ function updateExtendedLanguageText() {
 
   const commonTexts = {
     ko: {
-      onlineTitle: "온라인 대전 준비 중", onlineLead: "안정적인 온라인 대전을 준비하고 있습니다.", onlinePreview: "색상 선택 미리보기",
-      onlineButton: "온라인 대전 준비 중", onlineStatus: "정식 지원 전까지 로컬 대전과 AI 대전을 이용해주세요.",
-      onlineGo: "온라인 대전 준비 중", onlineBack: "로컬 대전 설정 돌아가기",
-      onlineAria: "온라인 대전 준비 중", onlinePalette: "온라인 대전 색상 미리보기", colors: ["하늘색", "분홍색", "노란색", "민트색", "보라색", "주황색"],
+      onlineTitle: "온라인 대전", onlineLead: "원하는 방식으로 상대와 실시간 대전을 시작하세요.", onlinePreview: "색상 선택 미리보기",
+      onlineButton: "온라인 대전", onlineStatus: "원하는 방식으로 상대와 실시간 대전을 시작하세요.",
+      onlineGo: "온라인 대전", onlineBack: "로컬 대전 설정 돌아가기",
+      onlineAria: "온라인 대전", onlinePalette: "온라인 대전 색상 미리보기", colors: ["하늘색", "분홍색", "노란색", "민트색", "보라색", "주황색"],
       pauseOpen: "일시정지 메뉴 열기", pauseMenu: "일시정지 메뉴", helpOpen: "게임 설명 열기", helpTitle: "게임 설명",
       settingsOpen: "설정 열기", settingsTitle: "설정", helpClose: "게임 설명 닫기", privacyClose: "개인정보 안내 나중에 하기",
       gauge: "점령률 게이지", mobileActions: "모바일 액션 버튼", ready1: "1P 준비", ready2: "2P 준비", item: "아이템"
     },
     en: {
-      onlineTitle: "Online Battle Coming Soon", onlineLead: "We are preparing a stable online battle experience.", onlinePreview: "Color Preview",
-      onlineButton: "Online Battle Coming Soon", onlineStatus: "Please use Local Battle or AI Battle until online play is officially supported.",
-      onlineGo: "Online Battle Coming Soon", onlineBack: "Back to Local Battle",
-      onlineAria: "Online battle coming soon", onlinePalette: "Online battle color preview", colors: ["Sky Blue", "Pink", "Yellow", "Mint", "Purple", "Orange"],
+      onlineTitle: "Online Battle", onlineLead: "Choose how to start a realtime match.", onlinePreview: "Color Preview",
+      onlineButton: "Online Battle", onlineStatus: "Choose how to start a realtime match.",
+      onlineGo: "Online Battle", onlineBack: "Back to Local Battle",
+      onlineAria: "Online battle", onlinePalette: "Online battle color preview", colors: ["Sky Blue", "Pink", "Yellow", "Mint", "Purple", "Orange"],
       pauseOpen: "Open pause menu", pauseMenu: "Pause menu", helpOpen: "Open game guide", helpTitle: "Game Guide",
       settingsOpen: "Open settings", settingsTitle: "Settings", helpClose: "Close game guide", privacyClose: "Review privacy notice later",
       gauge: "Territory gauge", mobileActions: "Mobile action buttons", ready1: "1P Ready", ready2: "2P Ready", item: "Item"
     },
     ja: {
-      onlineTitle: "オンライン対戦 準備中", onlineLead: "安定したオンライン対戦を準備しています。", onlinePreview: "カラー選択プレビュー",
-      onlineButton: "オンライン対戦 準備中", onlineStatus: "正式対応まではローカル対戦またはAI対戦をご利用ください。",
-      onlineGo: "オンライン対戦 準備中", onlineBack: "ローカル対戦設定に戻る",
-      onlineAria: "オンライン対戦準備中", onlinePalette: "オンライン対戦カラープレビュー", colors: ["空色", "ピンク", "イエロー", "ミント", "パープル", "オレンジ"],
+      onlineTitle: "オンライン対戦", onlineLead: "好きな方法でリアルタイム対戦を始めましょう。", onlinePreview: "カラー選択プレビュー",
+      onlineButton: "オンライン対戦", onlineStatus: "好きな方法でリアルタイム対戦を始めましょう。",
+      onlineGo: "オンライン対戦", onlineBack: "ローカル対戦設定に戻る",
+      onlineAria: "オンライン対戦", onlinePalette: "オンライン対戦カラープレビュー", colors: ["空色", "ピンク", "イエロー", "ミント", "パープル", "オレンジ"],
       pauseOpen: "一時停止メニューを開く", pauseMenu: "一時停止メニュー", helpOpen: "ゲーム説明を開く", helpTitle: "ゲーム説明",
       settingsOpen: "設定を開く", settingsTitle: "設定", helpClose: "ゲーム説明を閉じる", privacyClose: "プライバシー案内をあとで確認",
       gauge: "制圧率ゲージ", mobileActions: "モバイル操作ボタン", ready1: "1P準備", ready2: "2P準備", item: "アイテム"
     },
     zh: {
-      onlineTitle: "在线对战准备中", onlineLead: "我们正在准备稳定的在线对战体验。", onlinePreview: "颜色选择预览",
-      onlineButton: "在线对战准备中", onlineStatus: "正式支持前，请使用本地对战或AI对战。",
-      onlineGo: "在线对战准备中", onlineBack: "返回本地对战设置",
-      onlineAria: "在线对战准备中", onlinePalette: "在线对战颜色预览", colors: ["天蓝色", "粉色", "黄色", "薄荷色", "紫色", "橙色"],
+      onlineTitle: "在线对战", onlineLead: "选择一种方式开始实时对战。", onlinePreview: "颜色选择预览",
+      onlineButton: "在线对战", onlineStatus: "选择一种方式开始实时对战。",
+      onlineGo: "在线对战", onlineBack: "返回本地对战设置",
+      onlineAria: "在线对战", onlinePalette: "在线对战颜色预览", colors: ["天蓝色", "粉色", "黄色", "薄荷色", "紫色", "橙色"],
       pauseOpen: "打开暂停菜单", pauseMenu: "暂停菜单", helpOpen: "打开游戏说明", helpTitle: "游戏说明",
       settingsOpen: "打开设置", settingsTitle: "设置", helpClose: "关闭游戏说明", privacyClose: "稍后查看隐私说明",
       gauge: "占领率进度条", mobileActions: "移动端操作按钮", ready1: "1P准备", ready2: "2P准备", item: "道具"

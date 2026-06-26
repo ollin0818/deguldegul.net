@@ -91,6 +91,14 @@
     return window.DegulAuth;
   }
 
+  function isLocalTestMode() {
+    try {
+      return window.DegulTestGuard?.isTestMode?.() === true;
+    } catch {}
+    const { protocol, hostname } = window.location;
+    return protocol === "file:" || /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(hostname || "");
+  }
+
   function formatTime(ms) {
     if (!Number.isFinite(ms) || ms < 0) return "--:--.-";
     const totalSeconds = Math.floor(ms / 1000);
@@ -113,6 +121,10 @@
   }
 
   function beginMatch(config) {
+    if (isLocalTestMode()) {
+      activeMatch = null;
+      return;
+    }
     matchGeneration += 1;
     const generation = matchGeneration;
     const normalized = {
@@ -141,6 +153,10 @@
   }
 
   async function finishMatch(result) {
+    if (isLocalTestMode()) {
+      activeMatch = null;
+      return;
+    }
     const match = activeMatch;
     activeMatch = null;
     if (!match || match.generation !== matchGeneration || result?.won !== true) return;
@@ -289,6 +305,11 @@
     updateLabels();
 
     try {
+      if (isLocalTestMode()) {
+        if (generation !== refreshGeneration) return;
+        renderRanking({ top: [], me: null });
+        return;
+      }
       const api = auth();
       const user = await api?.refresh?.();
       if (!api?.request || !user?.nickname) throw new Error("nickname_required");

@@ -16,6 +16,15 @@
   let pendingAction = null;
   let pendingAllowLocalFallback = false;
   let selectedProfileColor = "#64beff";
+  let localAuthAnnounced = false;
+
+  const LOCAL_TEST_USER = {
+    id: "local-operator",
+    nickname: "운영자",
+    profileColor: "#64beff",
+    role: "operator",
+    localTest: true
+  };
 
   const texts = {
     ko: {
@@ -169,7 +178,47 @@
     } catch {}
   }
 
+  function isLocalTestMode() {
+    try {
+      if (window.DegulTestGuard?.isTestMode?.() === true) return true;
+    } catch {}
+    const { protocol, hostname } = window.location;
+    return protocol === "file:" || /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(hostname || "");
+  }
+
+  function ensureLocalTestUser() {
+    if (!isLocalTestMode()) return null;
+    storeToken("");
+    currentUser = {
+      ...LOCAL_TEST_USER,
+      profileColor: currentUser?.profileColor || selectedProfileColor || LOCAL_TEST_USER.profileColor
+    };
+    selectedProfileColor = currentUser.profileColor;
+    updateProfileButton();
+    if (!localAuthAnnounced) {
+      localAuthAnnounced = true;
+      announceReady();
+    }
+    return currentUser;
+  }
+
   async function api(path, options = {}) {
+    const localUser = ensureLocalTestUser();
+    if (localUser) {
+      if (path.startsWith("/api/auth/")) {
+        return { user: localUser, sessionToken: "" };
+      }
+      if (path.startsWith("/api/ai/rankings")) {
+        return { top: [], me: null };
+      }
+      if (path.startsWith("/api/ai/sessions")) {
+        return { sessionId: "local-test-session", submissionToken: "local-test-token" };
+      }
+      if (path.startsWith("/api/ai/results")) {
+        return { ok: true, skipped: true, localTest: true };
+      }
+    }
+
     const headers = new Headers(options.headers || {});
     headers.set("Accept", "application/json");
     if (options.body) headers.set("Content-Type", "application/json");
@@ -292,6 +341,9 @@
   }
 
   async function ensureSession() {
+    const localUser = ensureLocalTestUser();
+    if (localUser) return localUser;
+
     if (!hasConsent()) return null;
     if (currentUser) return currentUser;
     if (sessionPromise) return sessionPromise;
@@ -336,6 +388,14 @@
   }
 
   async function requireNickname(reason, action, options = {}) {
+    const localUser = ensureLocalTestUser();
+    if (localUser?.nickname) {
+      closeModal(false);
+      if (typeof action === "function") action();
+      else if (reason === "profile") showModal("profile");
+      return true;
+    }
+
     if (currentUser?.nickname) {
       if (typeof action === "function") action();
       else if (reason === "profile") showModal("profile");
@@ -378,6 +438,11 @@
   async function submitNickname(event) {
     event.preventDefault();
     if (busy) return;
+    if (ensureLocalTestUser()) {
+      closeModal(false);
+      runPendingAction();
+      return;
+    }
 
     const el = elements();
     const nickname = String(el.input.value || "").normalize("NFC").trim().replace(/\s+/gu, " ");
@@ -422,6 +487,18 @@
     if (busy || !currentUser?.nickname) return;
     const requestedColor = selectedProfileColor;
     const el = elements();
+    if (isLocalTestMode()) {
+      currentUser = {
+        ...currentUser,
+        profileColor: requestedColor
+      };
+      updateCharacterColors(requestedColor);
+      updateProfileButton();
+      renderModal("ready");
+      setMessage(text().colorSaved, false);
+      return;
+    }
+
     busy = true;
     let saved = false;
     let errorMessage = "";
@@ -540,6 +617,7 @@
     });
 
     installFeatureGuards();
+    if (ensureLocalTestUser()) return;
     if (hasConsent()) {
       ensureSession().catch(error => console.warn("[DegulAuth] silent login unavailable", error));
     }
