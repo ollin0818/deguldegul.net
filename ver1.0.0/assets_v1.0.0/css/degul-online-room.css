@@ -1,13 +1,109 @@
-.onlineMatchPanel {
+.onlineCompactMatchSelect {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 12px !important;
+}
+
+.localMatchSplitCard {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+#lobby .lobbyCard .localMatchSplitCard .matchButton,
+#lobby .lobbyCard button.onlineMatchModeButton {
+  min-height: 58px !important;
+  padding: 10px 12px !important;
+}
+
+#lobby .lobbyCard .localMatchSplitCard .matchButton span,
+#lobby .lobbyCard button.onlineMatchModeButton span {
+  font-size: 11px !important;
+  line-height: 1.15 !important;
+}
+
+#lobby .lobbyCard button.onlineMatchModeButton.selected {
+  border-color: rgba(47, 128, 237, 0.78) !important;
+  box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.17), 0 12px 24px rgba(15, 23, 42, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.72) !important;
+}
+
+.onlineRoomCompact {
   --online-room-accent: #2f80ed;
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.onlineMultiplayerPanel {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 520px);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.onlinePanelTopline {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.onlineMatchBadge {
+  justify-self: center;
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 12px;
+  background: rgba(47, 128, 237, 0.12);
+  color: #1d64b7;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.onlineMultiplayerPanel h2 {
+  margin: 0;
+  color: #ff8fb3;
+  font-size: 32px;
+  font-weight: 950;
+}
+
+.onlineMatchLead {
+  margin: -4px 0 2px !important;
+  color: #5b6f82;
+  font-size: 14px !important;
+  line-height: 1.35 !important;
+  font-weight: 800;
+}
+
+.onlineRoomBackButton {
+  min-height: 34px;
+  border: 1px solid rgba(47, 128, 237, 0.16) !important;
+  border-radius: 8px !important;
+  padding: 0 12px !important;
+  color: #1e4d6b !important;
+  background: rgba(235, 248, 255, 0.94) !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  cursor: pointer;
 }
 
 .onlineRoomEntry,
 .onlineRoomLobby {
   display: grid;
-  gap: 12px;
-  width: min(100%, 520px);
-  margin: 12px auto 0;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+}
+
+.onlineRoomEntry {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.onlineRoomEntry .onlineRoomJoinLine {
+  grid-column: 1 / -1;
 }
 
 .onlineRoomJoinLine,
@@ -20,7 +116,7 @@
 }
 
 .onlineRoomHeader {
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1px solid rgba(47, 128, 237, 0.16);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.76);
@@ -29,7 +125,7 @@
 .onlineRoomHeader span {
   display: block;
   color: #537083;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -37,18 +133,18 @@
   display: block;
   margin-top: 2px;
   color: #12344d;
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 900;
   letter-spacing: 0;
 }
 
 .onlineRoomCodeInput {
   width: 100%;
-  min-height: 44px;
+  min-height: 38px;
   border: 1px solid rgba(47, 128, 237, 0.22);
   border-radius: 8px;
   padding: 0 12px;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 900;
   text-align: center;
   text-transform: uppercase;
@@ -59,8 +155,9 @@
 
 .onlineRoomPrimaryButton,
 .onlineRoomSecondaryButton,
-.onlineRoomCopyButton {
-  min-height: 44px;
+.onlineRoomCopyButton,
+.onlineRoomQuickButton {
+  min-height: 38px;
   border: 0;
   border-radius: 8px;
   padding: 0 14px;
@@ -76,10 +173,17 @@
 }
 
 .onlineRoomSecondaryButton,
-.onlineRoomCopyButton {
+.onlineRoomCopyButton,
+.onlineRoomQuickButton {
   color: #1e4d6b;
   background: rgba(235, 248, 255, 0.94);
   border: 1px solid rgba(47, 128, 237, 0.18);
+}
+
+.onlineRoomQuickButton:disabled {
+  color: #7a8ea0;
+  cursor: not-allowed;
+  opacity: 0.76;
 }
 
 .onlineRoomSecondaryButton.danger {
@@ -89,7 +193,7 @@
 }
 
 .onlineRoomPlayers {
-  display: grid;
+  display: none;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
@@ -138,7 +242,7 @@
 }
 
 .onlineRoomSkinPanel {
-  display: grid;
+  display: none;
   gap: 8px;
   padding: 10px;
   border-radius: 8px;
@@ -203,6 +307,8 @@ body.ghost-mode-lock .onlineRoomSkinPanel > strong {
 }
 
 @media (max-width: 720px) {
+  .onlineCompactMatchSelect,
+  .onlineRoomEntry,
   .onlineRoomPlayers,
   .onlineRoomActions,
   .onlineRoomJoinLine {
@@ -212,4 +318,115 @@ body.ghost-mode-lock .onlineRoomSkinPanel > strong {
   .onlineRoomSkinGrid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+
+  .onlineMultiplayerPanel h2 {
+    font-size: 28px;
+  }
+}
+
+.onlineOpponentPanel {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 6px;
+  min-height: 118px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(47, 128, 237, 0.16);
+  background: rgba(235, 248, 255, 0.82);
+  color: #17364f;
+  text-align: center;
+}
+
+.onlineOpponentBadge {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 8px;
+  background: rgba(47, 128, 237, 0.12);
+  color: #1d64b7;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.onlineOpponentPanel strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.onlineOpponentPanel em {
+  max-width: 100%;
+  color: #587083;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact {
+  display: grid;
+}
+
+#lobby .lobbyCard:not(.online-room-active) .onlineRoomCompact,
+#lobby .lobbyCard:not(.online-room-active) .onlineOpponentPanel {
+  display: none !important;
+}
+
+#lobby .lobbyCard.online-room-active #p2Preview,
+#lobby .lobbyCard.online-room-active #p2Palette,
+#lobby .lobbyCard.online-room-active #p2ReadyBox,
+#lobby .lobbyCard.online-room-active .playerSelectBox:nth-child(2) .readyHint {
+  display: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .playerSelectBox:nth-child(2) {
+  min-height: 230px;
+}
+
+#lobby .lobbyCard.online-room-active #startStatus {
+  display: none;
+}
+
+#lobby .lobbyCard.online-room-active .aiDifficultyWrap.show {
+  display: none !important;
+}
+
+body.dark-mode .onlineOpponentPanel,
+body.ghost-mode-lock .onlineOpponentPanel {
+  border-color: rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.72);
+  color: #edf5ff;
+}
+
+body.dark-mode .onlineOpponentPanel em,
+body.ghost-mode-lock .onlineOpponentPanel em {
+  color: #b8c6d6;
+}
+
+body.tablet-device.mobile-landscape #lobby .lobbyCard .onlineCompactMatchSelect,
+body.device-layout-forced-tablet.mobile-landscape #lobby .lobbyCard .onlineCompactMatchSelect {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  grid-template-rows: 1fr !important;
+  grid-auto-rows: auto !important;
+  gap: 10px !important;
+}
+
+body.tablet-device.mobile-landscape #lobby .lobbyCard .localMatchSplitCard,
+body.device-layout-forced-tablet.mobile-landscape #lobby .lobbyCard .localMatchSplitCard {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+body.tablet-device.mobile-landscape #lobby .lobbyCard .localMatchSplitCard .matchButton,
+body.tablet-device.mobile-landscape #lobby .lobbyCard button.onlineMatchModeButton,
+body.device-layout-forced-tablet.mobile-landscape #lobby .lobbyCard .localMatchSplitCard .matchButton,
+body.device-layout-forced-tablet.mobile-landscape #lobby .lobbyCard button.onlineMatchModeButton {
+  height: 58px !important;
+  min-height: 58px !important;
+  padding: 8px 10px !important;
 }

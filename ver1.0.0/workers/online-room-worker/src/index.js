@@ -1,13 +1,29 @@
 const ROOM_CODE_PATTERN = /^[A-Z0-9]{6}$/;
 const PLAYER_ID_PATTERN = /^[a-f0-9-]{36}$/i;
 const ROOM_TTL_MS = 1000 * 60 * 60 * 3;
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Accept"
+};
 
 function json(data, init = {}) {
   return Response.json(data, {
     ...init,
     headers: {
       "Cache-Control": "no-store",
+      ...CORS_HEADERS,
       ...(init.headers || {})
+    }
+  });
+}
+
+function optionsResponse() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Cache-Control": "no-store",
+      ...CORS_HEADERS
     }
   });
 }
@@ -248,6 +264,7 @@ export class OnlineRoom {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (request.method === "OPTIONS") return optionsResponse();
     if (!url.pathname.startsWith("/api/online/")) {
       return error(404, "not_found", "온라인 API 경로가 아닙니다.");
     }

@@ -1,10 +1,11 @@
 (function () {
   "use strict";
 
-  const API_BASE = "/api/online";
+  const API_BASE = window.location.protocol === "file:" ? "https://deguldegul.net/api/online" : "/api/online";
   const SESSION_KEY = "degulDegulOnlineRoomSessionV1";
   const DEFAULT_SKIN = "sky";
   let session = loadSession();
+  let onlineMode = !!session;
   let pollTimer = null;
   let selectedSkin = session?.skin || DEFAULT_SKIN;
 
@@ -39,6 +40,17 @@
       { name: "Mint", actor: 0x62e6b7 },
       { name: "Yellow", actor: 0xffd166 }
     ];
+  }
+
+  function getLobbyCard() {
+    return document.querySelector("#lobby .lobbyCard");
+  }
+
+  function getCurrentSelectedSkin() {
+    try {
+      if (selectedColors?.[1]) return normalizeSkin(selectedColors[1]);
+    } catch {}
+    return selectedSkin || DEFAULT_SKIN;
   }
 
   function isChoiceLocked(choice) {
@@ -92,15 +104,85 @@
   }
 
   function applyOnlineRoomText() {
+    const button = $("onlineModeBtn");
     const title = $("onlineRoomTitle");
     const lead = $("onlineRoomLead");
-    const go = document.querySelector(".onlineTextGo");
-    const slide = document.querySelector(".onlineMatchSlide");
-    if (title) title.textContent = "온라인 방";
-    if (lead) lead.textContent = "6자리 방 코드로 친구와 같은 방에 입장하세요.";
-    if (go) go.textContent = "온라인 방 만들기";
-    if (slide) slide.setAttribute("aria-label", "온라인 대전 방");
-    if (!session) setStatus("온라인 방 연결 준비 완료");
+    if (button) {
+      const strong = button.querySelector("strong");
+      const span = button.querySelector("span");
+      if (strong) strong.textContent = "온라인 매칭";
+      if (span) span.textContent = "방 코드로 입장";
+      button.setAttribute("aria-pressed", onlineMode ? "true" : "false");
+    }
+    if (title) title.textContent = "온라인 매칭";
+    if (lead) lead.textContent = "방을 만들거나 6자리 코드로 친구 방에 입장하세요.";
+    if (onlineMode && !session) setStatus("방을 만들거나 코드로 입장하세요.");
+    if (!session) updateOpponentPanel(null);
+    applyOnlineRoomLayout();
+  }
+
+  function applyOnlineRoomLayout() {
+    const card = getLobbyCard();
+    const compact = $("onlineRoomCompact");
+    const opponent = $("onlineOpponentPanel");
+    const onlineButton = $("onlineModeBtn");
+    const pvpButton = $("pvpModeBtn");
+    const aiButton = $("aiModeBtn");
+
+    if (card) card.classList.toggle("online-room-active", !!onlineMode);
+    if (compact) compact.hidden = !onlineMode;
+    if (opponent) opponent.hidden = !onlineMode;
+    if (onlineButton) {
+      onlineButton.classList.toggle("selected", !!onlineMode);
+      onlineButton.setAttribute("aria-pressed", onlineMode ? "true" : "false");
+    }
+    if (onlineMode) {
+      pvpButton?.classList.remove("selected");
+      aiButton?.classList.remove("selected");
+      try {
+        window.setLobbyPanel?.("online");
+      } catch {}
+    }
+  }
+
+  function updateOpponentPanel(room) {
+    const panel = $("onlineOpponentPanel");
+    if (!panel) return;
+    panel.hidden = !onlineMode;
+
+    const slotLabel = $("onlineLocalSlot");
+    const name = $("onlineOpponentName");
+    const state = $("onlineOpponentState");
+    const localSlot = Number(session?.slot) || 1;
+    const opponentSlot = localSlot === 1 ? 2 : 1;
+    const opponent = room?.players?.[String(opponentSlot)] || room?.players?.[opponentSlot] || null;
+
+    if (slotLabel) slotLabel.textContent = session ? `${localSlot}P 온라인` : "ONLINE";
+    if (name) name.textContent = opponent ? opponent.nickname || `${opponentSlot}P` : "상대 대기 중";
+    if (state) {
+      if (!session) state.textContent = "방을 만들거나 코드로 입장하세요.";
+      else if (opponent) state.textContent = opponent.ready ? "상대 준비 완료" : "상대 입장 완료";
+      else state.textContent = "초대한 상대를 기다리는 중";
+    }
+  }
+
+  function setOnlineMode(enabled) {
+    onlineMode = !!enabled;
+    applyOnlineRoomLayout();
+    if (onlineMode) {
+      if (session) refreshRoom();
+      else {
+        renderRoom(null);
+        setStatus("방을 만들거나 코드로 입장하세요.");
+      }
+    } else {
+      try {
+        window.setLobbyPanel?.("main");
+      } catch {}
+      try {
+        window.updateGameModeUI?.();
+      } catch {}
+    }
   }
 
   function setBusy(isBusy) {
@@ -136,8 +218,10 @@
     const inRoom = !!session && !!room;
     const entry = $("onlineRoomEntry");
     const lobby = $("onlineRoomLobby");
+    applyOnlineRoomLayout();
     if (entry) entry.hidden = inRoom;
     if (lobby) lobby.hidden = !inRoom;
+    updateOpponentPanel(room);
     if (!inRoom) return;
 
     $("onlineRoomCode").textContent = room.code || session.roomCode || "------";
@@ -196,6 +280,7 @@
   async function createRoom() {
     setBusy(true);
     try {
+      selectedSkin = getCurrentSelectedSkin();
       const data = await api("/rooms", {
         method: "POST",
         body: { nickname: getNickname(), skin: selectedSkin }
@@ -206,6 +291,7 @@
         slot: data.slot,
         skin: selectedSkin
       });
+      onlineMode = true;
       renderRoom(data.room);
       startPolling();
       setStatus("방을 만들었습니다. 코드를 친구에게 공유하세요.");
@@ -226,6 +312,7 @@
     }
     setBusy(true);
     try {
+      selectedSkin = getCurrentSelectedSkin();
       const data = await api(`/rooms/${encodeURIComponent(code)}/join`, {
         method: "POST",
         body: { nickname: getNickname(), skin: selectedSkin }
@@ -236,6 +323,7 @@
         slot: data.slot,
         skin: selectedSkin
       });
+      onlineMode = true;
       renderRoom(data.room);
       startPolling();
       setStatus(`${data.slot}P로 입장했습니다.`);
@@ -292,6 +380,7 @@
     } catch {}
     stopPolling();
     saveSession(null);
+    onlineMode = true;
     renderRoom(null);
     setStatus("방에서 나갔습니다.");
     setBusy(false);
@@ -320,9 +409,12 @@
     });
     renderSkins();
     if (session) {
+      onlineMode = true;
+      applyOnlineRoomLayout();
       refreshRoom();
       startPolling();
     } else {
+      applyOnlineRoomLayout();
       renderRoom(null);
     }
   }
@@ -332,6 +424,7 @@
     joinRoom,
     leaveRoom,
     refreshRoom,
+    setOnlineMode,
     applyOnlineRoomText
   };
 
@@ -344,6 +437,17 @@
     };
     wrapped.__degulOnlineRoomWrapped = true;
     window.updateSiteInfoLanguage = wrapped;
+  }
+
+  const previousUpdateGameModeUI = window.updateGameModeUI;
+  if (typeof previousUpdateGameModeUI === "function" && !previousUpdateGameModeUI.__degulOnlineRoomWrapped) {
+    const wrapped = function (...args) {
+      const result = previousUpdateGameModeUI.apply(this, args);
+      if (onlineMode) applyOnlineRoomLayout();
+      return result;
+    };
+    wrapped.__degulOnlineRoomWrapped = true;
+    window.updateGameModeUI = wrapped;
   }
 
   if (document.readyState === "loading") {

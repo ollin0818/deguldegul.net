@@ -241,14 +241,20 @@
     <div class="lobbyPanelSlider" id="lobbyPanelSlider" aria-label="로비 패널 슬라이드">
       <div class="lobbyPanelTrack" id="lobbyPanelTrack">
         <section class="lobbyPanelSlide mainLobbySlide" aria-label="로컬 대전 설정">
-    <div class="matchSelectWrap" id="matchSelectWrap" aria-label="대전 방식 선택">
-      <button class="matchButton selected" id="pvpModeBtn" type="button" onclick="setMatchMode('pvp')">
-        <strong>2P 대전</strong>
-        <span>두 명이 같은 화면에서 플레이</span>
-      </button>
-      <button class="matchButton" id="aiModeBtn" type="button" onclick="setMatchMode('ai')">
-        <strong>AI 대전</strong>
-        <span>1P가 AI와 혼자 대전</span>
+    <div class="matchSelectWrap onlineCompactMatchSelect" id="matchSelectWrap" aria-label="대전 방식 선택">
+      <div class="localMatchSplitCard" aria-label="로컬 대전 선택">
+        <button class="matchButton selected" id="pvpModeBtn" type="button" onclick="window.DegulOnlineRoom?.setOnlineMode(false); setMatchMode('pvp')">
+          <strong>2P 대전</strong>
+          <span>같은 화면</span>
+        </button>
+        <button class="matchButton" id="aiModeBtn" type="button" onclick="window.DegulOnlineRoom?.setOnlineMode(false); setMatchMode('ai')">
+          <strong>AI 대전</strong>
+          <span>혼자 플레이</span>
+        </button>
+      </div>
+      <button class="matchButton onlineMatchModeButton" id="onlineModeBtn" type="button" onclick="window.DegulOnlineRoom?.setOnlineMode(true); window.setLobbyPanel?.('online')">
+        <strong>온라인 매칭</strong>
+        <span>방 코드로 입장</span>
       </button>
     </div>
 
@@ -308,62 +314,65 @@
 
     <div id="startStatus">색상을 고르고 각자 준비하세요.</div>
         </section>
-        <section class="lobbyPanelSlide onlineMatchSlide" aria-label="온라인 대전 방">
-          <div class="onlineMatchPanel">
-            <div class="onlineMatchBadge">ONLINE ROOM</div>
-            <h2 id="onlineRoomTitle">온라인 방</h2>
-            <p class="onlineMatchLead" id="onlineRoomLead">6자리 방 코드로 친구와 같은 방에 입장하세요.</p>
+        <section class="lobbyPanelSlide onlineMatchSlide" aria-label="멀티플레이 방">
+          <div class="onlineMatchPanel onlineMultiplayerPanel">
+            <div class="onlinePanelTopline">
+              <button class="onlineRoomBackButton" id="onlineRoomBackButton" type="button" onclick="window.DegulOnlineRoom?.setOnlineMode(false); window.setLobbyPanel?.('main')">로비</button>
+              <span class="onlineMatchBadge">MULTIPLAYER</span>
+            </div>
+            <h2 id="onlineRoomTitle">온라인 매칭</h2>
+            <p class="onlineMatchLead" id="onlineRoomLead">방을 만들거나 6자리 코드로 친구 방에 입장하세요.</p>
 
-            <div class="onlineRoomEntry" id="onlineRoomEntry">
-              <button class="onlineRoomPrimaryButton" id="onlineCreateRoomButton" type="button">방 만들기</button>
-              <div class="onlineRoomJoinLine">
-                <input class="onlineRoomCodeInput" id="onlineRoomCodeInput" type="text" inputmode="latin" maxlength="6" autocomplete="off" placeholder="방 코드">
-                <button class="onlineRoomSecondaryButton" id="onlineJoinRoomButton" type="button">입장</button>
-              </div>
+            <div class="onlineOpponentPanel" id="onlineOpponentPanel" hidden>
+              <span class="onlineOpponentBadge" id="onlineLocalSlot">ONLINE</span>
+              <strong id="onlineOpponentName">상대 대기 중</strong>
+              <em id="onlineOpponentState">방을 만들거나 코드로 입장하세요.</em>
             </div>
 
-            <div class="onlineRoomLobby" id="onlineRoomLobby" hidden>
-              <div class="onlineRoomHeader">
-                <div>
-                  <span>방 코드</span>
-                  <strong id="onlineRoomCode">------</strong>
-                </div>
-                <button class="onlineRoomCopyButton" id="onlineCopyRoomCodeButton" type="button">복사</button>
-              </div>
+    <div class="onlineRoomCompact" id="onlineRoomCompact" hidden>
+      <div class="onlineRoomEntry" id="onlineRoomEntry">
+        <button class="onlineRoomPrimaryButton" id="onlineCreateRoomButton" type="button">방 만들기</button>
+        <button class="onlineRoomQuickButton" id="onlineQuickMatchButton" type="button" disabled>빠른 대전 준비 중</button>
+        <div class="onlineRoomJoinLine">
+          <input class="onlineRoomCodeInput" id="onlineRoomCodeInput" type="text" inputmode="latin" maxlength="6" autocomplete="off" placeholder="방 코드">
+          <button class="onlineRoomSecondaryButton" id="onlineJoinRoomButton" type="button">입장</button>
+        </div>
+      </div>
 
-              <div class="onlineRoomPlayers">
-                <div class="onlineRoomPlayerCard" id="onlineRoomPlayer1">
-                  <span class="onlineRoomPlayerSlot">1P</span>
-                  <strong class="onlineRoomPlayerName">대기 중</strong>
-                  <em class="onlineRoomPlayerReady">준비 전</em>
-                </div>
-                <div class="onlineRoomPlayerCard" id="onlineRoomPlayer2">
-                  <span class="onlineRoomPlayerSlot">2P</span>
-                  <strong class="onlineRoomPlayerName">상대 대기 중</strong>
-                  <em class="onlineRoomPlayerReady">준비 전</em>
-                </div>
-              </div>
+      <div class="onlineRoomLobby" id="onlineRoomLobby" hidden>
+        <div class="onlineRoomHeader">
+          <div>
+            <span>방 코드</span>
+            <strong id="onlineRoomCode">------</strong>
+          </div>
+          <button class="onlineRoomCopyButton" id="onlineCopyRoomCodeButton" type="button">복사</button>
+        </div>
 
-              <div class="onlineRoomSkinPanel">
-                <strong>스킨 선택</strong>
-                <div class="onlineRoomSkinGrid" id="onlineRoomSkinGrid"></div>
-              </div>
+        <div class="onlineRoomPlayers" aria-hidden="true">
+          <div class="onlineRoomPlayerCard" id="onlineRoomPlayer1">
+            <span class="onlineRoomPlayerSlot">1P</span>
+            <strong class="onlineRoomPlayerName">대기 중</strong>
+            <em class="onlineRoomPlayerReady">준비 전</em>
+          </div>
+          <div class="onlineRoomPlayerCard" id="onlineRoomPlayer2">
+            <span class="onlineRoomPlayerSlot">2P</span>
+            <strong class="onlineRoomPlayerName">상대 대기 중</strong>
+            <em class="onlineRoomPlayerReady">준비 전</em>
+          </div>
+        </div>
 
-              <div class="onlineRoomActions">
-                <button class="onlineRoomPrimaryButton" id="onlineReadyButton" type="button">준비</button>
-                <button class="onlineRoomSecondaryButton danger" id="onlineLeaveRoomButton" type="button">방 나가기</button>
-              </div>
-            </div>
-            <div class="onlineMatchStatus" id="onlineMatchStatus" aria-live="polite">온라인 방 연결 준비 완료</div>
+        <div class="onlineRoomActions">
+          <button class="onlineRoomPrimaryButton" id="onlineReadyButton" type="button">준비</button>
+          <button class="onlineRoomSecondaryButton danger" id="onlineLeaveRoomButton" type="button">방 나가기</button>
+        </div>
+      </div>
+      <div class="onlineMatchStatus" id="onlineMatchStatus" aria-live="polite">온라인 방 연결 준비 완료</div>
+    </div>
+
           </div>
         </section>
       </div>
     </div>
-    <button class="lobbyOnlineArrow" id="lobbyOnlineArrow" type="button" onclick="toggleLobbyPanel()" aria-label="온라인 대전 준비 중 안내 보기" data-panel-target="online">
-      <span class="onlineArrowCube" aria-hidden="true"><span class="onlineArrowCubeFace"></span></span>
-      <span class="onlineArrowText onlineTextGo">온라인 대전 준비 중</span>
-      <span class="onlineArrowText onlineTextBack">로컬 대전 설정 돌아가기</span>
-    </button>
 
     <div class="lobbyWingStack" aria-label="AI 랭킹">
       <button class="lobbyWingTab ranking" id="aiRankingWing" type="button" onclick="openAiRankingPopup()" aria-label="랭킹 열기">
