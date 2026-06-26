@@ -35,6 +35,7 @@
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-auth.min.css?v=4">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-tablet-performance.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-ai-history.css?v=100">
+<link rel="stylesheet" href="assets_v1.0.0/css/degul-online-room.css?v=100">
 </head>
 <body>
 <div id="dominanceEdgeOverlay" aria-hidden="true"></div>
@@ -307,27 +308,53 @@
 
     <div id="startStatus">색상을 고르고 각자 준비하세요.</div>
         </section>
-        <section class="lobbyPanelSlide onlineMatchSlide" aria-label="온라인 대전 준비 중">
+        <section class="lobbyPanelSlide onlineMatchSlide" aria-label="온라인 대전 방">
           <div class="onlineMatchPanel">
-            <div class="onlineMatchBadge">COMING SOON</div>
-            <h2>온라인 대전 준비 중</h2>
-            <p class="onlineMatchLead">안정적인 온라인 대전을 준비하고 있습니다.</p>
-            <div class="onlineColorSelectBox onlineMatchPreviewDisabled" aria-disabled="true">
-              <div class="onlineColorPreview" id="onlineColorPreview" aria-hidden="true"></div>
-              <div class="onlineColorInfo">
-                <strong>색상 선택 미리보기</strong>
-                <div class="onlineColorPalette" aria-label="온라인 대전 색상 미리보기">
-                  <button class="onlineColorChip selected" type="button" style="--chip-color:#64beff" aria-label="하늘색" disabled></button>
-                  <button class="onlineColorChip" type="button" style="--chip-color:#ff7fab" aria-label="분홍색" disabled></button>
-                  <button class="onlineColorChip" type="button" style="--chip-color:#ffd166" aria-label="노란색" disabled></button>
-                  <button class="onlineColorChip" type="button" style="--chip-color:#7ee0a6" aria-label="민트색" disabled></button>
-                  <button class="onlineColorChip" type="button" style="--chip-color:#b38cff" aria-label="보라색" disabled></button>
-                  <button class="onlineColorChip" type="button" style="--chip-color:#ff9f6e" aria-label="주황색" disabled></button>
-                </div>
+            <div class="onlineMatchBadge">ONLINE ROOM</div>
+            <h2 id="onlineRoomTitle">온라인 방</h2>
+            <p class="onlineMatchLead" id="onlineRoomLead">6자리 방 코드로 친구와 같은 방에 입장하세요.</p>
+
+            <div class="onlineRoomEntry" id="onlineRoomEntry">
+              <button class="onlineRoomPrimaryButton" id="onlineCreateRoomButton" type="button">방 만들기</button>
+              <div class="onlineRoomJoinLine">
+                <input class="onlineRoomCodeInput" id="onlineRoomCodeInput" type="text" inputmode="latin" maxlength="6" autocomplete="off" placeholder="방 코드">
+                <button class="onlineRoomSecondaryButton" id="onlineJoinRoomButton" type="button">입장</button>
               </div>
             </div>
-            <button class="onlineMatchStartButton" type="button" disabled aria-disabled="true">온라인 대전 준비 중</button>
-            <div class="onlineMatchStatus" id="onlineMatchStatus" aria-live="polite">정식 지원 전까지 로컬 대전과 AI 대전을 이용해주세요.</div>
+
+            <div class="onlineRoomLobby" id="onlineRoomLobby" hidden>
+              <div class="onlineRoomHeader">
+                <div>
+                  <span>방 코드</span>
+                  <strong id="onlineRoomCode">------</strong>
+                </div>
+                <button class="onlineRoomCopyButton" id="onlineCopyRoomCodeButton" type="button">복사</button>
+              </div>
+
+              <div class="onlineRoomPlayers">
+                <div class="onlineRoomPlayerCard" id="onlineRoomPlayer1">
+                  <span class="onlineRoomPlayerSlot">1P</span>
+                  <strong class="onlineRoomPlayerName">대기 중</strong>
+                  <em class="onlineRoomPlayerReady">준비 전</em>
+                </div>
+                <div class="onlineRoomPlayerCard" id="onlineRoomPlayer2">
+                  <span class="onlineRoomPlayerSlot">2P</span>
+                  <strong class="onlineRoomPlayerName">상대 대기 중</strong>
+                  <em class="onlineRoomPlayerReady">준비 전</em>
+                </div>
+              </div>
+
+              <div class="onlineRoomSkinPanel">
+                <strong>스킨 선택</strong>
+                <div class="onlineRoomSkinGrid" id="onlineRoomSkinGrid"></div>
+              </div>
+
+              <div class="onlineRoomActions">
+                <button class="onlineRoomPrimaryButton" id="onlineReadyButton" type="button">준비</button>
+                <button class="onlineRoomSecondaryButton danger" id="onlineLeaveRoomButton" type="button">방 나가기</button>
+              </div>
+            </div>
+            <div class="onlineMatchStatus" id="onlineMatchStatus" aria-live="polite">온라인 방 연결 준비 완료</div>
           </div>
         </section>
       </div>
@@ -1023,6 +1050,7 @@
 <script src="assets_v1.0.0/js/degul-auth.min.js?v=6"></script>
 <script src="assets_v1.0.0/js/degul-ai-ranking.min.js?v=2"></script>
 <script src="assets_v1.0.0/js/degul-test-guard.js?v=100"></script>
+<script src="assets_v1.0.0/js/degul-online-room.js?v=100"></script>
 
 
 <div class="degulTutorialLayer" id="degulTutorialLayer" aria-hidden="true">
