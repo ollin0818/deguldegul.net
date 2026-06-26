@@ -5,9 +5,10 @@
   const SESSION_KEY = "degulDegulOnlineRoomSessionV1";
   const DEFAULT_SKIN = "sky";
   let session = loadSession();
-  let onlineMode = !!session;
+  let onlineMode = false;
   let pollTimer = null;
   let selectedSkin = session?.skin || DEFAULT_SKIN;
+  let suppressPanelSync = false;
 
   function $(id) {
     return document.getElementById(id);
@@ -139,9 +140,11 @@
     if (onlineMode) {
       pvpButton?.classList.remove("selected");
       aiButton?.classList.remove("selected");
-      try {
-        window.setLobbyPanel?.("online");
-      } catch {}
+      if (!suppressPanelSync) {
+        try {
+          window.setLobbyPanel?.("online");
+        } catch {}
+      }
     }
   }
 
@@ -168,6 +171,7 @@
 
   function setOnlineMode(enabled) {
     onlineMode = !!enabled;
+    suppressPanelSync = false;
     applyOnlineRoomLayout();
     if (onlineMode) {
       if (session) refreshRoom();
@@ -409,8 +413,10 @@
     });
     renderSkins();
     if (session) {
-      onlineMode = true;
+      onlineMode = false;
+      suppressPanelSync = true;
       applyOnlineRoomLayout();
+      suppressPanelSync = false;
       refreshRoom();
       startPolling();
     } else {
