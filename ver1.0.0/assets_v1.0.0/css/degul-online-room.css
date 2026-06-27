@@ -3574,3 +3574,161 @@ body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox
   height: 8px !important;
   margin-top: 0 !important;
 }
+
+/* Online battle dark mode pass: keep the lobby-sized layout, replace fixed light surfaces. */
+body.dark-mode .onlineRoomCompact,
+body.ghost-mode-lock .onlineRoomCompact {
+  --online-room-panel: rgba(18, 22, 32, 0.76);
+  --online-room-panel-strong: rgba(24, 29, 42, 0.92);
+  --online-room-border: rgba(255, 255, 255, 0.12);
+  --online-room-text: #f5f7fb;
+  --online-room-muted: #a4aab8;
+  --online-room-accent: #4aa3ff;
+  --online-room-warm: #8ee8ff;
+}
+
+body.dark-mode #lobby .lobbyCard.online-match-active,
+body.dark-mode #lobby .lobbyCard.online-room-active,
+body.ghost-mode-lock #lobby .lobbyCard.online-match-active,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active {
+  color: #f5f7fb !important;
+}
+
+body.dark-mode #lobby .lobbyCard button.onlineMatchModeButton,
+body.dark-mode #lobby .lobbyCard button.onlineMatchModeButton.selected,
+body.dark-mode #lobby .lobbyCard .onlineEntryCard,
+body.dark-mode #lobby .lobbyCard .onlineEntryCard.selected,
+body.dark-mode #lobby .lobbyCard .onlineEntryPanel,
+body.dark-mode #lobby .lobbyCard .onlineRoomHeader,
+body.dark-mode #lobby .lobbyCard .onlineRoomCodeInput,
+body.dark-mode #lobby .lobbyCard .onlineRoomSecondaryButton,
+body.dark-mode #lobby .lobbyCard .onlineRoomCopyButton,
+body.dark-mode #lobby .lobbyCard .onlineRoomBackButton,
+body.dark-mode #lobby .lobbyCard .onlineRoomQuickButton:not(.matching),
+body.ghost-mode-lock #lobby .lobbyCard button.onlineMatchModeButton,
+body.ghost-mode-lock #lobby .lobbyCard button.onlineMatchModeButton.selected,
+body.ghost-mode-lock #lobby .lobbyCard .onlineEntryCard,
+body.ghost-mode-lock #lobby .lobbyCard .onlineEntryCard.selected,
+body.ghost-mode-lock #lobby .lobbyCard .onlineEntryPanel,
+body.ghost-mode-lock #lobby .lobbyCard .onlineRoomHeader,
+body.ghost-mode-lock #lobby .lobbyCard .onlineRoomCodeInput,
+body.ghost-mode-lock #lobby .lobbyCard .onlineRoomSecondaryButton,
+body.ghost-mode-lock #lobby .lobbyCard .onlineRoomCopyButton,
+body.ghost-mode-lock #lobby .lobbyCard .onlineRoomBackButton,
+body.ghost-mode-lock #lobby .lobbyCard .onlineRoomQuickButton:not(.matching) {
+  color: #f5f7fb !important;
+  background: rgba(18, 22, 32, 0.76) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), 0 12px 28px rgba(0,0,0,0.28) !important;
+}
+
+body.dark-mode #lobby .lobbyCard .onlineEntryCopy > span,
+body.dark-mode #lobby .lobbyCard .onlineEntryHint,
+body.dark-mode #lobby .lobbyCard .onlineMatchLead,
+body.dark-mode #lobby .lobbyCard .onlineRoomHeader span,
+body.dark-mode #lobby .lobbyCard .onlineQuickSubtext,
+body.dark-mode #lobby .lobbyCard .onlineMatchStatus,
+body.ghost-mode-lock #lobby .lobbyCard .onlineEntryCopy > span,
+body.ghost-mode-lock #lobby .lobbyCard .onlineEntryHint,
+body.ghost-mode-lock #lobby .lobbyCard .onlineMatchLead,
+body.ghost-mode-lock #lobby .lobbyCard .onlineRoomHeader span,
+body.ghost-mode-lock #lobby .lobbyCard .onlineQuickSubtext,
+body.ghost-mode-lock #lobby .lobbyCard .onlineMatchStatus {
+  color: #a4aab8 !important;
+}
+
+body.dark-mode #lobby .lobbyCard .onlineRoomHeader strong,
+body.dark-mode #lobby .lobbyCard .onlineQuickText,
+body.dark-mode #lobby .lobbyCard .onlineEntryCard strong,
+body.ghost-mode-lock #lobby .lobbyCard .onlineRoomHeader strong,
+body.ghost-mode-lock #lobby .lobbyCard .onlineQuickText,
+body.ghost-mode-lock #lobby .lobbyCard .onlineEntryCard strong {
+  color: #f5f7fb !important;
+}
+
+body.dark-mode #lobby .lobbyCard.online-room-active .onlineLocalProfileCard.onlinePlayerSelectBox,
+body.dark-mode #lobby .lobbyCard.online-room-active .playerSelectBox.onlinePlayerSelectBox,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlineLocalProfileCard.onlinePlayerSelectBox,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .playerSelectBox.onlinePlayerSelectBox {
+  background: rgba(18, 22, 32, 0.78) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), 0 14px 30px rgba(0,0,0,0.30) !important;
+}
+
+body.dark-mode #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox .playerSelectTitle,
+body.dark-mode #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox .onlineProfileTitle strong,
+body.dark-mode #lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinName,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox .playerSelectTitle,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox .onlineProfileTitle strong,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinName {
+  color: #f5f7fb !important;
+}
+
+body.dark-mode #lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineLocalSkinRow:not(.onlineSolidRow) .onlineSkinCurrent,
+body.dark-mode #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox #onlineColorPalette.skinPalette.skinCarousel,
+body.dark-mode #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox #onlineSpecialPalette.skinPalette.skinCarousel,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineLocalSkinRow:not(.onlineSolidRow) .onlineSkinCurrent,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox #onlineColorPalette.skinPalette.skinCarousel,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox #onlineSpecialPalette.skinPalette.skinCarousel {
+  background: rgba(255,255,255,0.07) !important;
+  border-color: rgba(255,255,255,0.11) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05), 0 8px 20px rgba(0,0,0,0.22) !important;
+}
+
+body.dark-mode #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox #onlineColorTrack .skinChoiceButton,
+body.dark-mode #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox #onlineSpecialTrack .skinChoiceButton,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox #onlineColorTrack .skinChoiceButton,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox #onlineSpecialTrack .skinChoiceButton {
+  color: #f5f7fb !important;
+  background: rgba(24,29,42,0.86) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06) !important;
+}
+
+body.dark-mode #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox #onlineColorTrack .skinChoiceButton.selected,
+body.dark-mode #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox #onlineSpecialTrack .skinChoiceButton.selected,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox #onlineColorTrack .skinChoiceButton.selected,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox #onlineSpecialTrack .skinChoiceButton.selected {
+  border-color: rgba(142,232,255,0.72) !important;
+  box-shadow: 0 0 0 3px rgba(142,232,255,0.18), inset 0 0 0 1px rgba(255,255,255,0.12) !important;
+}
+
+body.dark-mode #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox #onlineColorPalette .skinArrowBtn,
+body.dark-mode #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox #onlineSpecialPalette .skinArrowBtn,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox #onlineColorPalette .skinArrowBtn,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox #onlineSpecialPalette .skinArrowBtn {
+  color: #f5f7fb !important;
+  background: rgba(255,255,255,0.10) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+}
+
+body.dark-mode #lobby .lobbyCard.online-room-active .onlineSkinDots .skinDot,
+body.dark-mode #lobby .lobbyCard.online-room-active .skinDots .skinDot,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlineSkinDots .skinDot,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .skinDots .skinDot {
+  background: rgba(255,255,255,0.24) !important;
+}
+
+body.dark-mode #lobby .lobbyCard.online-room-active .onlineSkinDots .skinDot.active,
+body.dark-mode #lobby .lobbyCard.online-room-active .skinDots .skinDot.active,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlineSkinDots .skinDot.active,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .skinDots .skinDot.active {
+  background: #8ee8ff !important;
+}
+
+body.dark-mode #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox button.onlineColorChip,
+body.dark-mode #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox .onlineColorChip,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox button.onlineColorChip,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox .onlineColorChip {
+  background: var(--chip-color) !important;
+  border-color: rgba(255,255,255,0.72) !important;
+  box-shadow: 0 5px 14px rgba(0,0,0,0.42), inset 0 0 0 1px rgba(255,255,255,0.30) !important;
+}
+
+body.dark-mode #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox button.onlineColorChip.selected,
+body.dark-mode #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox .onlineColorChip.selected,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox button.onlineColorChip.selected,
+body.ghost-mode-lock #lobby .lobbyCard.online-room-active .onlinePlayerSelectBox .onlineColorChip.selected {
+  border-color: rgba(255,255,255,0.92) !important;
+  box-shadow: 0 0 0 3px rgba(142,232,255,0.46), 0 8px 20px rgba(0,0,0,0.44), inset 0 0 0 1px rgba(255,255,255,0.34) !important;
+}
