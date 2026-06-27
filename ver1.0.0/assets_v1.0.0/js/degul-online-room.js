@@ -13,6 +13,7 @@
   let quickMatching = !!quickTicket;
   let quickMatchState = quickMatching ? "waiting" : "idle";
   let onlineEntryMode = "quick";
+  let onlineGameMode = "speed";
   let realtimeSocket = null;
   let realtimeInputSeq = 0;
   let realtimePingTimer = null;
@@ -21,7 +22,9 @@
   let realtimeStarted = false;
   let realtimeResultKey = "";
   let onlineInputPatched = false;
-  let selectedSkin = session?.skin || DEFAULT_SKIN;
+  let currentRoom = null;
+  let selectedSkin = session?.skin || "gift";
+  let selectedSolidSkin = DEFAULT_SKIN;
   let suppressPanelSync = false;
   const ONLINE_TEXT = {
     ko: {
@@ -37,8 +40,10 @@
       draw: "무승부",
       winner: slot => `${slot}P 승리`,
       onlineTitle: "온라인 대전",
+      onlineBadge: "online battle",
       onlineLead: "원하는 방식으로 상대와 실시간 대전을 시작하세요.",
       onlineButtonTitle: "온라인 대전",
+      backToLobby: "로비로 돌아가기",
       quick: "빠른 대전",
       quickStart: "빠른 대전 시작",
       quickCardTitle: "빠른대전",
@@ -59,7 +64,40 @@
       joinCardSub: "친구 방 참가",
       joinButton: "입장",
       joinHint: "친구가 공유한 6자리 방 코드를 입력하세요.",
-      roomCodePlaceholder: "방 코드"
+      roomCodePlaceholder: "방 코드",
+      speedModeTitle: "스피드 모드",
+      speedModeSub: "스피드 부스트 속도가 기본인 빠른 모드",
+      itemModeTitle: "아이템 모드",
+      itemModeSub: "아이템을 활용해 변수를 만드는 모드",
+      roomCodeLabel: "방 코드",
+      copyButton: "복사",
+      readyButton: "준비",
+      unreadyButton: "준비 취소",
+      leaveButton: "방 나가기",
+      waitingP1: "1P 대기 중",
+      waitingOpponent: "상대 대기 중",
+      seatEmpty: "빈 자리",
+      readyDone: "준비 완료",
+      readyBefore: "준비 전",
+      localOnlineSlot: slot => `${slot}P 온라인`,
+      opponentNone: "방을 만들거나 코드로 입장하세요.",
+      opponentReady: "상대 준비 완료",
+      opponentJoined: "상대 입장 완료",
+      opponentWaiting: "초대한 상대를 기다리는 중",
+      roomCreated: "방을 만들었습니다. 코드를 친구에게 공유하세요.",
+      roomJoined: slot => `${slot}P로 입장했습니다.`,
+      roomLeft: "방에서 나갔습니다.",
+      roomCodeCopied: "방 코드를 복사했습니다.",
+      roomMissing: "방이 사라졌습니다.",
+      opponentReadyStatus: "상대가 준비 완료했습니다.",
+      opponentJoinedStatus: "상대가 입장했습니다.",
+      waitingOpponentStatus: "상대 입장을 기다리는 중입니다.",
+      requestFailed: "온라인 방 요청에 실패했습니다.",
+      enterRoomCode: "6자리 방 코드를 입력하세요.",
+      previousSolid: "이전 단색",
+      nextSolid: "다음 단색",
+      previousSkin: "이전 스킨",
+      nextSkin: "다음 스킨"
     },
     en: {
       wsOpen: "Connected to the realtime server.",
@@ -74,8 +112,10 @@
       draw: "Draw",
       winner: slot => `${slot}P Win`,
       onlineTitle: "Online Battle",
+      onlineBadge: "online battle",
       onlineLead: "Choose how to start a realtime match.",
       onlineButtonTitle: "Online Battle",
+      backToLobby: "Back to lobby",
       quick: "Quick Match",
       quickStart: "Start Quick Match",
       quickCardTitle: "Quick Match",
@@ -96,7 +136,40 @@
       joinCardSub: "Join a friend",
       joinButton: "Join",
       joinHint: "Enter the 6-character room code your friend shared.",
-      roomCodePlaceholder: "Room Code"
+      roomCodePlaceholder: "Room Code",
+      speedModeTitle: "Speed Mode",
+      speedModeSub: "Fast standard mode with speed boost pacing.",
+      itemModeTitle: "Item Mode",
+      itemModeSub: "Use items to create match-changing moments.",
+      roomCodeLabel: "Room Code",
+      copyButton: "Copy",
+      readyButton: "Ready",
+      unreadyButton: "Cancel Ready",
+      leaveButton: "Leave Room",
+      waitingP1: "Waiting for 1P",
+      waitingOpponent: "Waiting for opponent",
+      seatEmpty: "Empty",
+      readyDone: "Ready",
+      readyBefore: "Not ready",
+      localOnlineSlot: slot => `${slot}P Online`,
+      opponentNone: "Create a room or enter a code.",
+      opponentReady: "Opponent ready",
+      opponentJoined: "Opponent joined",
+      opponentWaiting: "Waiting for invited opponent",
+      roomCreated: "Room created. Share the code with a friend.",
+      roomJoined: slot => `Joined as ${slot}P.`,
+      roomLeft: "Left the room.",
+      roomCodeCopied: "Room code copied.",
+      roomMissing: "The room disappeared.",
+      opponentReadyStatus: "Opponent is ready.",
+      opponentJoinedStatus: "Opponent joined.",
+      waitingOpponentStatus: "Waiting for opponent to join.",
+      requestFailed: "Online room request failed.",
+      enterRoomCode: "Enter the 6-character room code.",
+      previousSolid: "Previous solid color",
+      nextSolid: "Next solid color",
+      previousSkin: "Previous skin",
+      nextSkin: "Next skin"
     },
     ja: {
       wsOpen: "リアルタイムサーバーに接続しました。",
@@ -111,8 +184,10 @@
       draw: "引き分け",
       winner: slot => `${slot}P 勝利`,
       onlineTitle: "オンライン対戦",
+      onlineBadge: "online battle",
       onlineLead: "好きな方法でリアルタイム対戦を始めましょう。",
       onlineButtonTitle: "オンライン対戦",
+      backToLobby: "ロビーに戻る",
       quick: "クイック対戦",
       quickStart: "クイック対戦開始",
       quickCardTitle: "クイック対戦",
@@ -133,7 +208,40 @@
       joinCardSub: "友だちの部屋へ",
       joinButton: "入場",
       joinHint: "友だちから共有された6桁の部屋コードを入力してください。",
-      roomCodePlaceholder: "部屋コード"
+      roomCodePlaceholder: "部屋コード",
+      speedModeTitle: "スピードモード",
+      speedModeSub: "スピードブーストの速度が基本の高速モード",
+      itemModeTitle: "アイテムモード",
+      itemModeSub: "アイテムで展開を変えるモード",
+      roomCodeLabel: "部屋コード",
+      copyButton: "コピー",
+      readyButton: "準備",
+      unreadyButton: "準備取消",
+      leaveButton: "部屋を出る",
+      waitingP1: "1P待機中",
+      waitingOpponent: "相手待機中",
+      seatEmpty: "空き",
+      readyDone: "準備完了",
+      readyBefore: "準備前",
+      localOnlineSlot: slot => `${slot}P オンライン`,
+      opponentNone: "部屋を作成するかコードで入場してください。",
+      opponentReady: "相手準備完了",
+      opponentJoined: "相手入場完了",
+      opponentWaiting: "招待した相手を待っています",
+      roomCreated: "部屋を作成しました。コードを友だちに共有してください。",
+      roomJoined: slot => `${slot}Pで入場しました。`,
+      roomLeft: "部屋から退出しました。",
+      roomCodeCopied: "部屋コードをコピーしました。",
+      roomMissing: "部屋がなくなりました。",
+      opponentReadyStatus: "相手が準備完了しました。",
+      opponentJoinedStatus: "相手が入場しました。",
+      waitingOpponentStatus: "相手の入場を待っています。",
+      requestFailed: "オンライン部屋リクエストに失敗しました。",
+      enterRoomCode: "6桁の部屋コードを入力してください。",
+      previousSolid: "前の単色",
+      nextSolid: "次の単色",
+      previousSkin: "前のスキン",
+      nextSkin: "次のスキン"
     },
     zh: {
       wsOpen: "已连接实时服务器。",
@@ -148,8 +256,10 @@
       draw: "平局",
       winner: slot => `${slot}P 胜利`,
       onlineTitle: "在线对战",
+      onlineBadge: "online battle",
       onlineLead: "选择一种方式开始实时对战。",
       onlineButtonTitle: "在线对战",
+      backToLobby: "返回大厅",
       quick: "快速对战",
       quickStart: "开始快速对战",
       quickCardTitle: "快速对战",
@@ -170,7 +280,40 @@
       joinCardSub: "加入好友房间",
       joinButton: "进入",
       joinHint: "请输入朋友分享的6位房间代码。",
-      roomCodePlaceholder: "房间代码"
+      roomCodePlaceholder: "房间代码",
+      speedModeTitle: "速度模式",
+      speedModeSub: "以速度加成为基础的快速模式",
+      itemModeTitle: "道具模式",
+      itemModeSub: "使用道具制造变化的模式",
+      roomCodeLabel: "房间代码",
+      copyButton: "复制",
+      readyButton: "准备",
+      unreadyButton: "取消准备",
+      leaveButton: "离开房间",
+      waitingP1: "等待1P",
+      waitingOpponent: "等待对手",
+      seatEmpty: "空位",
+      readyDone: "已准备",
+      readyBefore: "未准备",
+      localOnlineSlot: slot => `${slot}P 在线`,
+      opponentNone: "请创建房间或输入代码。",
+      opponentReady: "对手已准备",
+      opponentJoined: "对手已加入",
+      opponentWaiting: "正在等待邀请的对手",
+      roomCreated: "房间已创建，请把代码分享给朋友。",
+      roomJoined: slot => `已作为${slot}P进入。`,
+      roomLeft: "已离开房间。",
+      roomCodeCopied: "房间代码已复制。",
+      roomMissing: "房间已不存在。",
+      opponentReadyStatus: "对手已准备。",
+      opponentJoinedStatus: "对手已加入。",
+      waitingOpponentStatus: "正在等待对手加入。",
+      requestFailed: "在线房间请求失败。",
+      enterRoomCode: "请输入6位房间代码。",
+      previousSolid: "上一种纯色",
+      nextSolid: "下一种纯色",
+      previousSkin: "上一个皮肤",
+      nextSkin: "下一个皮肤"
     }
   };
 
@@ -219,15 +362,39 @@
     ];
   }
 
+  const ONLINE_COLOR_NAMES = {
+    Sky: { ko: "하늘색", en: "Sky Blue", ja: "空色", zh: "天蓝色" },
+    Pink: { ko: "분홍색", en: "Pink", ja: "ピンク", zh: "粉色" },
+    Mint: { ko: "민트색", en: "Mint", ja: "ミント", zh: "薄荷色" },
+    Yellow: { ko: "노란색", en: "Yellow", ja: "イエロー", zh: "黄色" },
+    Purple: { ko: "보라색", en: "Purple", ja: "パープル", zh: "紫色" },
+    Coral: { ko: "코랄색", en: "Coral", ja: "コーラル", zh: "珊瑚色" },
+    "Gift Box": { ko: "선물 스킨", en: "Gift Skin", ja: "ギフトスキン", zh: "礼物皮肤" },
+    Ice: { ko: "얼음 스킨", en: "Ice Skin", ja: "アイススキン", zh: "冰雪皮肤" },
+    Rainbow: { ko: "무지개 스킨", en: "Rainbow Skin", ja: "レインボースキン", zh: "彩虹皮肤" },
+    Chocolate: { ko: "초콜릿 스킨", en: "Chocolate Skin", ja: "チョコレートスキン", zh: "巧克力皮肤" },
+    Knight: { ko: "나이트 스킨", en: "Knight Skin", ja: "ナイトスキン", zh: "骑士皮肤" },
+    Extreme: { ko: "로봇청소기 스킨", en: "Extreme AI Skin", ja: "エクストリームAIスキン", zh: "极限AI皮肤" },
+    Hell: { ko: "지옥 AI 스킨", en: "Hell AI Skin", ja: "ヘルAIスキン", zh: "地狱AI皮肤" },
+    Chaos: { ko: "카오스 AI 스킨", en: "Chaos AI Skin", ja: "カオスAIスキン", zh: "混沌AI皮肤" },
+    Ghost: { ko: "유령 스킨", en: "Ghost Skin", ja: "ゴーストスキン", zh: "幽灵皮肤" }
+  };
+
+  function getChoiceDisplayName(choice) {
+    if (!choice) return "";
+    try {
+      if (typeof getColorDisplayName === "function") return getColorDisplayName(choice);
+    } catch {}
+    const names = ONLINE_COLOR_NAMES[choice.name];
+    return names?.[getLang()] || names?.ko || names?.en || choice.name || normalizeSkin(choice);
+  }
+
   function getLobbyCard() {
     return document.querySelector("#lobby .lobbyCard");
   }
 
   function getCurrentSelectedSkin() {
-    try {
-      if (selectedColors?.[1]) return normalizeSkin(selectedColors[1]);
-    } catch {}
-    return selectedSkin || DEFAULT_SKIN;
+    return getOnlineBattleSkin();
   }
 
   function isChoiceLocked(choice) {
@@ -236,6 +403,65 @@
     } catch {
       return false;
     }
+  }
+
+  function getSkinColor(skin, slot = 1) {
+    const normalized = normalizeSkin({ skin });
+    const choice = getSkinChoices().find(item => normalizeSkin(item) === normalized);
+    const fallback = slot === 1 ? 0x7dc7ff : 0xff92b8;
+    const value = Number(choice?.actor);
+    return `#${(Number.isFinite(value) ? value : fallback).toString(16).padStart(6, "0")}`;
+  }
+
+  function getSelectedSkinChoice() {
+    return getSelectedSpecialChoice() || getSkinChoices()[0] || { name: "Gift Box", actor: 0xff3b6b, skin: "gift" };
+  }
+
+  function getSelectableSkinChoices() {
+    return getSkinChoices().filter(choice => !choice.hidden && !isChoiceLocked(choice));
+  }
+
+  function getSolidChoices() {
+    return getSkinChoices().filter(choice => !choice.hidden && !choice.skin && !isChoiceLocked(choice));
+  }
+
+  function getSpecialSkinChoices() {
+    return getSkinChoices().filter(choice => !choice.hidden && !!choice.skin && !isChoiceLocked(choice));
+  }
+
+  function getChoiceByKey(key) {
+    const normalized = normalizeSkin({ skin: key });
+    return getSkinChoices().find(choice => normalizeSkin(choice) === normalized) || null;
+  }
+
+  function getSelectedSolidChoice() {
+    const choices = getSolidChoices();
+    return choices.find(choice => normalizeSkin(choice) === selectedSolidSkin) || choices[0] || getSkinChoices()[0] || null;
+  }
+
+  function getSelectedSpecialChoice() {
+    const choices = getSpecialSkinChoices();
+    return choices.find(choice => normalizeSkin(choice) === selectedSkin) || choices[0] || getChoiceByKey(selectedSkin) || getSkinChoices()[0] || null;
+  }
+
+  function getOnlineBattleSkin() {
+    return normalizeSkin(getSelectedSpecialChoice()) || selectedSkin || DEFAULT_SKIN;
+  }
+
+  function syncOnlineSelectionDefaults() {
+    const solid = getSelectedSolidChoice();
+    const skin = getSelectedSpecialChoice();
+    if (solid) selectedSolidSkin = normalizeSkin(solid);
+    if (skin) selectedSkin = normalizeSkin(skin);
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   function loadSession() {
@@ -282,7 +508,7 @@
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data?.ok === false) {
-      const error = new Error(data?.message || "온라인 방 요청에 실패했습니다.");
+      const error = new Error(data?.message || onlineText("requestFailed"));
       error.code = data?.error || "request_failed";
       throw error;
     }
@@ -300,6 +526,8 @@
     const button = $("onlineModeBtn");
     const title = $("onlineRoomTitle");
     const lead = $("onlineRoomLead");
+    const badge = document.querySelector(".onlineMatchBadge");
+    const backButton = $("onlineRoomBackButton");
     if (button) {
       const strong = button.querySelector("strong");
       const span = button.querySelector("span");
@@ -307,21 +535,39 @@
       if (span) span.textContent = onlineText("quick");
       button.setAttribute("aria-pressed", onlineMode ? "true" : "false");
     }
+    if (badge) badge.textContent = onlineText("onlineBadge");
+    if (backButton) {
+      backButton.textContent = "←";
+      backButton.title = onlineText("backToLobby");
+      backButton.setAttribute("aria-label", onlineText("backToLobby"));
+    }
     if (title) title.textContent = onlineText("onlineTitle");
     if (lead) lead.textContent = onlineText("onlineLead");
     setCardText("onlineQuickCard", onlineText("quickCardTitle"), onlineText("quickCardSub"));
     setCardText("onlineCreateCard", onlineText("createCardTitle"), onlineText("createCardSub"));
     setCardText("onlineJoinCard", onlineText("joinCardTitle"), onlineText("joinCardSub"));
+    setModeCardText("onlineSpeedModeButton", onlineText("speedModeTitle"), onlineText("speedModeSub"));
+    setModeCardText("onlineItemModeButton", onlineText("itemModeTitle"), onlineText("itemModeSub"));
     setText("onlineCreateRoomButton", onlineText("createButton"));
     setText("onlineJoinRoomButton", onlineText("joinButton"));
+    setText("onlineCopyRoomCodeButton", onlineText("copyButton"));
+    setText("onlineLeaveRoomButton", onlineText("leaveButton"));
     setText("onlineCreatePanel", onlineText("createHint"), ".onlineEntryHint");
     setText("onlineJoinPanel", onlineText("joinHint"), ".onlineEntryHint");
+    setText("onlineRoomLobby", onlineText("roomCodeLabel"), ".onlineRoomHeader span");
     const codeInput = $("onlineRoomCodeInput");
     if (codeInput) codeInput.placeholder = onlineText("roomCodePlaceholder");
+    setButtonLabel("onlineSolidPrevButton", onlineText("previousSolid"));
+    setButtonLabel("onlineSolidCurrentButton", onlineText("nextSolid"));
+    setButtonLabel("onlineSolidNextButton", onlineText("nextSolid"));
+    setButtonLabel("onlineSkinPrevButton", onlineText("previousSkin"));
+    setButtonLabel("onlineSkinCurrentButton", onlineText("nextSkin"));
+    setButtonLabel("onlineSkinNextButton", onlineText("nextSkin"));
     applyOnlineEntryMode();
     updateQuickMatchUI();
     if (onlineMode && !session && !quickMatching) setStatus(onlineText("onlineTitle"));
     if (!session) updateOpponentPanel(null);
+    updateLocalProfileCard();
     applyOnlineRoomLayout();
   }
 
@@ -339,7 +585,29 @@
     if (sub) sub.textContent = subText;
   }
 
+  function setModeCardText(id, titleText, subText) {
+    const card = $(id);
+    if (!card) return;
+    const title = card.querySelector(".onlineModeCopy strong");
+    const sub = card.querySelector(".onlineModeCopy span");
+    if (title) title.textContent = titleText;
+    if (sub) sub.textContent = subText;
+  }
+
+  function setButtonLabel(id, label) {
+    const button = $(id);
+    if (!button) return;
+    button.title = label;
+    button.setAttribute("aria-label", label);
+  }
+
   function applyOnlineEntryMode() {
+    const compact = $("onlineRoomCompact");
+    if (compact) {
+      compact.classList.toggle("online-entry-quick", onlineEntryMode === "quick");
+      compact.classList.toggle("online-entry-create", onlineEntryMode === "create");
+      compact.classList.toggle("online-entry-join", onlineEntryMode === "join");
+    }
     document.querySelectorAll("[data-online-entry]").forEach((button) => {
       const selected = button.dataset.onlineEntry === onlineEntryMode;
       button.classList.toggle("selected", selected);
@@ -350,6 +618,19 @@
       panel.hidden = !selected;
       panel.classList.toggle("active", selected);
     });
+  }
+
+  function updateOnlineGameModeUI() {
+    document.querySelectorAll("[data-online-game-mode]").forEach((button) => {
+      const selected = button.dataset.onlineGameMode === onlineGameMode;
+      button.classList.toggle("selected", selected);
+      button.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
+  }
+
+  function setOnlineGameMode(mode) {
+    onlineGameMode = mode === "item" ? "item" : "speed";
+    updateOnlineGameModeUI();
   }
 
   function setOnlineEntryMode(mode) {
@@ -423,12 +704,12 @@
     const opponentSlot = localSlot === 1 ? 2 : 1;
     const opponent = room?.players?.[String(opponentSlot)] || room?.players?.[opponentSlot] || null;
 
-    if (slotLabel) slotLabel.textContent = session ? `${localSlot}P 온라인` : "ONLINE";
-    if (name) name.textContent = opponent ? opponent.nickname || `${opponentSlot}P` : "상대 대기 중";
+    if (slotLabel) slotLabel.textContent = session ? onlineText("localOnlineSlot", localSlot) : "ONLINE";
+    if (name) name.textContent = opponent ? opponent.nickname || `${opponentSlot}P` : onlineText("waitingOpponent");
     if (state) {
-      if (!session) state.textContent = "방을 만들거나 코드로 입장하세요.";
-      else if (opponent) state.textContent = opponent.ready ? "상대 준비 완료" : "상대 입장 완료";
-      else state.textContent = "초대한 상대를 기다리는 중";
+      if (!session) state.textContent = onlineText("opponentNone");
+      else if (opponent) state.textContent = opponent.ready ? onlineText("opponentReady") : onlineText("opponentJoined");
+      else state.textContent = onlineText("opponentWaiting");
     }
   }
 
@@ -501,8 +782,9 @@
       button.type = "button";
       button.className = "onlineRoomSkinButton";
       button.style.setProperty("--skin-color", `#${Number(choice.actor || 0x64beff).toString(16).padStart(6, "0")}`);
-      button.title = choice.name || skin;
-      button.setAttribute("aria-label", choice.name || skin);
+      const label = getChoiceDisplayName(choice) || skin;
+      button.title = label;
+      button.setAttribute("aria-label", label);
       button.classList.toggle("selected", selectedSkin === skin);
       const locked = isChoiceLocked(choice);
       button.classList.toggle("locked", locked);
@@ -510,15 +792,85 @@
       button.addEventListener("click", () => selectSkin(skin));
       grid.appendChild(button);
     });
+    updateLocalProfileCard();
+  }
+
+  function updateLocalProfileCard() {
+    syncOnlineSelectionDefaults();
+    const nickname = $("onlineLocalNickname");
+    const avatar = $("onlineLocalAvatar");
+    const solidSwatch = $("onlineSolidSwatch");
+    const solidName = $("onlineSolidName");
+    const solidDots = $("onlineSolidDots");
+    const swatch = $("onlineSkinSwatch");
+    const name = $("onlineSkinName");
+    const dots = $("onlineSkinDots");
+    const solidChoices = getSolidChoices();
+    const skinChoices = getSpecialSkinChoices();
+    const solidChoice = getSelectedSolidChoice() || solidChoices[0] || getSkinChoices()[0];
+    const skinChoice = getSelectedSpecialChoice() || skinChoices[0] || getSkinChoices()[0];
+    const solidKey = normalizeSkin(solidChoice);
+    const skinKey = normalizeSkin(skinChoice);
+    const color = getSkinColor(skinKey, 1);
+
+    if (nickname) nickname.textContent = getNickname();
+    if (avatar) {
+      avatar.style.setProperty("--online-profile-color", "#64beff");
+      avatar.dataset.skin = skinKey;
+    }
+    if (solidSwatch) {
+      solidSwatch.style.setProperty("--online-profile-color", getSkinColor(solidKey, 1));
+      solidSwatch.dataset.skin = "";
+    }
+    if (solidName) solidName.textContent = getChoiceDisplayName(solidChoice) || solidKey;
+    if (solidDots) {
+      solidDots.innerHTML = solidChoices.map(item => `<span class="skinDot${normalizeSkin(item) === solidKey ? " active" : ""}"></span>`).join("");
+    }
+    if (swatch) {
+      swatch.style.setProperty("--online-profile-color", color);
+      swatch.style.setProperty("--preview-color", color);
+      swatch.style.setProperty("--chip-color", color);
+      swatch.dataset.skin = skinChoice?.skin || skinKey;
+      swatch.classList.add("selectedPreview");
+      if (!swatch.querySelector("i")) swatch.innerHTML = "<i></i><i></i>";
+    }
+    if (name) name.textContent = getChoiceDisplayName(skinChoice) || skinKey;
+    if (dots) {
+      dots.innerHTML = skinChoices.map(item => `<span class="skinDot${normalizeSkin(item) === skinKey ? " active" : ""}"></span>`).join("");
+    }
+  }
+
+  function shiftOnlineSolidColor(direction) {
+    const choices = getSolidChoices();
+    if (!choices.length) return;
+    const current = choices.findIndex(choice => normalizeSkin(choice) === selectedSolidSkin);
+    const next = (Math.max(0, current) + direction + choices.length) % choices.length;
+    selectedSolidSkin = normalizeSkin(choices[next]);
+    updateLocalProfileCard();
+  }
+
+  function shiftOnlineSkin(direction) {
+    const choices = getSpecialSkinChoices();
+    if (!choices.length) return;
+    const current = choices.findIndex(choice => normalizeSkin(choice) === selectedSkin);
+    const next = (Math.max(0, current) + direction + choices.length) % choices.length;
+    selectSkin(normalizeSkin(choices[next]));
   }
 
   function renderRoom(room) {
+    currentRoom = room || null;
     const inRoom = !!session && !!room;
+    const sessionEntryMode = session?.entryMode || onlineEntryMode || "quick";
     const entry = $("onlineRoomEntry");
     const lobby = $("onlineRoomLobby");
+    const compact = $("onlineRoomCompact");
     applyOnlineRoomLayout();
+    if (compact) {
+      compact.classList.toggle("online-session-quick", inRoom && sessionEntryMode === "quick");
+      compact.classList.toggle("online-session-room", inRoom && sessionEntryMode !== "quick");
+    }
     if (entry) entry.hidden = inRoom;
-    if (lobby) lobby.hidden = !inRoom;
+    if (lobby) lobby.hidden = !inRoom || sessionEntryMode === "quick";
     updateOpponentPanel(room);
     if (!inRoom) return;
 
@@ -532,22 +884,22 @@
       card.classList.toggle("ready", !!player?.ready);
       const name = card.querySelector(".onlineRoomPlayerName");
       const ready = card.querySelector(".onlineRoomPlayerReady");
-      if (name) name.textContent = player ? player.nickname || `${slot}P` : (slot === 1 ? "1P 대기 중" : "상대 대기 중");
-      if (ready) ready.textContent = player ? (player.ready ? "준비 완료" : "준비 전") : "빈 자리";
+      if (name) name.textContent = player ? player.nickname || `${slot}P` : (slot === 1 ? onlineText("waitingP1") : onlineText("waitingOpponent"));
+      if (ready) ready.textContent = player ? (player.ready ? onlineText("readyDone") : onlineText("readyBefore")) : onlineText("seatEmpty");
     });
 
     const me = room.players?.[String(localSlot)] || room.players?.[localSlot] || null;
     if (me?.skin) selectedSkin = me.skin;
     const readyButton = $("onlineReadyButton");
-    if (readyButton) readyButton.textContent = me?.ready ? "준비 취소" : "준비";
+    if (readyButton) readyButton.textContent = me?.ready ? onlineText("unreadyButton") : onlineText("readyButton");
     renderSkins();
 
     const opponentSlot = localSlot === 1 ? 2 : 1;
     const opponent = room.players?.[String(opponentSlot)] || room.players?.[opponentSlot] || null;
     if (opponent) {
-      setStatus(opponent.ready ? "상대가 준비 완료했습니다." : "상대가 입장했습니다.");
+      setStatus(opponent.ready ? onlineText("opponentReadyStatus") : onlineText("opponentJoinedStatus"));
     } else {
-      setStatus("상대 입장을 기다리는 중입니다.");
+      setStatus(onlineText("waitingOpponentStatus"));
     }
     maybeConnectRealtime(room);
   }
@@ -561,7 +913,7 @@
       stopPolling();
       saveSession(null);
       renderRoom(null);
-      setStatus(error.code === "room_not_found" ? "방이 사라졌습니다." : error.message, true);
+      setStatus(error.code === "room_not_found" ? onlineText("roomMissing") : error.message, true);
     }
   }
 
@@ -585,6 +937,77 @@
   function stopQuickPolling() {
     if (quickPollTimer) window.clearInterval(quickPollTimer);
     quickPollTimer = null;
+  }
+
+  function clearOnlineCountdownUi() {
+    const countdown = $("countdownOverlay");
+    if (countdown) countdown.classList.remove("online-countdown");
+    const players = $("onlineCountdownPlayers");
+    if (players) players.remove();
+  }
+
+  function getOnlineCountdownPlayer(slot) {
+    const player = currentRoom?.players?.[String(slot)] || currentRoom?.players?.[slot] || null;
+    return {
+      slot,
+      nickname: player?.nickname || `${slot}P`,
+      skin: player?.skin || (slot === Number(session?.slot) ? selectedSkin : DEFAULT_SKIN)
+    };
+  }
+
+  function renderOnlineCountdownPlayers() {
+    const countdown = $("countdownOverlay");
+    if (!countdown) return;
+    let wrap = $("onlineCountdownPlayers");
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.id = "onlineCountdownPlayers";
+      wrap.className = "onlineCountdownPlayers";
+      countdown.appendChild(wrap);
+    }
+    wrap.innerHTML = [1, 2].map(slot => {
+      const player = getOnlineCountdownPlayer(slot);
+      const color = getSkinColor(player.skin, slot);
+      return `
+        <div class="onlineCountdownProfile p${slot}" style="--online-player-color:${color}">
+          <div class="onlineCountdownSlot">${slot}P</div>
+          <div class="onlineCountdownAvatar" aria-hidden="true"><i></i><i></i></div>
+          <strong>${escapeHtml(player.nickname)}</strong>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function hasActiveOnlineMatchState() {
+    return !!(onlineMode && (session || realtimeStarted || realtimeResultKey || quickMatching || quickTicket));
+  }
+
+  function resetOnlineLobbyState(message = onlineText("onlineTitle")) {
+    stopPolling();
+    stopQuickPolling();
+    stopRealtimePing();
+    if (realtimeSocket) {
+      try {
+        realtimeSocket.close(1000, "reset");
+      } catch {}
+    }
+    realtimeSocket = null;
+    realtimeInputSeq = 0;
+    realtimeRttMs = 0;
+    realtimeSnapshotTick = -1;
+    realtimeStarted = false;
+    realtimeResultKey = "";
+    currentRoom = null;
+    quickMatching = false;
+    quickMatchState = "idle";
+    saveQuickTicket("");
+    saveSession(null);
+    onlineMode = true;
+    onlineEntryMode = "quick";
+    renderRoom(null);
+    applyOnlineRoomText();
+    setStatus(message);
+    clearOnlineCountdownUi();
   }
 
   function getRealtimeUrl() {
@@ -709,8 +1132,11 @@
     if (lobby) lobby.style.display = "none";
     if (countdown) {
       countdown.style.display = "flex";
+      countdown.classList.add("online-countdown");
       countdown.classList.toggle("classic-mode", true);
       countdown.classList.toggle("item-mode", false);
+      countdown.classList.toggle("ghost-mode", false);
+      renderOnlineCountdownPlayers();
     }
     const left = Number(packet.countdownRemainingMs || 0);
     const value = left > 1000 ? Math.ceil(left / 1000) : (left > 0 ? (typeof tr === "function" ? tr("start") : "START") : "");
@@ -720,7 +1146,10 @@
 
   function showServerPlaying(snapshot) {
     const countdown = $("countdownOverlay");
-    if (countdown) countdown.style.display = "none";
+    if (countdown) {
+      countdown.style.display = "none";
+      countdown.classList.remove("online-countdown");
+    }
     try { setGamePhase(GAME_PHASE.PLAYING); } catch {}
     try {
       if (!matchStartedAt) matchStartedAt = performance.now() - Math.max(0, Date.now() - Number(snapshot.startAt || Date.now()));
@@ -801,12 +1230,13 @@
         roomCode: data.room.code,
         playerId: data.playerId,
         slot: data.slot,
-        skin: selectedSkin
+        skin: selectedSkin,
+        entryMode: "create"
       });
       onlineMode = true;
       renderRoom(data.room);
       startPolling();
-      setStatus("방을 만들었습니다. 코드를 친구에게 공유하세요.");
+      setStatus(onlineText("roomCreated"));
     } catch (error) {
       setStatus(error.message, true);
     } finally {
@@ -820,7 +1250,7 @@
     const code = normalizeCode(input?.value);
     if (input) input.value = code;
     if (code.length !== 6) {
-      setStatus("6자리 방 코드를 입력하세요.", true);
+      setStatus(onlineText("enterRoomCode"), true);
       return;
     }
     setBusy(true);
@@ -834,12 +1264,13 @@
         roomCode: data.room.code,
         playerId: data.playerId,
         slot: data.slot,
-        skin: selectedSkin
+        skin: selectedSkin,
+        entryMode: "join"
       });
       onlineMode = true;
       renderRoom(data.room);
       startPolling();
-      setStatus(`${data.slot}P로 입장했습니다.`);
+      setStatus(onlineText("roomJoined", data.slot));
     } catch (error) {
       setStatus(error.message, true);
     } finally {
@@ -864,6 +1295,7 @@
         body: {
           nickname: getNickname(),
           skin: selectedSkin,
+          mode: onlineGameMode,
           ticket: quickTicket || undefined
         }
       });
@@ -888,10 +1320,12 @@
             roomCode: data.roomCode || data.room?.code,
             playerId: data.playerId,
             slot: data.slot,
-            skin: selectedSkin
+            skin: selectedSkin,
+            entryMode: "quick"
           });
           onlineMode = true;
           renderRoom(data.room);
+          updateQuickMatchUI("idle");
           startPolling();
           maybeConnectRealtime(data.room);
         }, 720);
@@ -950,6 +1384,7 @@
     if (session) session.skin = selectedSkin;
     saveSession(session);
     renderSkins();
+    updateLocalProfileCard();
     if (!session) return;
     try {
       const data = await api(`/rooms/${encodeURIComponent(session.roomCode)}/skin`, {
@@ -980,26 +1415,52 @@
     saveSession(null);
     onlineMode = true;
     renderRoom(null);
-    setStatus("방에서 나갔습니다.");
+    setStatus(onlineText("roomLeft"));
     setBusy(false);
+  }
+
+  function patchResultLobbyReset() {
+    const originalCloseResultToLobby = window.closeResultToLobby;
+    if (typeof originalCloseResultToLobby === "function" && !originalCloseResultToLobby.__degulOnlineRoomWrapped) {
+      const wrapped = function (...args) {
+        const shouldResetOnline = hasActiveOnlineMatchState();
+        const result = originalCloseResultToLobby.apply(this, args);
+        if (shouldResetOnline) {
+          window.setTimeout(() => resetOnlineLobbyState(), 240);
+        }
+        return result;
+      };
+      wrapped.__degulOnlineRoomWrapped = true;
+      window.closeResultToLobby = wrapped;
+    }
   }
 
   function bind() {
     patchLocalReadyGuard();
+    patchResultLobbyReset();
     applyOnlineRoomText();
     document.querySelectorAll("[data-online-entry]").forEach((button) => {
       button.addEventListener("click", () => setOnlineEntryMode(button.dataset.onlineEntry));
+    });
+    document.querySelectorAll("[data-online-game-mode]").forEach((button) => {
+      button.addEventListener("click", () => setOnlineGameMode(button.dataset.onlineGameMode));
     });
     $("onlineCreateRoomButton")?.addEventListener("click", createRoom);
     $("onlineQuickMatchButton")?.addEventListener("click", () => requestQuickMatch(false));
     $("onlineJoinRoomButton")?.addEventListener("click", joinRoom);
     $("onlineReadyButton")?.addEventListener("click", toggleReady);
     $("onlineLeaveRoomButton")?.addEventListener("click", leaveRoom);
+    $("onlineSolidPrevButton")?.addEventListener("click", () => shiftOnlineSolidColor(-1));
+    $("onlineSolidNextButton")?.addEventListener("click", () => shiftOnlineSolidColor(1));
+    $("onlineSolidCurrentButton")?.addEventListener("click", () => shiftOnlineSolidColor(1));
+    $("onlineSkinPrevButton")?.addEventListener("click", () => shiftOnlineSkin(-1));
+    $("onlineSkinNextButton")?.addEventListener("click", () => shiftOnlineSkin(1));
+    $("onlineSkinCurrentButton")?.addEventListener("click", () => shiftOnlineSkin(1));
     $("onlineCopyRoomCodeButton")?.addEventListener("click", async () => {
       const code = session?.roomCode || $("onlineRoomCode")?.textContent || "";
       try {
         await navigator.clipboard.writeText(code);
-        setStatus("방 코드를 복사했습니다.");
+        setStatus(onlineText("roomCodeCopied"));
       } catch {
         setStatus(code);
       }
@@ -1011,6 +1472,8 @@
       if (event.key === "Enter") joinRoom();
     });
     renderSkins();
+    updateLocalProfileCard();
+    updateOnlineGameModeUI();
     if (session) {
       onlineMode = false;
       suppressPanelSync = true;
@@ -1035,6 +1498,8 @@
     joinRoom,
     leaveRoom,
     refreshRoom,
+    resetLobbyState: resetOnlineLobbyState,
+    setOnlineGameMode,
     setOnlineMode,
     applyOnlineRoomText,
     isRealtimeActive: () => !!(onlineMode && session && realtimeSocket && realtimeSocket.readyState === WebSocket.OPEN && realtimeStarted)

@@ -195,7 +195,9 @@ export const DegulServerGame = (() => {
       const actor = state.players[slot];
       if (!actor.alive) continue;
       actor.dir = { ...actor.nextDir };
-      planned[slot] = { x: actor.x + actor.dir.dx, z: actor.z + actor.dir.dz };
+      const nx = actor.x + actor.dir.dx;
+      const nz = actor.z + actor.dir.dz;
+      if (inBounds(nx, nz)) planned[slot] = { x: nx, z: nz };
     }
 
     if (planned[1] && planned[2]) {
@@ -222,7 +224,6 @@ export const DegulServerGame = (() => {
     const nz = actor.z + actor.dir.dz;
     const opponent = state.players[actor.slot === 1 ? 2 : 1];
     if (!inBounds(nx, nz)) {
-      endGame(state, opponent.slot, "wall", at);
       return;
     }
     if (containsPoint(actor.trail, nx, nz)) {

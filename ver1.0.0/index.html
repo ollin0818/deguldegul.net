@@ -35,7 +35,7 @@
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-auth.min.css?v=4">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-tablet-performance.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-ai-history.css?v=100">
-<link rel="stylesheet" href="assets_v1.0.0/css/degul-online-room.css?v=105-online-card-icons">
+<link rel="stylesheet" href="assets_v1.0.0/css/degul-online-room.css?v=106-online-skin-carousel">
 </head>
 <body>
 <div id="dominanceEdgeOverlay" aria-hidden="true"></div>
@@ -317,8 +317,8 @@
         <section class="lobbyPanelSlide onlineMatchSlide" aria-label="멀티플레이 방">
           <div class="onlineMatchPanel onlineMultiplayerPanel">
             <div class="onlinePanelTopline">
-              <button class="onlineRoomBackButton" id="onlineRoomBackButton" type="button" onclick="window.DegulOnlineRoom?.setOnlineMode(false); window.setLobbyPanel?.('main')">로비</button>
-              <span class="onlineMatchBadge">MULTIPLAYER</span>
+              <button class="onlineRoomBackButton" id="onlineRoomBackButton" type="button" onclick="window.DegulOnlineRoom?.setOnlineMode(false); window.setLobbyPanel?.('main')" aria-label="로비로 돌아가기" title="로비로 돌아가기">←</button>
+              <span class="onlineMatchBadge">online battle</span>
             </div>
             <h2 id="onlineRoomTitle">온라인 대전</h2>
             <p class="onlineMatchLead" id="onlineRoomLead">원하는 방식으로 상대와 실시간 대전을 시작하세요.</p>
@@ -349,17 +349,59 @@
           </button>
         </div>
 
+        <div class="onlineModeCards" aria-label="온라인 게임 모드">
+          <button class="modeButton onlineModeCard selected" id="onlineSpeedModeButton" type="button" data-online-game-mode="speed" aria-pressed="true">
+            <span class="onlineModeIcon speed" aria-hidden="true"></span>
+            <span class="onlineModeCopy">
+              <strong>스피드 모드</strong>
+              <span>스피드 부스트 속도가 기본인 빠른 모드</span>
+            </span>
+          </button>
+          <button class="modeButton onlineModeCard" id="onlineItemModeButton" type="button" data-online-game-mode="item" aria-pressed="false">
+            <span class="onlineModeIcon item" aria-hidden="true"></span>
+            <span class="onlineModeCopy">
+              <strong>아이템 모드</strong>
+              <span>영역확장 / 스피드 / 보호막 / 거대화 / 로봇청소기 등장</span>
+            </span>
+          </button>
+        </div>
+
+        <section class="onlineLocalProfileCard" aria-label="내 온라인 프로필">
+          <div class="onlineLocalProfileHeader">
+            <div class="onlineLocalAvatar" id="onlineLocalAvatar" aria-hidden="true"><i></i><i></i></div>
+            <strong id="onlineLocalNickname">Player</strong>
+          </div>
+          <div class="onlineLocalSkinRow onlineSolidRow">
+            <button class="onlineSkinArrow prev" id="onlineSolidPrevButton" type="button" aria-label="이전 단색">‹</button>
+            <button class="onlineSkinCurrent" id="onlineSolidCurrentButton" type="button" aria-label="다음 단색">
+              <span id="onlineSolidSwatch"></span>
+              <strong id="onlineSolidName">하늘색</strong>
+            </button>
+            <button class="onlineSkinArrow next" id="onlineSolidNextButton" type="button" aria-label="다음 단색">›</button>
+          </div>
+          <div class="onlineSkinDots onlineSolidDots" id="onlineSolidDots" aria-hidden="true"></div>
+          <div class="onlineLocalSkinRow">
+            <button class="onlineSkinArrow prev" id="onlineSkinPrevButton" type="button" aria-label="이전 스킨">‹</button>
+            <button class="onlineSkinCurrent" id="onlineSkinCurrentButton" type="button" aria-label="다음 스킨">
+              <span id="onlineSkinSwatch" class="selectedPreview" data-skin=""><i></i><i></i></span>
+              <strong id="onlineSkinName">하늘색</strong>
+            </button>
+            <button class="onlineSkinArrow next" id="onlineSkinNextButton" type="button" aria-label="다음 스킨">›</button>
+          </div>
+          <div class="onlineSkinDots" id="onlineSkinDots" aria-hidden="true"></div>
+        </section>
+
         <div class="onlineEntryPanel active" id="onlineQuickPanel" data-online-panel="quick" role="tabpanel">
           <button class="onlineRoomQuickButton" id="onlineQuickMatchButton" type="button">
             <span class="onlineQuickIcon" aria-hidden="true"></span>
             <span class="onlineQuickText">빠른 대전 시작</span>
             <span class="onlineQuickSubtext">선택한 색상으로 상대 찾기</span>
+            <span class="onlineQuickSearchingPanel" id="onlineQuickSearchingPanel" hidden>
+              <span class="onlineQuickSpinner" aria-hidden="true"></span>
+              <strong id="onlineQuickSearchingTitle">상대를 찾고 있습니다</strong>
+              <span id="onlineQuickSearchingLead">비슷한 시간에 접속한 플레이어와 자동으로 연결합니다.</span>
+            </span>
           </button>
-          <div class="onlineQuickSearchingPanel" id="onlineQuickSearchingPanel" hidden>
-            <div class="onlineQuickSpinner" aria-hidden="true"></div>
-            <strong id="onlineQuickSearchingTitle">상대를 찾고 있습니다</strong>
-            <span id="onlineQuickSearchingLead">비슷한 시간에 접속한 플레이어와 자동으로 연결합니다.</span>
-          </div>
         </div>
 
         <div class="onlineEntryPanel" id="onlineCreatePanel" data-online-panel="create" role="tabpanel" hidden>
@@ -1096,7 +1138,7 @@
 <script src="assets_v1.0.0/js/degul-auth.min.js?v=7-local-test"></script>
 <script src="assets_v1.0.0/js/degul-ai-ranking.min.js?v=3-local-test"></script>
 <script src="assets_v1.0.0/js/degul-test-guard.js?v=100"></script>
-<script src="assets_v1.0.0/js/degul-online-room.js?v=104-online-card-icons"></script>
+<script src="assets_v1.0.0/js/degul-online-room.js?v=106-online-skin-carousel"></script>
 
 
 <div class="degulTutorialLayer" id="degulTutorialLayer" aria-hidden="true">

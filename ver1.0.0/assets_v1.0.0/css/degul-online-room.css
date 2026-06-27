@@ -755,3 +755,2449 @@ body.device-layout-forced-tablet.mobile-landscape #lobby .lobbyCard button.onlin
   min-height: 58px !important;
   padding: 8px 10px !important;
 }
+
+#lobby .lobbyCard.online-room-active {
+  background:
+    radial-gradient(circle at 10% 14%, rgba(125, 199, 255, 0.12), transparent 24%),
+    radial-gradient(circle at 92% 8%, rgba(255, 146, 184, 0.10), transparent 22%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 251, 255, 0.90)) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineMatchSlide {
+  align-content: start;
+}
+
+.onlineMultiplayerPanel {
+  gap: 16px;
+  max-width: 980px;
+  min-height: min(760px, calc(100vh - 126px));
+  padding: 30px 34px 34px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow:
+    0 28px 78px rgba(42, 86, 140, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+}
+
+.onlinePanelTopline {
+  grid-template-columns: 1fr auto 1fr;
+}
+
+.onlineRoomBackButton {
+  justify-self: start;
+  min-width: 96px;
+  min-height: 48px;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: #111827 !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.20), inset 0 0 0 1px rgba(255, 255, 255, 0.12) !important;
+  font-size: 17px !important;
+}
+
+.onlineMatchBadge {
+  min-height: 40px;
+  padding: 0 20px;
+  border-radius: 8px;
+  background: rgba(0, 122, 255, 0.12);
+  color: #007aff;
+  font-size: 17px;
+  letter-spacing: 0;
+}
+
+.onlineMultiplayerPanel h2 {
+  margin-top: 4px;
+  color: #111827;
+  font-size: clamp(42px, 5.2vw, 64px);
+  line-height: 1.02;
+  letter-spacing: 0;
+}
+
+.onlineMatchLead {
+  margin: -6px 0 18px !important;
+  color: #667085;
+  font-size: clamp(17px, 1.7vw, 22px) !important;
+  font-weight: 850;
+}
+
+.onlineRoomCompact {
+  gap: 20px;
+}
+
+.onlineRoomEntry {
+  gap: 22px;
+}
+
+.onlineEntryCards {
+  position: relative;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 26px;
+}
+
+.onlineEntryCard {
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 16px;
+  min-height: 104px;
+  padding: 18px 24px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86) !important;
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.72);
+}
+
+.onlineEntryCard:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: -22px;
+  top: 50%;
+  border-left: 14px solid rgba(209, 218, 232, 0.64);
+  border-top: 18px solid transparent;
+  border-bottom: 18px solid transparent;
+  transform: translateY(-50%);
+}
+
+.onlineEntryIcon {
+  width: 62px;
+  height: 62px;
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(226, 236, 255, 0.92), rgba(242, 247, 255, 0.96));
+  color: #007aff !important;
+  font-size: 31px;
+}
+
+.onlineEntryCard strong {
+  font-size: clamp(20px, 2vw, 25px);
+  color: #111827;
+}
+
+.onlineEntryCopy > span {
+  margin-top: 5px;
+  color: #526179;
+  font-size: clamp(15px, 1.4vw, 18px);
+}
+
+.onlineEntryCard.selected {
+  border-color: rgba(177, 212, 255, 0.92);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12), 0 14px 32px rgba(15, 23, 42, 0.10);
+}
+
+.onlineModeCards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+#lobby .lobbyCard button.onlineModeCard,
+.onlineModeCard {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  min-height: 104px;
+  padding: 18px 24px !important;
+  border: 2px solid rgba(255, 190, 32, 0.82) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 251, 241, 0.76) !important;
+  color: #111827 !important;
+  text-align: left;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.80) !important;
+}
+
+.onlineModeIcon {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 193, 48, 0.24);
+}
+
+.onlineModeIcon.speed::before {
+  content: "";
+  position: absolute;
+  inset: 14px 16px;
+  border-radius: 50% 50% 46% 46%;
+  border: 5px solid #f5a400;
+  border-left-color: transparent;
+  transform: rotate(-28deg);
+}
+
+.onlineModeIcon.item::before {
+  content: "★";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #f5a400;
+  font-size: 30px;
+  font-weight: 950;
+}
+
+.onlineModeCopy strong {
+  display: block;
+  font-size: clamp(20px, 2vw, 25px);
+  font-weight: 950;
+}
+
+.onlineModeCopy span {
+  display: block;
+  margin-top: 6px;
+  color: #334155;
+  font-size: clamp(13px, 1.3vw, 16px);
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.onlineLocalProfileCard {
+  display: grid;
+  justify-self: center;
+  width: min(500px, 100%);
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.10), inset 0 0 0 1px rgba(255, 255, 255, 0.76);
+}
+
+.onlineLocalProfileHeader {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+  min-height: 118px;
+  padding: 24px 30px 18px;
+  background: linear-gradient(135deg, rgba(214, 236, 255, 0.88), rgba(240, 248, 255, 0.78));
+  text-align: left;
+}
+
+.onlineLocalAvatar {
+  --online-profile-color: #64beff;
+  position: relative;
+  width: 78px;
+  height: 78px;
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.42), transparent 40%),
+    var(--online-profile-color);
+  box-shadow:
+    0 12px 24px rgba(0, 122, 255, 0.26),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.72),
+    inset -10px -12px 18px rgba(15, 23, 42, 0.18);
+}
+
+.onlineLocalAvatar i {
+  position: absolute;
+  top: 50%;
+  width: 11%;
+  height: 27%;
+  min-width: 6px;
+  min-height: 17px;
+  border: 2px solid rgba(248, 251, 255, 0.96);
+  border-radius: 999px;
+  background: #050814;
+  transform: translateY(-48%);
+}
+
+.onlineLocalAvatar i:first-child { left: 31%; }
+.onlineLocalAvatar i:last-child { right: 31%; }
+
+.onlineLocalProfileHeader strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #111827;
+  font-size: clamp(24px, 2.3vw, 32px);
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.onlineLocalSkinRow {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 56px;
+  gap: 14px;
+  padding: 20px 64px 8px;
+}
+
+#lobby .lobbyCard button.onlineSkinArrow,
+.onlineSkinArrow {
+  width: 56px !important;
+  min-width: 56px !important;
+  height: 56px !important;
+  min-height: 56px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: #111827 !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.18) !important;
+  font-size: 38px !important;
+  line-height: 1 !important;
+}
+
+#lobby .lobbyCard button.onlineSkinCurrent,
+.onlineSkinCurrent {
+  display: grid !important;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  height: 56px !important;
+  min-height: 56px !important;
+  padding: 0 22px !important;
+  border: 1px solid rgba(15, 23, 42, 0.10) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.86) !important;
+  color: #111827 !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72) !important;
+  text-align: left;
+}
+
+#onlineSkinSwatch {
+  --online-profile-color: #64beff;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--online-profile-color);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.76);
+}
+
+#onlineSkinName {
+  overflow: hidden;
+  font-size: 18px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.onlineSkinDots {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  min-height: 18px;
+  padding: 0 0 22px;
+}
+
+.onlineSkinDots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #cfd8e6;
+}
+
+.onlineSkinDots span.active {
+  width: 20px;
+  background: #007aff;
+}
+
+.onlineEntryPanel {
+  min-height: auto;
+}
+
+#onlineQuickPanel.onlineEntryPanel {
+  padding: 0;
+  border: 0;
+  background: transparent !important;
+}
+
+.onlineRoomQuickButton {
+  grid-template-columns: 92px minmax(0, 1fr);
+  min-height: 136px;
+  padding: 22px 28px !important;
+  border: 2px solid rgba(135, 190, 255, 0.92) !important;
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, rgba(231, 243, 255, 0.82), rgba(248, 251, 255, 0.94)) !important;
+  box-shadow: 0 18px 38px rgba(0, 122, 255, 0.13), inset 0 0 0 1px rgba(255, 255, 255, 0.78) !important;
+}
+
+.onlineQuickIcon {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #8fd0ff, #4aaef5);
+  box-shadow: 0 12px 26px rgba(0, 122, 255, 0.28), inset 0 0 0 3px rgba(255, 255, 255, 0.72), inset -10px -12px 18px rgba(15, 23, 42, 0.16);
+}
+
+.onlineQuickIcon:before,
+.onlineQuickIcon:after {
+  width: 8px;
+  height: 23px;
+  background: #050814;
+  border: 2px solid rgba(248, 251, 255, 0.96);
+}
+
+.onlineQuickIcon:before { left: 23px; }
+.onlineQuickIcon:after { right: 23px; }
+
+.onlineQuickText {
+  align-self: end;
+  color: #111827;
+  font-size: clamp(24px, 2.3vw, 32px);
+  font-weight: 950;
+}
+
+.onlineQuickSubtext {
+  align-self: start;
+  color: #526179;
+  font-size: clamp(15px, 1.4vw, 18px);
+}
+
+.onlineQuickSearchingPanel {
+  margin-top: 14px;
+  border-radius: 8px;
+}
+
+#countdownOverlay.online-countdown {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#countdownOverlay.online-countdown #classicCountdownGuide,
+#countdownOverlay.online-countdown #ghostCountdownGuide,
+#countdownOverlay.online-countdown #itemCountdownGuide,
+#countdownOverlay.online-countdown #countRule {
+  display: none !important;
+}
+
+#countdownOverlay.online-countdown #countNumber {
+  position: relative;
+  z-index: 3;
+  margin-bottom: 18px;
+}
+
+#countdownOverlay.online-countdown #countdownControlGuide {
+  position: relative;
+  z-index: 3;
+  display: flex !important;
+  width: min(760px, calc(100vw - 460px));
+  max-height: 44vh;
+  margin-top: 0;
+  padding: 16px 18px;
+  border-radius: 22px;
+}
+
+#countdownOverlay.online-countdown .controlKeyboardTitle {
+  justify-content: center;
+  text-align: center;
+}
+
+#countdownOverlay.online-countdown .controlKeyboardTitle > div:first-child {
+  display: none;
+}
+
+#countdownOverlay.online-countdown .keyboardFullArt {
+  --key: 21px;
+  --gap: 3px;
+  padding: 10px;
+  border-radius: 16px;
+}
+
+#countdownOverlay.online-countdown .keyboardSections {
+  gap: 8px;
+}
+
+.onlineCountdownPlayers {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.onlineCountdownProfile {
+  --online-player-color: #7dc7ff;
+  position: absolute;
+  top: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  width: min(250px, 24vw);
+  padding: 22px 18px;
+  border-radius: 8px;
+  color: #ffffff;
+  text-align: center;
+  transform: translateY(-50%);
+}
+
+.onlineCountdownProfile.p1 {
+  left: clamp(24px, 6vw, 92px);
+}
+
+.onlineCountdownProfile.p2 {
+  right: clamp(24px, 6vw, 92px);
+}
+
+.onlineCountdownSlot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 13px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.onlineCountdownAvatar {
+  position: relative;
+  width: clamp(96px, 11vw, 142px);
+  height: clamp(96px, 11vw, 142px);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.42), transparent 40%),
+    var(--online-player-color);
+  box-shadow:
+    0 22px 46px rgba(0, 0, 0, 0.24),
+    inset 0 0 0 4px rgba(255, 255, 255, 0.72),
+    inset -16px -18px 28px rgba(15, 23, 42, 0.22);
+}
+
+.onlineCountdownAvatar i {
+  position: absolute;
+  top: 50%;
+  width: 12%;
+  height: 27%;
+  min-width: 10px;
+  min-height: 23px;
+  border: 3px solid rgba(248, 251, 255, 0.96);
+  border-radius: 999px;
+  background: #050814;
+  transform: translateY(-48%);
+  box-sizing: border-box;
+}
+
+.onlineCountdownAvatar i:first-child {
+  left: 31%;
+}
+
+.onlineCountdownAvatar i:last-child {
+  right: 31%;
+}
+
+.onlineCountdownProfile strong {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: clamp(24px, 2.4vw, 38px);
+  font-weight: 950;
+  line-height: 1.08;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.32);
+}
+
+@media (max-width: 1180px) {
+  #countdownOverlay.online-countdown #countdownControlGuide {
+    width: min(600px, calc(100vw - 380px));
+  }
+
+  .onlineCountdownProfile {
+    width: min(210px, 25vw);
+  }
+}
+
+@media (max-width: 860px) {
+  #countdownOverlay.online-countdown {
+    justify-content: center;
+  }
+
+  #countdownOverlay.online-countdown #countdownControlGuide {
+    width: min(520px, calc(100vw - 36px));
+    max-height: 36vh;
+  }
+
+  .onlineCountdownProfile {
+    top: 18px;
+    width: min(190px, 42vw);
+    padding: 10px 8px;
+    gap: 8px;
+    transform: none;
+  }
+
+  .onlineCountdownProfile.p1 {
+    left: 12px;
+  }
+
+  .onlineCountdownProfile.p2 {
+    right: 12px;
+  }
+
+  .onlineCountdownAvatar {
+    width: 70px;
+    height: 70px;
+  }
+
+  .onlineCountdownAvatar i {
+    min-width: 6px;
+    min-height: 16px;
+    border-width: 2px;
+  }
+
+  .onlineCountdownProfile strong {
+    font-size: 17px;
+  }
+}
+
+@media (max-width: 980px), (max-height: 860px) {
+  .onlineMultiplayerPanel {
+    max-width: 860px;
+    min-height: 0;
+    max-height: calc(100vh - 72px);
+    overflow-y: auto;
+    padding: 24px 24px 28px;
+    gap: 12px;
+  }
+
+  .onlineMultiplayerPanel h2 {
+    font-size: clamp(34px, 5vw, 48px);
+  }
+
+  .onlineMatchLead {
+    margin-bottom: 8px !important;
+  }
+
+  .onlineEntryCards {
+    gap: 14px;
+  }
+
+  .onlineEntryCard {
+    grid-template-columns: 52px minmax(0, 1fr);
+    min-height: 80px;
+    padding: 12px 14px;
+  }
+
+  .onlineEntryCard:not(:last-child)::after {
+    display: none;
+  }
+
+  .onlineEntryIcon {
+    width: 46px;
+    height: 46px;
+    font-size: 24px;
+  }
+
+  .onlineModeCards {
+    gap: 12px;
+  }
+
+  #lobby .lobbyCard button.onlineModeCard,
+  .onlineModeCard {
+    grid-template-columns: 52px minmax(0, 1fr);
+    min-height: 82px;
+    padding: 12px 14px !important;
+  }
+
+  .onlineModeIcon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .onlineLocalProfileCard {
+    width: min(440px, 100%);
+  }
+
+  .onlineLocalProfileHeader {
+    grid-template-columns: 74px minmax(0, 1fr);
+    min-height: 88px;
+    padding: 16px 22px 14px;
+  }
+
+  .onlineLocalAvatar {
+    width: 62px;
+    height: 62px;
+  }
+
+  .onlineLocalSkinRow {
+    grid-template-columns: 48px minmax(0, 1fr) 48px;
+    gap: 10px;
+    padding: 15px 38px 8px;
+  }
+
+  #lobby .lobbyCard button.onlineSkinArrow,
+  .onlineSkinArrow,
+  #lobby .lobbyCard button.onlineSkinCurrent,
+  .onlineSkinCurrent {
+    height: 48px !important;
+    min-height: 48px !important;
+  }
+
+  #lobby .lobbyCard button.onlineSkinArrow,
+  .onlineSkinArrow {
+    width: 48px !important;
+    min-width: 48px !important;
+  }
+
+  .onlineRoomQuickButton {
+    grid-template-columns: 72px minmax(0, 1fr);
+    min-height: 104px;
+    padding: 16px 20px !important;
+  }
+
+  .onlineQuickIcon {
+    width: 58px;
+    height: 58px;
+  }
+
+  .onlineQuickIcon:before { left: 18px; }
+  .onlineQuickIcon:after { right: 18px; }
+}
+
+@media (max-width: 720px) {
+  .onlinePanelTopline {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .onlineRoomBackButton {
+    justify-self: center;
+  }
+
+  .onlineEntryCards,
+  .onlineModeCards {
+    grid-template-columns: 1fr;
+  }
+
+  .onlineLocalProfileHeader {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .onlineLocalSkinRow {
+    padding: 14px 14px 8px;
+  }
+
+  .onlineRoomQuickButton {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+}
+
+/* 온라인 패널은 메인 로비 카드 규격을 그대로 따른다. */
+#lobby .lobbyCard.online-room-active {
+  width: min(680px, calc(100vw - 42px)) !important;
+  padding: 42px 38px 34px !important;
+  border-radius: 34px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineMatchSlide {
+  align-content: stretch;
+}
+
+#lobby .lobbyCard.online-room-active .onlineMultiplayerPanel {
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+#lobby .lobbyCard.online-room-active .onlinePanelTopline {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomBackButton {
+  min-width: 72px;
+  min-height: 36px;
+  border-radius: 999px !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineMatchBadge {
+  justify-self: center;
+  min-height: 28px;
+  padding: 0 13px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+#lobby .lobbyCard.online-room-active .onlineMultiplayerPanel h2 {
+  margin: 2px 0 0;
+  font-size: 46px;
+  line-height: 1;
+  font-weight: 850;
+  letter-spacing: -0.055em;
+}
+
+#lobby .lobbyCard.online-room-active .onlineMatchLead {
+  margin: 8px 0 12px !important;
+  font-size: 15px !important;
+  line-height: 1.45 !important;
+  font-weight: 750;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact,
+#lobby .lobbyCard.online-room-active .onlineRoomEntry {
+  gap: 10px;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCards {
+  gap: 8px;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCard {
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 9px;
+  min-height: 58px;
+  padding: 9px 11px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.64) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.58);
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCard:not(:last-child)::after {
+  display: none;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  font-size: 18px;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCard strong {
+  font-size: 15px;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCopy > span {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+#lobby .lobbyCard.online-room-active .onlineModeCards {
+  gap: 10px;
+}
+
+#lobby .lobbyCard.online-room-active button.onlineModeCard,
+#lobby .lobbyCard.online-room-active .onlineModeCard {
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 10px;
+  min-height: 68px;
+  padding: 10px 12px !important;
+  border-width: 1px !important;
+  border-radius: 18px !important;
+  background: rgba(255, 251, 241, 0.58) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineModeIcon {
+  width: 36px;
+  height: 36px;
+}
+
+#lobby .lobbyCard.online-room-active .onlineModeIcon.speed::before {
+  inset: 9px 10px;
+  border-width: 4px;
+}
+
+#lobby .lobbyCard.online-room-active .onlineModeIcon.item::before {
+  font-size: 22px;
+}
+
+#lobby .lobbyCard.online-room-active .onlineModeCopy strong {
+  font-size: 15px;
+  line-height: 1.15;
+}
+
+#lobby .lobbyCard.online-room-active .onlineModeCopy span {
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+#lobby .lobbyCard.online-room-active .onlineLocalProfileCard {
+  width: min(360px, 100%);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.48);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+}
+
+#lobby .lobbyCard.online-room-active .onlineLocalProfileHeader {
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 12px;
+  min-height: 70px;
+  padding: 14px 16px 10px;
+  border-radius: 26px 26px 0 0;
+}
+
+#lobby .lobbyCard.online-room-active .onlineLocalAvatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+}
+
+#lobby .lobbyCard.online-room-active .onlineLocalAvatar i {
+  min-width: 4px;
+  min-height: 11px;
+  border-width: 1px;
+}
+
+#lobby .lobbyCard.online-room-active .onlineLocalProfileHeader strong {
+  font-size: 18px;
+  letter-spacing: -0.035em;
+}
+
+#lobby .lobbyCard.online-room-active .onlineLocalSkinRow {
+  grid-template-columns: 38px minmax(0, 1fr) 38px;
+  gap: 8px;
+  padding: 12px 28px 5px;
+}
+
+#lobby .lobbyCard.online-room-active button.onlineSkinArrow,
+#lobby .lobbyCard.online-room-active .onlineSkinArrow {
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  border-radius: 14px !important;
+  font-size: 27px !important;
+}
+
+#lobby .lobbyCard.online-room-active button.onlineSkinCurrent,
+#lobby .lobbyCard.online-room-active .onlineSkinCurrent {
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 10px;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 12px !important;
+  border-radius: 18px !important;
+}
+
+#lobby .lobbyCard.online-room-active #onlineSkinSwatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 9px;
+}
+
+#lobby .lobbyCard.online-room-active #onlineSkinName {
+  font-size: 13px;
+}
+
+#lobby .lobbyCard.online-room-active .onlineSkinDots {
+  gap: 6px;
+  min-height: 14px;
+  padding: 0 0 12px;
+}
+
+#lobby .lobbyCard.online-room-active .onlineSkinDots span {
+  width: 6px;
+  height: 6px;
+}
+
+#lobby .lobbyCard.online-room-active .onlineSkinDots span.active {
+  width: 16px;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomQuickButton {
+  grid-template-columns: 50px minmax(0, 1fr);
+  min-height: 76px;
+  padding: 12px 16px !important;
+  border-width: 1px !important;
+  border-radius: 26px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineQuickIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+
+#lobby .lobbyCard.online-room-active .onlineQuickIcon:before,
+#lobby .lobbyCard.online-room-active .onlineQuickIcon:after {
+  width: 5px;
+  height: 13px;
+  border-width: 1px;
+}
+
+#lobby .lobbyCard.online-room-active .onlineQuickIcon:before { left: 14px; }
+#lobby .lobbyCard.online-room-active .onlineQuickIcon:after { right: 14px; }
+
+#lobby .lobbyCard.online-room-active .onlineQuickText {
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+#lobby .lobbyCard.online-room-active .onlineQuickSubtext {
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+@media (max-width: 720px) {
+  #lobby .lobbyCard.online-room-active {
+    padding: 30px 22px !important;
+  }
+
+  #lobby .lobbyCard.online-room-active .onlineMultiplayerPanel h2 {
+    font-size: 32px;
+  }
+
+  #lobby .lobbyCard.online-room-active .onlineEntryCards,
+  #lobby .lobbyCard.online-room-active .onlineModeCards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 최종 온라인 로비 규격: 메인 로비 버튼/모드 스타일과 동일하게 맞춤 */
+#lobby .lobbyCard.online-room-active #onlineCreateCard,
+#lobby .lobbyCard.online-room-active #onlineJoinCard {
+  display: grid !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCards {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCard {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  min-height: 68px !important;
+  padding: 13px 14px !important;
+  border-radius: 18px !important;
+  background: rgba(255,255,255,0.58) !important;
+  color: #111827 !important;
+  border: 1px solid rgba(0,0,0,0.08) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.58), 0 8px 18px rgba(15,23,42,0.08) !important;
+  text-align: left !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCard.selected {
+  border-color: rgba(0,122,255,0.78) !important;
+  box-shadow: 0 0 0 3px rgba(0,122,255,0.18), 0 12px 24px rgba(15,23,42,0.10), inset 0 0 0 1px rgba(255,255,255,0.74) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryIcon {
+  display: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCard strong {
+  display: block !important;
+  margin-bottom: 4px !important;
+  color: #111827 !important;
+  font-size: 15px !important;
+  font-weight: 900 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCopy > span {
+  color: #6b7280 !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineModeCards {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+#lobby .lobbyCard.online-room-active button.onlineModeCard,
+#lobby .lobbyCard.online-room-active .onlineModeCard {
+  display: block !important;
+  min-height: 72px !important;
+  padding: 14px 16px !important;
+  border-radius: 20px !important;
+  background: #fff8e6 !important;
+  color: #111111 !important;
+  border: 2px solid rgba(255, 209, 102, 0.42) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.70), 0 8px 18px rgba(91,72,38,0.08) !important;
+  text-align: left !important;
+}
+
+#lobby .lobbyCard.online-room-active button.onlineModeCard.selected,
+#lobby .lobbyCard.online-room-active .onlineModeCard.selected {
+  background: #fff8e6 !important;
+  color: #111111 !important;
+  border: 2px solid #ffd166 !important;
+  box-shadow:
+    0 0 0 2px rgba(255, 209, 102, 0.82),
+    0 0 18px rgba(255,255,255,0.95),
+    0 0 32px rgba(255,255,255,0.72),
+    0 12px 24px rgba(91,72,38,0.12),
+    inset 0 0 0 1px rgba(255,255,255,0.82) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineModeIcon {
+  display: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineModeCopy strong {
+  display: block !important;
+  margin-bottom: 4px !important;
+  color: #111111 !important;
+  font-size: 15px !important;
+  font-weight: 900 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineModeCopy span {
+  display: block !important;
+  color: #111111 !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomQuickButton {
+  background: rgba(255,255,255,0.72) !important;
+  color: #111827 !important;
+  border: 1px solid rgba(0,0,0,0.06) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.62), 0 10px 22px rgba(15,23,42,0.08) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomQuickButton::before {
+  display: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineQuickText,
+#lobby .lobbyCard.online-room-active .onlineQuickSubtext {
+  color: #111827 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineQuickSubtext {
+  opacity: 0.72;
+}
+
+#lobby .lobbyCard.online-room-active .onlineLocalAvatar {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.42), transparent 40%),
+    #64beff !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineEntryPanel[data-online-panel="quick"] {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineRoomQuickButton {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  justify-self: stretch !important;
+  grid-template-columns: 52px minmax(0, 1fr) minmax(150px, auto) !important;
+  min-height: 104px !important;
+  padding: 16px 18px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch {
+  position: relative !important;
+  display: block !important;
+  overflow: hidden !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 10px !important;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.40), transparent 40%),
+    var(--online-profile-color, #64beff) !important;
+  box-shadow:
+    inset 0 0 0 2px rgba(255,255,255,0.74),
+    inset -4px -5px 8px rgba(15,23,42,0.14) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch::before,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch::after,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch::before,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 50% !important;
+  width: 4px !important;
+  height: 9px !important;
+  border: 1px solid rgba(248,251,255,0.96) !important;
+  border-radius: 999px !important;
+  background: #050814 !important;
+  transform: translateY(-48%) !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.20) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch::before,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch::before {
+  left: 31% !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch::after,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch::after {
+  right: 31% !important;
+}
+
+@media (max-width: 720px) {
+  #lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineRoomQuickButton {
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+  }
+}
+
+/* Final online battle header and skin icon priority. */
+#lobby .lobbyCard.online-room-active .onlinePanelTopline {
+  grid-template-columns: 40px minmax(0, 1fr) 40px !important;
+  align-items: center !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomBackButton {
+  display: grid !important;
+  place-items: center !important;
+  justify-self: start !important;
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineMatchBadge {
+  grid-column: 2 !important;
+  justify-self: center !important;
+  text-transform: lowercase !important;
+  letter-spacing: 0 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineMultiplayerPanel h2,
+#lobby .lobbyCard.online-room-active .onlineMatchLead {
+  text-align: center !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin]::before,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin]::after {
+  display: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="gift"] {
+  background:
+    linear-gradient(90deg, transparent 42%, rgba(255,255,255,0.92) 42%, rgba(255,255,255,0.92) 58%, transparent 58%),
+    linear-gradient(0deg, transparent 42%, rgba(255,255,255,0.92) 42%, rgba(255,255,255,0.92) 58%, transparent 58%),
+    var(--chip-color, var(--online-profile-color, #ff3b6b)) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="ice"] {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.78) 0 8%, transparent 8% 28%, rgba(255,255,255,0.42) 28% 35%, transparent 35% 100%),
+    var(--chip-color, var(--online-profile-color, #8ee8ff)) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="rainbow"] {
+  background: conic-gradient(#ff4d6d, #ffd166, #22c55e, #38bdf8, #a855f7, #ff4d6d) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="ghost"] {
+  background: radial-gradient(circle at 42% 34%, #ffffff 0 23%, #dfe3ea 24% 54%, #8d96a6 55% 100%) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chocolate"] {
+  background:
+    radial-gradient(circle at 30% 32%, rgba(255,255,255,0.28) 0 9%, transparent 10%),
+    linear-gradient(135deg, #8b4a24, #4f2612) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chess"] {
+  background:
+    conic-gradient(#f7f7f7 25%, #20242d 0 50%, #f7f7f7 0 75%, #20242d 0) 0 0 / 14px 14px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chess"]::after {
+  content: "♞" !important;
+  display: grid !important;
+  place-items: center !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #111827 !important;
+  font-size: 18px !important;
+  font-weight: 900 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="extreme"] {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.96) 0 12%, transparent 13%),
+    linear-gradient(135deg, #0f172a, var(--chip-color, #ff2d55)) !important;
+  box-shadow: 0 0 12px rgba(255,45,85,0.50), inset 0 0 0 2px rgba(255,255,255,0.74) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="hell"] {
+  background:
+    radial-gradient(circle at 50% 20%, #fff7ed 0 9%, transparent 10%),
+    linear-gradient(180deg, #ffedd5 0 18%, #ef4444 19% 60%, #4c0519 61% 100%) !important;
+  box-shadow: 0 0 14px rgba(239,68,68,0.55), inset 0 0 0 2px rgba(255,255,255,0.70) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chaos"] {
+  background:
+    radial-gradient(circle at 36% 42%, #ffffff 0 10%, transparent 11%),
+    conic-gradient(from 25deg, #111827, #7c3aed, #22d3ee, #f97316, #111827) !important;
+  box-shadow: 0 0 14px rgba(124,58,237,0.50), inset 0 0 0 2px rgba(255,255,255,0.72) !important;
+}
+
+/* Online battle header and skin-preview corrections. */
+#lobby .lobbyCard.online-room-active .onlinePanelTopline {
+  grid-template-columns: 40px minmax(0, 1fr) 40px !important;
+  align-items: center !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomBackButton {
+  display: grid !important;
+  place-items: center !important;
+  justify-self: start !important;
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineMatchBadge {
+  grid-column: 2 !important;
+  justify-self: center !important;
+  text-transform: lowercase !important;
+  letter-spacing: 0 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineMultiplayerPanel h2,
+#lobby .lobbyCard.online-room-active .onlineMatchLead {
+  text-align: center !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin]::before,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin]::after {
+  display: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="gift"] {
+  background:
+    linear-gradient(90deg, transparent 42%, rgba(255,255,255,0.92) 42%, rgba(255,255,255,0.92) 58%, transparent 58%),
+    linear-gradient(0deg, transparent 42%, rgba(255,255,255,0.92) 42%, rgba(255,255,255,0.92) 58%, transparent 58%),
+    var(--chip-color, var(--online-profile-color, #ff3b6b)) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="ice"] {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.78) 0 8%, transparent 8% 28%, rgba(255,255,255,0.42) 28% 35%, transparent 35% 100%),
+    var(--chip-color, var(--online-profile-color, #8ee8ff)) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="rainbow"] {
+  background: conic-gradient(#ff4d6d, #ffd166, #22c55e, #38bdf8, #a855f7, #ff4d6d) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="ghost"] {
+  background: radial-gradient(circle at 42% 34%, #ffffff 0 23%, #dfe3ea 24% 54%, #8d96a6 55% 100%) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chocolate"] {
+  background:
+    radial-gradient(circle at 30% 32%, rgba(255,255,255,0.28) 0 9%, transparent 10%),
+    linear-gradient(135deg, #8b4a24, #4f2612) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chess"] {
+  background:
+    conic-gradient(#f7f7f7 25%, #20242d 0 50%, #f7f7f7 0 75%, #20242d 0) 0 0 / 14px 14px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chess"]::after {
+  content: "♞" !important;
+  display: grid !important;
+  place-items: center !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #111827 !important;
+  font-size: 18px !important;
+  font-weight: 900 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="extreme"] {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.96) 0 12%, transparent 13%),
+    linear-gradient(135deg, #0f172a, var(--chip-color, #ff2d55)) !important;
+  box-shadow: 0 0 12px rgba(255,45,85,0.50), inset 0 0 0 2px rgba(255,255,255,0.74) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="hell"] {
+  background:
+    radial-gradient(circle at 50% 20%, #fff7ed 0 9%, transparent 10%),
+    linear-gradient(180deg, #ffedd5 0 18%, #ef4444 19% 60%, #4c0519 61% 100%) !important;
+  box-shadow: 0 0 14px rgba(239,68,68,0.55), inset 0 0 0 2px rgba(255,255,255,0.70) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chaos"] {
+  background:
+    radial-gradient(circle at 36% 42%, #ffffff 0 10%, transparent 11%),
+    conic-gradient(from 25deg, #111827, #7c3aed, #22d3ee, #f97316, #111827) !important;
+  box-shadow: 0 0 14px rgba(124,58,237,0.50), inset 0 0 0 2px rgba(255,255,255,0.72) !important;
+}
+
+/* Online battle header and skin-preview corrections. */
+#lobby .lobbyCard.online-room-active .onlinePanelTopline {
+  grid-template-columns: 40px minmax(0, 1fr) 40px !important;
+  align-items: center !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomBackButton {
+  display: grid !important;
+  place-items: center !important;
+  justify-self: start !important;
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineMatchBadge {
+  grid-column: 2 !important;
+  justify-self: center !important;
+  text-transform: lowercase !important;
+  letter-spacing: 0 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineMultiplayerPanel h2,
+#lobby .lobbyCard.online-room-active .onlineMatchLead {
+  text-align: center !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin]::before,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin]::after {
+  display: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="gift"] {
+  background:
+    linear-gradient(90deg, transparent 42%, rgba(255,255,255,0.92) 42%, rgba(255,255,255,0.92) 58%, transparent 58%),
+    linear-gradient(0deg, transparent 42%, rgba(255,255,255,0.92) 42%, rgba(255,255,255,0.92) 58%, transparent 58%),
+    var(--chip-color, var(--online-profile-color, #ff3b6b)) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="ice"] {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.78) 0 8%, transparent 8% 28%, rgba(255,255,255,0.42) 28% 35%, transparent 35% 100%),
+    var(--chip-color, var(--online-profile-color, #8ee8ff)) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="rainbow"] {
+  background: conic-gradient(#ff3b30, #ff9500, #ffd60a, #34c759, #0a84ff, #3348ff, #af52de, #ff3b30) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="ghost"] {
+  background: radial-gradient(circle at 42% 34%, #ffffff 0 23%, #dfe3ea 24% 54%, #8d96a6 55% 100%) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chocolate"] {
+  background:
+    radial-gradient(circle at 30% 26%, rgba(255,255,255,0.20) 0 8%, transparent 9%),
+    linear-gradient(135deg, #7b3f1d, #3b1d0f) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chess"] {
+  background:
+    radial-gradient(circle at 58% 34%, #f8fafc 0 8%, transparent 9%),
+    linear-gradient(135deg, transparent 0 36%, rgba(248,250,252,0.92) 37% 52%, transparent 53%),
+    repeating-conic-gradient(#f8fafc 0% 25%, #111827 0% 50%) 50% / 50% 50% !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chess"]::after {
+  content: "♞" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #f8fafc !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  text-shadow: 0 2px 0 #020617, 0 0 7px rgba(2,6,23,0.60) !important;
+  transform: none !important;
+  width: auto !important;
+  height: auto !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="extreme"] {
+  background: var(--chip-color, var(--online-profile-color, #843cff)) !important;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.74), 0 0 11px rgba(132,60,255,0.70) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="hell"] {
+  background: var(--chip-color, var(--online-profile-color, #2a0000)) !important;
+  box-shadow: inset 0 0 0 2px rgba(255,230,180,0.92), 0 0 11px rgba(255,75,31,0.86) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chaos"] {
+  background: var(--chip-color, var(--online-profile-color, #00ff78)) !important;
+  box-shadow: inset 0 0 0 2px rgba(0,255,120,0.45), 0 0 12px rgba(0,255,120,0.70) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-session-quick .onlineRoomLobby,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-session-quick .onlineRoomHeader,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-session-quick .onlineRoomActions {
+  display: none !important;
+}
+
+/* Online battle final pass: tab icons, skin preview carousel, wide quick button. */
+#lobby .lobbyCard.online-room-active .onlineEntryCard {
+  grid-template-columns: 30px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 9px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryIcon {
+  display: grid !important;
+  place-items: center !important;
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  border-radius: 11px !important;
+  background: rgba(0, 122, 255, 0.10) !important;
+  color: #007aff !important;
+  font-size: 17px !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCard.selected .onlineEntryIcon {
+  background: rgba(0, 122, 255, 0.16) !important;
+  color: #0057c2 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineEntryPanel[data-online-panel="quick"] {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineRoomQuickButton {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  justify-self: stretch !important;
+  grid-template-columns: 52px minmax(0, 1fr) minmax(150px, auto) !important;
+  min-height: 104px !important;
+  padding: 16px 18px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch {
+  position: relative !important;
+  display: block !important;
+  overflow: hidden !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 10px !important;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.40), transparent 40%),
+    var(--online-profile-color, #64beff) !important;
+  box-shadow:
+    inset 0 0 0 2px rgba(255,255,255,0.74),
+    inset -4px -5px 8px rgba(15,23,42,0.14) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch::before,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch::after,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch::before,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 50% !important;
+  width: 4px !important;
+  height: 9px !important;
+  border: 1px solid rgba(248,251,255,0.96) !important;
+  border-radius: 999px !important;
+  background: #050814 !important;
+  transform: translateY(-48%) !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.20) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch::before,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch::before {
+  left: 31% !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch::after,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch::after {
+  right: 31% !important;
+}
+
+@media (max-width: 720px) {
+  #lobby .lobbyCard.online-room-active .onlineEntryCard {
+    grid-template-columns: 30px minmax(0, 1fr) !important;
+  }
+
+  #lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineRoomQuickButton {
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+  }
+}
+
+/* Online battle final pass: tab icons, skin preview carousel, wide quick button. */
+#lobby .lobbyCard.online-room-active .onlineEntryCard {
+  grid-template-columns: 30px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 9px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryIcon {
+  display: grid !important;
+  place-items: center !important;
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  border-radius: 11px !important;
+  background: rgba(0, 122, 255, 0.10) !important;
+  color: #007aff !important;
+  font-size: 17px !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCard.selected .onlineEntryIcon {
+  background: rgba(0, 122, 255, 0.16) !important;
+  color: #0057c2 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineEntryPanel[data-online-panel="quick"] {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineRoomQuickButton {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  justify-self: stretch !important;
+  grid-template-columns: 52px minmax(0, 1fr) minmax(150px, auto) !important;
+  min-height: 104px !important;
+  padding: 16px 18px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch {
+  position: relative !important;
+  display: block !important;
+  overflow: hidden !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 10px !important;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.40), transparent 40%),
+    var(--online-profile-color, #64beff) !important;
+  box-shadow:
+    inset 0 0 0 2px rgba(255,255,255,0.74),
+    inset -4px -5px 8px rgba(15,23,42,0.14) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch::before,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch::after,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch::before,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 50% !important;
+  width: 4px !important;
+  height: 9px !important;
+  border: 1px solid rgba(248,251,255,0.96) !important;
+  border-radius: 999px !important;
+  background: #050814 !important;
+  transform: translateY(-48%) !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.20) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch::before,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch::before {
+  left: 31% !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch::after,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch::after {
+  right: 31% !important;
+}
+
+@media (max-width: 720px) {
+  #lobby .lobbyCard.online-room-active .onlineEntryCard {
+    grid-template-columns: 30px minmax(0, 1fr) !important;
+  }
+
+  #lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineRoomQuickButton {
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+  }
+}
+
+/* Quick match tab: only profile controls and the quick-start button remain. */
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineRoomLobby,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick + .onlineMatchStatus,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-session-quick + .onlineMatchStatus {
+  display: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick {
+  gap: 12px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineLocalProfileCard {
+  width: min(430px, 100%) !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.54) !important;
+  border: 1px solid rgba(15, 23, 42, 0.07) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.62), 0 10px 24px rgba(15,23,42,0.07) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineLocalProfileHeader {
+  grid-template-columns: 62px minmax(0, 1fr) !important;
+  gap: 14px !important;
+  min-height: 84px !important;
+  padding: 16px 20px 12px !important;
+  border-radius: 24px 24px 0 0 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineLocalAvatar {
+  width: 56px !important;
+  height: 56px !important;
+  border-radius: 16px !important;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.42), transparent 40%),
+    #64beff !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineLocalAvatar i {
+  min-width: 5px !important;
+  min-height: 13px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineLocalProfileHeader strong {
+  font-size: 20px !important;
+  font-weight: 950 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineLocalSkinRow {
+  grid-template-columns: 44px minmax(0, 1fr) 44px !important;
+  gap: 10px !important;
+  padding: 14px 34px 6px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick button.onlineSkinArrow,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineSkinArrow {
+  width: 44px !important;
+  min-width: 44px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  border-radius: 16px !important;
+  font-size: 29px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick button.onlineSkinCurrent,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineSkinCurrent {
+  grid-template-columns: 34px minmax(0, 1fr) !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  padding: 0 14px !important;
+  border-radius: 18px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 10px !important;
+  background: var(--online-profile-color, #64beff) !important;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.76) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidName,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinName {
+  font-size: 14px !important;
+  font-weight: 900 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineSkinDots {
+  min-height: 16px !important;
+  padding: 0 0 12px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineEntryPanel[data-online-panel="quick"] {
+  display: block !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineRoomQuickButton {
+  grid-template-columns: 52px minmax(0, 1fr) minmax(132px, auto) !important;
+  grid-template-rows: auto auto !important;
+  min-height: 96px !important;
+  padding: 14px 16px !important;
+  border-radius: 26px !important;
+  background: rgba(255,255,255,0.76) !important;
+  color: #111827 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineQuickIcon {
+  grid-column: 1 !important;
+  grid-row: 1 / 3 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineQuickText {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  align-self: end !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineQuickSubtext {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  align-self: start !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineQuickSearchingPanel {
+  grid-column: 3 !important;
+  grid-row: 1 / 3 !important;
+  display: grid !important;
+  grid-template-columns: 22px minmax(0, 1fr) !important;
+  align-items: center !important;
+  justify-items: start !important;
+  gap: 2px 8px !important;
+  margin: 0 !important;
+  padding: 8px 10px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(0,122,255,0.14) !important;
+  background: rgba(0,122,255,0.08) !important;
+  box-shadow: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineQuickSearchingPanel[hidden] {
+  display: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineQuickSpinner {
+  grid-column: 1 !important;
+  grid-row: 1 / 3 !important;
+  width: 20px !important;
+  height: 20px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineQuickSearchingPanel strong {
+  grid-column: 2 !important;
+  font-size: 12px !important;
+  line-height: 1.15 !important;
+  color: #111827 !important;
+  white-space: nowrap !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineQuickSearchingPanel span:not(.onlineQuickSpinner) {
+  grid-column: 2 !important;
+  max-width: 150px !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  color: #64748b !important;
+}
+
+@media (max-width: 720px) {
+  #lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineLocalProfileCard {
+    width: min(390px, 100%) !important;
+  }
+
+  #lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineLocalSkinRow {
+    padding: 12px 18px 6px !important;
+  }
+
+  #lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineRoomQuickButton {
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+    min-height: 104px !important;
+  }
+
+  #lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineQuickSearchingPanel {
+    grid-column: 2 !important;
+    grid-row: 3 !important;
+    margin-top: 8px !important;
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 720px) {
+  #lobby .lobbyCard.online-room-active .onlineEntryCards,
+  #lobby .lobbyCard.online-room-active .onlineModeCards {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+#lobby .lobbyCard.online-room-active #onlineCreateCard,
+#lobby .lobbyCard.online-room-active #onlineJoinCard {
+  display: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCards {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+#lobby .lobbyCard.online-room-active #onlineQuickCard {
+  grid-template-columns: 34px minmax(0, 1fr);
+  min-height: 58px;
+}
+
+#lobby .lobbyCard.online-room-active .onlineModeCards {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  max-width: none;
+}
+
+#lobby .lobbyCard.online-room-active button.onlineModeCard,
+#lobby .lobbyCard.online-room-active .onlineModeCard {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 62px;
+  padding: 10px 14px !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-radius: 22px !important;
+  background: rgba(255, 255, 255, 0.48) !important;
+  color: var(--text-main) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55) !important;
+  text-align: center;
+}
+
+#lobby .lobbyCard.online-room-active button.onlineModeCard.selected,
+#lobby .lobbyCard.online-room-active .onlineModeCard.selected {
+  border-color: rgba(0, 122, 255, 0.42) !important;
+  background: rgba(0, 122, 255, 0.10) !important;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.14), inset 0 0 0 1px rgba(255, 255, 255, 0.72) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineModeIcon {
+  display: none;
+}
+
+#lobby .lobbyCard.online-room-active .onlineModeCopy strong {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--text-main);
+}
+
+#lobby .lobbyCard.online-room-active .onlineModeCopy span {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 750;
+  color: var(--text-sub);
+}
+
+#lobby .lobbyCard.online-room-active .onlineLocalProfileCard {
+  justify-self: center;
+  width: min(360px, 100%);
+  margin: 0 auto;
+}
+
+#lobby .lobbyCard.online-room-active .onlineLocalAvatar {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.42), transparent 40%),
+    #64beff !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomQuickButton {
+  background: rgba(255, 255, 255, 0.72) !important;
+  color: #111827 !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.62), 0 10px 22px rgba(15, 23, 42, 0.08) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomQuickButton::before {
+  display: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineQuickText,
+#lobby .lobbyCard.online-room-active .onlineQuickSubtext {
+  color: #111827 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineQuickSubtext {
+  opacity: 0.72;
+}
+
+@media (max-width: 720px) {
+  #lobby .lobbyCard.online-room-active .onlineModeCards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Final correction: keep all three top online tabs and match lobby styles. */
+#lobby .lobbyCard.online-room-active #onlineCreateCard,
+#lobby .lobbyCard.online-room-active #onlineJoinCard {
+  display: grid !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCards {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  max-width: none !important;
+  margin: 0 !important;
+  gap: 8px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCard {
+  grid-template-columns: 30px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 9px !important;
+  min-height: 68px !important;
+  padding: 13px 14px !important;
+  border-radius: 18px !important;
+  background: rgba(255,255,255,0.58) !important;
+  color: #111827 !important;
+  border: 1px solid rgba(0,0,0,0.08) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.58), 0 8px 18px rgba(15,23,42,0.08) !important;
+  text-align: left !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCard.selected {
+  border-color: rgba(0,122,255,0.78) !important;
+  box-shadow: 0 0 0 3px rgba(0,122,255,0.18), 0 12px 24px rgba(15,23,42,0.10), inset 0 0 0 1px rgba(255,255,255,0.74) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryIcon {
+  display: grid !important;
+  place-items: center !important;
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  border-radius: 11px !important;
+  background: rgba(0, 122, 255, 0.10) !important;
+  color: #007aff !important;
+  font-size: 17px !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCard.selected .onlineEntryIcon {
+  background: rgba(0, 122, 255, 0.16) !important;
+  color: #0057c2 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCard strong {
+  display: block !important;
+  margin-bottom: 4px !important;
+  color: #111827 !important;
+  font-size: 15px !important;
+  font-weight: 900 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineEntryCopy > span {
+  color: #6b7280 !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+#lobby .lobbyCard.online-room-active button.onlineModeCard,
+#lobby .lobbyCard.online-room-active .onlineModeCard {
+  display: block !important;
+  min-height: 72px !important;
+  padding: 14px 16px !important;
+  border-radius: 20px !important;
+  background: #fff8e6 !important;
+  color: #111111 !important;
+  border: 2px solid rgba(255, 209, 102, 0.42) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.70), 0 8px 18px rgba(91,72,38,0.08) !important;
+  text-align: left !important;
+}
+
+#lobby .lobbyCard.online-room-active button.onlineModeCard.selected,
+#lobby .lobbyCard.online-room-active .onlineModeCard.selected {
+  background: #fff8e6 !important;
+  color: #111111 !important;
+  border: 2px solid #ffd166 !important;
+  box-shadow:
+    0 0 0 2px rgba(255, 209, 102, 0.82),
+    0 0 18px rgba(255,255,255,0.95),
+    0 0 32px rgba(255,255,255,0.72),
+    0 12px 24px rgba(91,72,38,0.12),
+    inset 0 0 0 1px rgba(255,255,255,0.82) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineModeCopy strong {
+  display: block !important;
+  margin-bottom: 4px !important;
+  color: #111111 !important;
+  font-size: 15px !important;
+  font-weight: 900 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineModeCopy span {
+  display: block !important;
+  color: #111111 !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineEntryPanel[data-online-panel="quick"] {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineRoomQuickButton {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  justify-self: stretch !important;
+  grid-template-columns: 52px minmax(0, 1fr) minmax(150px, auto) !important;
+  min-height: 104px !important;
+  padding: 16px 18px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch {
+  position: relative !important;
+  display: block !important;
+  overflow: hidden !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 10px !important;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.40), transparent 40%),
+    var(--online-profile-color, #64beff) !important;
+  box-shadow:
+    inset 0 0 0 2px rgba(255,255,255,0.74),
+    inset -4px -5px 8px rgba(15,23,42,0.14) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch::before,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch::after,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch::before,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 50% !important;
+  width: 4px !important;
+  height: 9px !important;
+  border: 1px solid rgba(248,251,255,0.96) !important;
+  border-radius: 999px !important;
+  background: #050814 !important;
+  transform: translateY(-48%) !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.20) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch::before,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch::before {
+  left: 31% !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSolidSwatch::after,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch::after {
+  right: 31% !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-session-quick .onlineRoomLobby,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-session-quick .onlineRoomHeader,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-session-quick .onlineRoomActions {
+  display: none !important;
+}
+
+@media (max-width: 720px) {
+  #lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineRoomQuickButton {
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+  }
+}
+
+/* EOF priority: online battle header and independent skin preview. */
+#lobby .lobbyCard.online-room-active .onlinePanelTopline {
+  grid-template-columns: 40px minmax(0, 1fr) 40px !important;
+  align-items: center !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomBackButton {
+  display: grid !important;
+  place-items: center !important;
+  justify-self: start !important;
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineMatchBadge {
+  grid-column: 2 !important;
+  justify-self: center !important;
+  text-transform: lowercase !important;
+  letter-spacing: 0 !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineMultiplayerPanel h2,
+#lobby .lobbyCard.online-room-active .onlineMatchLead {
+  text-align: center !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin]::before,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin]::after {
+  display: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="gift"] {
+  background: linear-gradient(90deg, transparent 42%, rgba(255,255,255,0.92) 42%, rgba(255,255,255,0.92) 58%, transparent 58%), linear-gradient(0deg, transparent 42%, rgba(255,255,255,0.92) 42%, rgba(255,255,255,0.92) 58%, transparent 58%), var(--chip-color, var(--online-profile-color, #ff3b6b)) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="ice"] {
+  background: linear-gradient(135deg, rgba(255,255,255,0.78) 0 8%, transparent 8% 28%, rgba(255,255,255,0.42) 28% 35%, transparent 35% 100%), var(--chip-color, var(--online-profile-color, #8ee8ff)) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="rainbow"] {
+  background: conic-gradient(#ff4d6d, #ffd166, #22c55e, #38bdf8, #a855f7, #ff4d6d) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="ghost"] {
+  background: radial-gradient(circle at 42% 34%, #ffffff 0 23%, #dfe3ea 24% 54%, #8d96a6 55% 100%) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chocolate"] {
+  background: radial-gradient(circle at 30% 32%, rgba(255,255,255,0.28) 0 9%, transparent 10%), linear-gradient(135deg, #8b4a24, #4f2612) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chess"] {
+  background: conic-gradient(#f7f7f7 25%, #20242d 0 50%, #f7f7f7 0 75%, #20242d 0) 0 0 / 14px 14px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chess"]::after {
+  content: "♞" !important;
+  display: grid !important;
+  place-items: center !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #111827 !important;
+  font-size: 18px !important;
+  font-weight: 900 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="extreme"] {
+  background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.96) 0 12%, transparent 13%), linear-gradient(135deg, #0f172a, var(--chip-color, #ff2d55)) !important;
+  box-shadow: 0 0 12px rgba(255,45,85,0.50), inset 0 0 0 2px rgba(255,255,255,0.74) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="hell"] {
+  background: radial-gradient(circle at 50% 20%, #fff7ed 0 9%, transparent 10%), linear-gradient(180deg, #ffedd5 0 18%, #ef4444 19% 60%, #4c0519 61% 100%) !important;
+  box-shadow: 0 0 14px rgba(239,68,68,0.55), inset 0 0 0 2px rgba(255,255,255,0.70) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chaos"] {
+  background: radial-gradient(circle at 36% 42%, #ffffff 0 10%, transparent 11%), conic-gradient(from 25deg, #111827, #7c3aed, #22d3ee, #f97316, #111827) !important;
+  box-shadow: 0 0 14px rgba(124,58,237,0.50), inset 0 0 0 2px rgba(255,255,255,0.72) !important;
+}
+
+/* Latest online skin carousel pass: mirror lobby preview behavior. */
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineLocalSkinRow:not(.onlineSolidRow) {
+  grid-template-columns: 44px minmax(0, 1fr) 44px !important;
+  align-items: center !important;
+  padding: 10px 34px 2px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineLocalSkinRow:not(.onlineSolidRow) .onlineSkinCurrent {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: 74px auto !important;
+  justify-items: center !important;
+  align-items: center !important;
+  gap: 7px !important;
+  height: 112px !important;
+  min-height: 112px !important;
+  padding: 10px 14px 9px !important;
+  border-radius: 18px !important;
+  background: rgba(255,255,255,0.82) !important;
+  border: 1px solid rgba(15,23,42,0.08) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.72), 0 8px 18px rgba(15,23,42,0.07) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch.selectedPreview {
+  position: relative !important;
+  display: block !important;
+  width: 68px !important;
+  min-width: 68px !important;
+  height: 68px !important;
+  min-height: 68px !important;
+  overflow: hidden !important;
+  border-radius: 16px !important;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.38), transparent 42%),
+    var(--preview-color, var(--online-profile-color, #64beff)) !important;
+  box-shadow:
+    0 0 0 3px rgba(255,255,255,0.86),
+    0 9px 18px rgba(15,23,42,0.14),
+    inset -8px -10px 16px rgba(15,23,42,0.14) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch.selectedPreview i {
+  position: absolute !important;
+  top: 50% !important;
+  z-index: 4 !important;
+  display: block !important;
+  width: 7px !important;
+  height: 15px !important;
+  border: 1px solid rgba(248,251,255,0.98) !important;
+  border-radius: 999px !important;
+  background: #050814 !important;
+  transform: translateY(-46%) !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.25) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch.selectedPreview i:first-child {
+  left: calc(50% - 14px) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch.selectedPreview i:last-child {
+  right: calc(50% - 14px) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinName {
+  max-width: 100% !important;
+  color: #111827 !important;
+  font-size: 14px !important;
+  font-weight: 950 !important;
+  line-height: 1.1 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineSkinDots {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineSkinDots .skinDot {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 999px !important;
+  background: rgba(15,23,42,0.18) !important;
+  transform: scale(1) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineSkinDots .skinDot.active {
+  width: 18px !important;
+  background: #007aff !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="gift"] {
+  background:
+    linear-gradient(90deg, transparent 42%, rgba(255,255,255,0.92) 42%, rgba(255,255,255,0.92) 58%, transparent 58%),
+    linear-gradient(0deg, transparent 42%, rgba(255,255,255,0.92) 42%, rgba(255,255,255,0.92) 58%, transparent 58%),
+    var(--preview-color, #ff3b6b) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="ice"] {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.78) 0 8%, transparent 8% 28%, rgba(255,255,255,0.42) 28% 35%, transparent 35% 100%),
+    var(--preview-color, #8ee8ff) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="rainbow"] {
+  background: linear-gradient(135deg, #ff3b30 0 14.28%, #ff9500 14.28% 28.56%, #ffd60a 28.56% 42.84%, #34c759 42.84% 57.12%, #0a84ff 57.12% 71.4%, #3348ff 71.4% 85.68%, #af52de 85.68% 100%) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="ghost"] {
+  background: radial-gradient(circle at 45% 34%, rgba(255,255,255,0.98) 0 28%, rgba(232,235,240,0.92) 29% 54%, rgba(150,158,172,0.92) 55% 100%) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chocolate"] {
+  background:
+    radial-gradient(circle at 30% 32%, rgba(255,255,255,0.28) 0 9%, transparent 10%),
+    linear-gradient(135deg, #8b4a24, #4f2612) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chess"] {
+  background: conic-gradient(#f7f7f7 25%, #20242d 0 50%, #f7f7f7 0 75%, #20242d 0) 0 0 / 26px 26px !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chess"]::after {
+  content: "♞" !important;
+  display: grid !important;
+  place-items: center !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 3 !important;
+  color: rgba(248,250,252,0.96) !important;
+  font-size: 36px !important;
+  text-shadow: 0 2px 0 #020617, 0 0 9px rgba(2,6,23,0.7) !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="extreme"] {
+  background: var(--preview-color, #843cff) !important;
+  animation: rewardSkinSolidSparkle 1.05s ease-in-out infinite !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="hell"] {
+  background: var(--preview-color, #2a0000) !important;
+  animation: hellSkinSolidSparkle 0.9s ease-in-out infinite !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch[data-skin="chaos"] {
+  background: var(--preview-color, #00ff78) !important;
+  animation: chaosSkinSolidSparkle 0.78s steps(2, end) infinite !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineRoomQuickButton.matching {
+  background: linear-gradient(135deg, #0a84ff 0%, #38bdf8 48%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  border-color: rgba(255,255,255,0.38) !important;
+  box-shadow:
+    0 0 0 3px rgba(10,132,255,0.16),
+    0 16px 34px rgba(37,99,235,0.30),
+    inset 0 0 0 1px rgba(255,255,255,0.34) !important;
+  animation: onlineQuickBlueBreath 1.35s ease-in-out infinite !important;
+}
+
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineRoomQuickButton.matching .onlineQuickText,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineRoomQuickButton.matching .onlineQuickSubtext,
+#lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineRoomQuickButton.matching .onlineQuickSearchingPanel {
+  color: #ffffff !important;
+}
+
+@keyframes onlineQuickBlueBreath {
+  0%, 100% {
+    filter: brightness(1) saturate(1);
+    transform: translateY(0);
+  }
+  50% {
+    filter: brightness(1.13) saturate(1.12);
+    transform: translateY(-1px);
+  }
+}
+
+@media (max-width: 720px) {
+  #lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick .onlineLocalSkinRow:not(.onlineSolidRow) {
+    padding: 10px 18px 2px !important;
+  }
+
+  #lobby .lobbyCard.online-room-active .onlineRoomCompact.online-entry-quick #onlineSkinSwatch.selectedPreview {
+    width: 60px !important;
+    min-width: 60px !important;
+    height: 60px !important;
+    min-height: 60px !important;
+  }
+}
