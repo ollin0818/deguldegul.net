@@ -9,7 +9,7 @@
   const tutorialTranslations = {
     ko: {
       steps: [
-        ["대전 방식을 선택하세요.", "2P 대전은 같은 화면에서 친구와 대결하고, AI 대전은 혼자 AI와 겨룹니다."],
+        ["대전 방식을 선택하세요.", "2P 대전은 같은 화면에서 친구와 겨루고, AI 대전은 혼자 연습하며, 온라인 대전은 실시간 상대와 플레이합니다."],
         ["게임 모드를 고르세요.", "스피드 모드는 빠른 기본 대전이고, 아이템 모드는 다양한 변수를 만들며, 고스트 모드는 서로의 흔적과 시야를 가려 혼란을 줄 수 있습니다."],
         ["색상을 고르고 준비를 완료하세요.", "각 플레이어가 원하는 색상을 선택한 뒤 준비 완료를 누르면 게임이 시작됩니다."]
       ],
@@ -19,7 +19,7 @@
     },
     en: {
       steps: [
-        ["Choose a battle type.", "2P Battle lets you play with a friend on the same screen. AI Battle lets you challenge the AI alone."],
+        ["Choose a battle type.", "2P Battle is for same-screen play, AI Battle is solo practice, and Online Battle matches you with a live opponent."],
         ["Choose a game mode.", "Speed Mode is a fast standard match, Item Mode adds variables, and Ghost Mode hides trails and vision."],
         ["Choose colors and get ready.", "Select a color for each player, then ready up to start the game."]
       ],
@@ -29,7 +29,7 @@
     },
     ja: {
       steps: [
-        ["対戦方式を選んでください。", "2P対戦は同じ画面で友だちと対戦し、AI対戦は1人でAIに挑戦します。"],
+        ["対戦方式を選んでください。", "2P対戦は同じ画面で対戦し、AI対戦は1人で練習、オンライン対戦はリアルタイムの相手と遊べます。"],
         ["ゲームモードを選んでください。", "スピードモードは高速な基本対戦、アイテムモードはさまざまな変化が加わり、ゴーストモードはラインと視界を隠します。"],
         ["色を選んで準備を完了してください。", "各プレイヤーの色を選び、準備完了にするとゲームが始まります。"]
       ],
@@ -39,7 +39,7 @@
     },
     zh: {
       steps: [
-        ["请选择对战方式。", "2P对战可在同一画面与朋友对战，AI对战则由1P单人挑战AI。"],
+        ["请选择对战方式。", "2P对战适合同屏游玩，AI对战适合单人练习，在线对战可与实时对手匹配。"],
         ["请选择游戏模式。", "速度模式是高速基础对战，道具模式会加入更多变化，幽灵模式会隐藏轨迹和视野。"],
         ["请选择颜色并完成准备。", "为每位玩家选择颜色并点击准备后，游戏就会开始。"]
       ],

@@ -327,6 +327,8 @@
     try {
       if (typeof currentLang === "string" && ONLINE_TEXT[currentLang]) return currentLang;
     } catch {}
+    const documentLang = document.documentElement.lang;
+    if (ONLINE_TEXT[documentLang]) return documentLang;
     return "ko";
   }
 
