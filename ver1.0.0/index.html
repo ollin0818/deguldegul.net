@@ -366,29 +366,29 @@
           </button>
         </div>
 
-        <section class="onlineLocalProfileCard" aria-label="내 온라인 프로필">
-          <div class="onlineLocalProfileHeader">
-            <div class="onlineLocalAvatar" id="onlineLocalAvatar" aria-hidden="true"><i></i><i></i></div>
+        <section class="onlineLocalProfileCard playerSelectBox onlinePlayerSelectBox" aria-label="내 온라인 색상">
+          <div class="onlineProfileTitle">
+            <span class="onlineLocalAvatar" id="onlineLocalAvatar" aria-hidden="true"><i></i><i></i></span>
             <strong id="onlineLocalNickname">Player</strong>
           </div>
-          <div class="onlineLocalSkinRow onlineSolidRow">
-            <button class="onlineSkinArrow prev" id="onlineSolidPrevButton" type="button" aria-label="이전 단색">‹</button>
-            <button class="onlineSkinCurrent" id="onlineSolidCurrentButton" type="button" aria-label="다음 단색">
-              <span id="onlineSolidSwatch"></span>
-              <strong id="onlineSolidName">하늘색</strong>
-            </button>
-            <button class="onlineSkinArrow next" id="onlineSolidNextButton" type="button" aria-label="다음 단색">›</button>
+          <div class="selectedPreview" id="onlineSkinSwatch" data-skin=""><i></i><i></i></div>
+          <div class="skinPalette skinCarousel" id="onlineColorPalette" aria-label="온라인 색상 선택">
+            <button class="skinArrowBtn prev" id="onlineColorPrevButton" type="button" aria-label="이전 색상">‹</button>
+            <div class="skinViewport">
+              <div class="skinTrack" id="onlineColorTrack"></div>
+            </div>
+            <button class="skinArrowBtn next" id="onlineColorNextButton" type="button" aria-label="다음 색상">›</button>
+            <div class="skinDots" id="onlineColorDots" aria-hidden="true"></div>
           </div>
-          <div class="onlineSkinDots onlineSolidDots" id="onlineSolidDots" aria-hidden="true"></div>
-          <div class="onlineLocalSkinRow">
-            <button class="onlineSkinArrow prev" id="onlineSkinPrevButton" type="button" aria-label="이전 스킨">‹</button>
-            <button class="onlineSkinCurrent" id="onlineSkinCurrentButton" type="button" aria-label="다음 스킨">
-              <span id="onlineSkinSwatch" class="selectedPreview" data-skin=""><i></i><i></i></span>
-              <strong id="onlineSkinName">하늘색</strong>
-            </button>
-            <button class="onlineSkinArrow next" id="onlineSkinNextButton" type="button" aria-label="다음 스킨">›</button>
+          <div class="skinPalette skinCarousel" id="onlineSpecialPalette" aria-label="온라인 특수스킨 선택">
+            <button class="skinArrowBtn prev" id="onlineSpecialPrevButton" type="button" aria-label="이전 스킨">‹</button>
+            <div class="skinViewport">
+              <div class="skinTrack" id="onlineSpecialTrack"></div>
+            </div>
+            <button class="skinArrowBtn next" id="onlineSpecialNextButton" type="button" aria-label="다음 스킨">›</button>
+            <div class="skinDots" id="onlineSpecialDots" aria-hidden="true"></div>
           </div>
-          <div class="onlineSkinDots" id="onlineSkinDots" aria-hidden="true"></div>
+          <strong id="onlineSkinName" class="onlineColorName">하늘색</strong>
         </section>
 
         <div class="onlineEntryPanel active" id="onlineQuickPanel" data-online-panel="quick" role="tabpanel">

@@ -397,6 +397,26 @@ const DegulSfx = (() => {
   const rollingCounts = { rollP1: 0, rollP2: 0, rollAI: 0 };
   const rollStopTimers = { rollP1: null, rollP2: null, rollAI: null };
   let lastTurnAt = 0;
+  const oneShotPools = {};
+  const oneShotActiveCounts = {};
+  const lastOneShotAt = {};
+  const ONE_SHOT_POOL_LIMIT = 3;
+  const oneShotMinIntervals = {
+    button: 45,
+    turn: 90,
+    turnP1: 90,
+    turnP2: 90,
+    turnAI: 90,
+    pickup: 120,
+    pickupSpeed: 120,
+    pickupShield: 120,
+    pickupGiant: 120,
+    shieldWallHit: 120,
+    captureP1: 120,
+    captureP2: 120,
+    captureAI: 120,
+    spawn: 120
+  };
   const reportedAudioFailures = new Set();
 
   function reportAudioFailure(name, error) {
@@ -444,13 +464,31 @@ const DegulSfx = (() => {
     unlock();
     const base = get(name);
     if (!base) return;
+    const now = performance.now();
+    const minInterval = oneShotMinIntervals[name] || 0;
+    if (minInterval && now - (lastOneShotAt[name] || 0) < minInterval) return;
+    lastOneShotAt[name] = now;
     try {
-      const audio = base.cloneNode(true);
+      const pool = oneShotPools[name] || (oneShotPools[name] = []);
+      const activeCount = oneShotActiveCounts[name] || 0;
+      if (!pool.length && activeCount >= ONE_SHOT_POOL_LIMIT) return;
+      const audio = pool.pop() || base.cloneNode(true);
+      oneShotActiveCounts[name] = activeCount + 1;
       audio.volume = getEffectiveVolume(name);
       audio.currentTime = 0;
+      audio.onended = () => {
+        oneShotActiveCounts[name] = Math.max(0, (oneShotActiveCounts[name] || 1) - 1);
+        if (audio !== base && pool.length < ONE_SHOT_POOL_LIMIT) pool.push(audio);
+      };
       const p = audio.play();
-      if (p && typeof p.catch === "function") p.catch(error => reportAudioFailure(name, error));
+      if (p && typeof p.catch === "function") {
+        p.catch(error => {
+          oneShotActiveCounts[name] = Math.max(0, (oneShotActiveCounts[name] || 1) - 1);
+          reportAudioFailure(name, error);
+        });
+      }
     } catch (error) {
+      oneShotActiveCounts[name] = Math.max(0, (oneShotActiveCounts[name] || 1) - 1);
       reportAudioFailure(name, error);
     }
   }
@@ -599,7 +637,7 @@ const AI_CLEAR_REWARDS = {
   normal: { skin: "ice", labelKo: "얼음 스킨", labelEn: "Ice Skin" },
   hard: { skin: "rainbow", labelKo: "무지개 스킨", labelEn: "Rainbow Skin" },
   superhard: { skin: "chess", labelKo: "나이트 스킨", labelEn: "Knight Skin", labelJa: "ナイトスキン", labelZh: "骑士皮肤" },
-  extreme: { skin: "extreme", labelKo: "로봇청소기 스킨", labelEn: "Extreme AI Skin" },
+  extreme: { skin: "extreme", labelKo: "익스트림 AI 스킨", labelEn: "Extreme AI Skin" },
   hell: { skin: "hell", labelKo: "지옥 AI 스킨", labelEn: "Hell AI Skin" },
   chaos: { skin: "chaos", labelKo: "카오스 AI 스킨", labelEn: "Chaos AI Skin" }
 };
@@ -792,7 +830,7 @@ const COLOR_DISPLAY_NAMES = {
   Ice: { ko: "얼음 스킨", en: "Ice Skin" },
   Rainbow: { ko: "무지개 스킨", en: "Rainbow Skin" },
   Chocolate: { ko: "초콜릿 스킨", en: "Chocolate Skin" },
-  Extreme: { ko: "로봇청소기 스킨", en: "Extreme AI Skin", ja: "エクストリームAIスキン" },
+    Extreme: { ko: "익스트림 AI 스킨", en: "Extreme AI Skin", ja: "エクストリームAIスキン" },
   Hell: { ko: "지옥 AI 스킨", en: "Hell AI Skin", ja: "ヘルAIスキン" },
   Chaos: { ko: "카오스 AI 스킨", en: "Chaos AI Skin", ja: "カオスAIスキン" },
   Ghost: { ko: "유령 스킨", en: "Ghost Skin", ja: "ゴーストスキン" }

@@ -19,12 +19,14 @@
   let realtimePingTimer = null;
   let realtimeRttMs = 0;
   let realtimeSnapshotTick = -1;
+  let pendingRealtimeSnapshotPacket = null;
+  let realtimeSnapshotFrame = 0;
   let realtimeStarted = false;
   let realtimeResultKey = "";
   let onlineInputPatched = false;
   let currentRoom = null;
-  let selectedSkin = session?.skin || "gift";
-  let selectedSolidSkin = DEFAULT_SKIN;
+  let selectedSkin = session?.skin || DEFAULT_SKIN;
+  let selectedSolidSkin = session?.skin || DEFAULT_SKIN;
   let suppressPanelSync = false;
   const ONLINE_TEXT = {
     ko: {
@@ -374,7 +376,7 @@
     Rainbow: { ko: "무지개 스킨", en: "Rainbow Skin", ja: "レインボースキン", zh: "彩虹皮肤" },
     Chocolate: { ko: "초콜릿 스킨", en: "Chocolate Skin", ja: "チョコレートスキン", zh: "巧克力皮肤" },
     Knight: { ko: "나이트 스킨", en: "Knight Skin", ja: "ナイトスキン", zh: "骑士皮肤" },
-    Extreme: { ko: "로봇청소기 스킨", en: "Extreme AI Skin", ja: "エクストリームAIスキン", zh: "极限AI皮肤" },
+    Extreme: { ko: "익스트림 AI 스킨", en: "Extreme AI Skin", ja: "エクストリームAIスキン", zh: "极限AI皮肤" },
     Hell: { ko: "지옥 AI 스킨", en: "Hell AI Skin", ja: "ヘルAIスキン", zh: "地狱AI皮肤" },
     Chaos: { ko: "카오스 AI 스킨", en: "Chaos AI Skin", ja: "カオスAIスキン", zh: "混沌AI皮肤" },
     Ghost: { ko: "유령 스킨", en: "Ghost Skin", ja: "ゴーストスキン", zh: "幽灵皮肤" }
@@ -445,14 +447,13 @@
   }
 
   function getOnlineBattleSkin() {
-    return normalizeSkin(getSelectedSpecialChoice()) || selectedSkin || DEFAULT_SKIN;
+    return selectedSkin || normalizeSkin(getSelectedSolidChoice()) || selectedSolidSkin || DEFAULT_SKIN;
   }
 
   function syncOnlineSelectionDefaults() {
     const solid = getSelectedSolidChoice();
-    const skin = getSelectedSpecialChoice();
     if (solid) selectedSolidSkin = normalizeSkin(solid);
-    if (skin) selectedSkin = normalizeSkin(skin);
+    selectedSkin = normalizeSkin(getChoiceByKey(selectedSkin) || solid || { skin: selectedSkin });
   }
 
   function escapeHtml(value) {
@@ -772,72 +773,92 @@
   }
 
   function renderSkins() {
-    const grid = $("onlineRoomSkinGrid");
-    if (!grid) return;
-    grid.innerHTML = "";
-    getSkinChoices().forEach((choice) => {
-      if (choice.hidden) return;
+    const colorTrack = $("onlineColorTrack");
+    const specialTrack = $("onlineSpecialTrack");
+    if (!colorTrack && !specialTrack) {
+      updateLocalProfileCard();
+      return;
+    }
+    syncOnlineSelectionDefaults();
+    renderOnlineChoiceTrack(colorTrack, getSolidChoices());
+    renderOnlineChoiceTrack(specialTrack, getSpecialSkinChoices());
+    updateLocalProfileCard();
+  }
+
+  function renderOnlineChoiceTrack(track, choices) {
+    if (!track) return;
+    track.innerHTML = "";
+    choices.forEach((choice) => {
       const skin = normalizeSkin(choice);
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "onlineRoomSkinButton";
-      button.style.setProperty("--skin-color", `#${Number(choice.actor || 0x64beff).toString(16).padStart(6, "0")}`);
+      button.className = "skinChoiceButton";
+      button.dataset.skin = skin;
+      button.style.setProperty("--chip-color", getSkinColor(skin, 1));
       const label = getChoiceDisplayName(choice) || skin;
+      button.textContent = label;
       button.title = label;
       button.setAttribute("aria-label", label);
       button.classList.toggle("selected", selectedSkin === skin);
-      const locked = isChoiceLocked(choice);
-      button.classList.toggle("locked", locked);
-      button.disabled = locked;
+      button.setAttribute("aria-pressed", selectedSkin === skin ? "true" : "false");
       button.addEventListener("click", () => selectSkin(skin));
-      grid.appendChild(button);
+      track.appendChild(button);
     });
-    updateLocalProfileCard();
   }
 
   function updateLocalProfileCard() {
     syncOnlineSelectionDefaults();
     const nickname = $("onlineLocalNickname");
     const avatar = $("onlineLocalAvatar");
-    const solidSwatch = $("onlineSolidSwatch");
-    const solidName = $("onlineSolidName");
-    const solidDots = $("onlineSolidDots");
     const swatch = $("onlineSkinSwatch");
     const name = $("onlineSkinName");
-    const dots = $("onlineSkinDots");
+    const colorTrack = $("onlineColorTrack");
+    const specialTrack = $("onlineSpecialTrack");
     const solidChoices = getSolidChoices();
-    const skinChoices = getSpecialSkinChoices();
+    const specialChoices = getSpecialSkinChoices();
     const solidChoice = getSelectedSolidChoice() || solidChoices[0] || getSkinChoices()[0];
-    const skinChoice = getSelectedSpecialChoice() || skinChoices[0] || getSkinChoices()[0];
+    const selectedChoice = getChoiceByKey(selectedSkin) || solidChoice;
+    const selectedKey = normalizeSkin(selectedChoice);
     const solidKey = normalizeSkin(solidChoice);
-    const skinKey = normalizeSkin(skinChoice);
-    const color = getSkinColor(skinKey, 1);
+    const color = getSkinColor(selectedKey, 1);
 
     if (nickname) nickname.textContent = getNickname();
     if (avatar) {
-      avatar.style.setProperty("--online-profile-color", "#64beff");
-      avatar.dataset.skin = skinKey;
-    }
-    if (solidSwatch) {
-      solidSwatch.style.setProperty("--online-profile-color", getSkinColor(solidKey, 1));
-      solidSwatch.dataset.skin = "";
-    }
-    if (solidName) solidName.textContent = getChoiceDisplayName(solidChoice) || solidKey;
-    if (solidDots) {
-      solidDots.innerHTML = solidChoices.map(item => `<span class="skinDot${normalizeSkin(item) === solidKey ? " active" : ""}"></span>`).join("");
+      avatar.style.setProperty("--online-profile-color", "#7dc7ff");
+      avatar.style.setProperty("--preview-color", "#7dc7ff");
+      avatar.dataset.skin = "";
     }
     if (swatch) {
       swatch.style.setProperty("--online-profile-color", color);
       swatch.style.setProperty("--preview-color", color);
       swatch.style.setProperty("--chip-color", color);
-      swatch.dataset.skin = skinChoice?.skin || skinKey;
+      swatch.dataset.skin = selectedChoice?.skin || "";
       swatch.classList.add("selectedPreview");
       if (!swatch.querySelector("i")) swatch.innerHTML = "<i></i><i></i>";
     }
-    if (name) name.textContent = getChoiceDisplayName(skinChoice) || skinKey;
+    if (name) name.textContent = getChoiceDisplayName(selectedChoice) || selectedKey;
+    updateOnlineChoiceCarousel("onlineColor", colorTrack, solidChoices, selectedKey);
+    updateOnlineChoiceCarousel("onlineSpecial", specialTrack, specialChoices, selectedKey);
+  }
+
+  function updateOnlineChoiceCarousel(prefix, track, choices, selectedKey) {
+    const fallbackIndex = prefix === "onlineColor" ? choices.findIndex(choice => normalizeSkin(choice) === selectedSolidSkin) : 0;
+    const selectedIndex = choices.findIndex(choice => normalizeSkin(choice) === selectedKey);
+    const activeIndex = Math.max(0, selectedIndex >= 0 ? selectedIndex : fallbackIndex);
+    const dots = $(`${prefix}Dots`);
+    const prevButton = $(`${prefix}PrevButton`);
+    const nextButton = $(`${prefix}NextButton`);
+    if (track) track.style.transform = `translateX(${-100 * activeIndex}%)`;
+    document.querySelectorAll(`#${prefix}Track .skinChoiceButton`).forEach((button) => {
+      const active = button.dataset.skin === selectedKey;
+      button.classList.toggle("selected", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
     if (dots) {
-      dots.innerHTML = skinChoices.map(item => `<span class="skinDot${normalizeSkin(item) === skinKey ? " active" : ""}"></span>`).join("");
+      dots.innerHTML = choices.map((choice, index) => `<span class="skinDot${index === activeIndex ? " active" : ""}"></span>`).join("");
     }
+    if (prevButton) prevButton.disabled = choices.length < 2;
+    if (nextButton) nextButton.disabled = choices.length < 2;
   }
 
   function shiftOnlineSolidColor(direction) {
@@ -845,12 +866,18 @@
     if (!choices.length) return;
     const current = choices.findIndex(choice => normalizeSkin(choice) === selectedSolidSkin);
     const next = (Math.max(0, current) + direction + choices.length) % choices.length;
-    selectedSolidSkin = normalizeSkin(choices[next]);
-    updateLocalProfileCard();
+    selectSkin(normalizeSkin(choices[next]));
   }
 
   function shiftOnlineSkin(direction) {
-    const choices = getSpecialSkinChoices();
+    shiftOnlineChoice(getSelectableSkinChoices(), direction);
+  }
+
+  function shiftOnlineSpecialSkin(direction) {
+    shiftOnlineChoice(getSpecialSkinChoices(), direction);
+  }
+
+  function shiftOnlineChoice(choices, direction) {
     if (!choices.length) return;
     const current = choices.findIndex(choice => normalizeSkin(choice) === selectedSkin);
     const next = (Math.max(0, current) + direction + choices.length) % choices.length;
@@ -889,7 +916,11 @@
     });
 
     const me = room.players?.[String(localSlot)] || room.players?.[localSlot] || null;
-    if (me?.skin) selectedSkin = me.skin;
+    if (me?.skin) {
+      selectedSkin = me.skin;
+      const meChoice = getChoiceByKey(me.skin);
+      if (meChoice && !meChoice.skin) selectedSolidSkin = me.skin;
+    }
     const readyButton = $("onlineReadyButton");
     if (readyButton) readyButton.textContent = me?.ready ? onlineText("unreadyButton") : onlineText("readyButton");
     renderSkins();
@@ -995,6 +1026,9 @@
     realtimeInputSeq = 0;
     realtimeRttMs = 0;
     realtimeSnapshotTick = -1;
+    pendingRealtimeSnapshotPacket = null;
+    if (realtimeSnapshotFrame) window.cancelAnimationFrame(realtimeSnapshotFrame);
+    realtimeSnapshotFrame = 0;
     realtimeStarted = false;
     realtimeResultKey = "";
     currentRoom = null;
@@ -1073,8 +1107,23 @@
       return;
     }
     if (message.type === "snapshot") {
-      applyServerSnapshot(message);
+      queueServerSnapshot(message);
     }
+  }
+
+  function queueServerSnapshot(packet) {
+    const snapshot = packet?.state;
+    if (!snapshot || snapshot.tick < realtimeSnapshotTick) return;
+    const pendingTick = pendingRealtimeSnapshotPacket?.state?.tick ?? -1;
+    if (snapshot.tick < pendingTick) return;
+    pendingRealtimeSnapshotPacket = packet;
+    if (realtimeSnapshotFrame) return;
+    realtimeSnapshotFrame = window.requestAnimationFrame(() => {
+      realtimeSnapshotFrame = 0;
+      const nextPacket = pendingRealtimeSnapshotPacket;
+      pendingRealtimeSnapshotPacket = null;
+      if (nextPacket) applyServerSnapshot(nextPacket);
+    });
   }
 
   function sendDirection(direction) {
@@ -1160,22 +1209,38 @@
   function applyAuthoritativeState(snapshot) {
     try {
       if (Array.isArray(snapshot.land) && Array.isArray(land)) {
+        const changedCells = [];
         for (let z = 0; z < snapshot.land.length; z++) {
-          for (let x = 0; x < snapshot.land[z].length; x++) land[z][x] = snapshot.land[z][x];
+          const snapshotRow = snapshot.land[z];
+          if (!Array.isArray(snapshotRow)) continue;
+          if (!Array.isArray(land[z])) land[z] = [];
+          for (let x = 0; x < snapshotRow.length; x++) {
+            const nextOwner = snapshotRow[x];
+            if (land[z][x] === nextOwner) continue;
+            land[z][x] = nextOwner;
+            changedCells.push({ x, z });
+          }
         }
-        refreshBoardColors();
+        if (changedCells.length) {
+          if (typeof refreshBoardCells === "function") refreshBoardCells(changedCells);
+          else refreshBoardColors();
+        }
       }
       syncActorFromSnapshot(p1, snapshot.players?.[1] || snapshot.players?.["1"]);
       syncActorFromSnapshot(p2, snapshot.players?.[2] || snapshot.players?.["2"]);
-      updateScoreUIThrottled(true);
+      updateScoreUIThrottled(false);
     } catch (error) {
       console.warn("Failed to apply online snapshot", error);
     }
   }
 
+  function getTrailSignature(points) {
+    if (!Array.isArray(points) || !points.length) return "";
+    return `${points.length}:${points[0].x},${points[0].z}:${points[points.length - 1].x},${points[points.length - 1].z}`;
+  }
+
   function syncActorFromSnapshot(actor, data) {
     if (!actor || !data) return;
-    if (typeof clearTrail === "function") clearTrail(actor);
     actor.x = data.x;
     actor.z = data.z;
     actor.dir = data.dir || actor.dir;
@@ -1186,8 +1251,13 @@
       actor.mesh.position.set(toWorld(actor.x), y, toWorld(actor.z));
       actor.mesh.visible = actor.alive;
     }
-    if (Array.isArray(data.trail)) {
-      for (const point of data.trail) addTrail(actor, point.x, point.z);
+    const nextTrailKey = getTrailSignature(data.trail);
+    if (actor.onlineTrailKey !== nextTrailKey) {
+      actor.onlineTrailKey = nextTrailKey;
+      if (typeof clearTrail === "function") clearTrail(actor);
+      if (Array.isArray(data.trail)) {
+        for (const point of data.trail) addTrail(actor, point.x, point.z);
+      }
     }
   }
 
@@ -1380,7 +1450,10 @@
   }
 
   async function selectSkin(skin) {
-    selectedSkin = skin || DEFAULT_SKIN;
+    const nextSkin = skin || DEFAULT_SKIN;
+    const choice = getChoiceByKey(nextSkin);
+    if (choice && !choice.skin) selectedSolidSkin = nextSkin;
+    selectedSkin = nextSkin;
     if (session) session.skin = selectedSkin;
     saveSession(session);
     renderSkins();
@@ -1456,6 +1529,10 @@
     $("onlineSkinPrevButton")?.addEventListener("click", () => shiftOnlineSkin(-1));
     $("onlineSkinNextButton")?.addEventListener("click", () => shiftOnlineSkin(1));
     $("onlineSkinCurrentButton")?.addEventListener("click", () => shiftOnlineSkin(1));
+    $("onlineColorPrevButton")?.addEventListener("click", () => shiftOnlineSolidColor(-1));
+    $("onlineColorNextButton")?.addEventListener("click", () => shiftOnlineSolidColor(1));
+    $("onlineSpecialPrevButton")?.addEventListener("click", () => shiftOnlineSpecialSkin(-1));
+    $("onlineSpecialNextButton")?.addEventListener("click", () => shiftOnlineSpecialSkin(1));
     $("onlineCopyRoomCodeButton")?.addEventListener("click", async () => {
       const code = session?.roomCode || $("onlineRoomCode")?.textContent || "";
       try {
