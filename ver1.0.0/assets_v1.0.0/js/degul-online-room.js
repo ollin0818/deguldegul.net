@@ -924,6 +924,7 @@
       const meChoice = getChoiceByKey(me.skin);
       if (meChoice && !meChoice.skin) selectedSolidSkin = me.skin;
     }
+    syncOnlineMatchColors(room);
     const readyButton = $("onlineReadyButton");
     if (readyButton) readyButton.textContent = me?.ready ? onlineText("unreadyButton") : onlineText("readyButton");
     renderSkins();
@@ -1106,6 +1107,13 @@
       realtimeRttMs = Math.max(0, Math.round(performance.now() - Number(message.clientNow || 0)));
       return;
     }
+    if (message.type === "hello") {
+      if (message.room) {
+        renderRoom(message.room);
+        syncOnlineMatchColors(message.room);
+      }
+      return;
+    }
     if (message.type === "room") {
       renderRoom(message.room);
       return;
@@ -1178,6 +1186,7 @@
       realtimeStarted = true;
       realtimeResultKey = "";
       try { matchMode = "pvp"; } catch {}
+      syncOnlineMatchColors(currentRoom);
       try { resetMatch(); } catch {}
       try { pauseLobbyBgm(); } catch {}
     }
@@ -1257,18 +1266,87 @@
     return `${points.length}:${points[0].x},${points[0].z}:${points[points.length - 1].x},${points[points.length - 1].z}`;
   }
 
+  function syncOnlineMatchColors(room = currentRoom) {
+    if (!room || typeof selectedColors === "undefined" || typeof COLOR_CHOICES === "undefined" || !Array.isArray(COLOR_CHOICES)) return;
+    [1, 2].forEach(slot => {
+      const player = room.players?.[String(slot)] || room.players?.[slot] || null;
+      const choice = getChoiceByKey(player?.skin || (slot === Number(session?.slot) ? selectedSkin : ""));
+      if (choice) selectedColors[slot] = choice;
+    });
+  }
+
+  function getActorBaseY(actor) {
+    if (!actor) return 0.42;
+    if (actor.mesh?.userData && Number.isFinite(actor.mesh.userData.baseY)) return actor.mesh.userData.baseY;
+    if (actor.colorData?.skin === "ghost") return 0.56;
+    if (actor.colorData?.skin === "chess") return 0.38;
+    return 0.42;
+  }
+
+  function snapActorToSnapshot(actor, x, z) {
+    actor.x = x;
+    actor.z = z;
+    actor.onlineTargetX = x;
+    actor.onlineTargetZ = z;
+    actor.onlineQueuedSnapshot = null;
+    actor.moving = false;
+    actor.rollToken = null;
+    if (actor.mesh) {
+      actor.mesh.position.set(toWorld(x), getActorBaseY(actor), toWorld(z));
+      actor.mesh.visible = actor.alive;
+    }
+  }
+
+  function applyQueuedActorSnapshot(actor) {
+    const queued = actor?.onlineQueuedSnapshot;
+    if (!queued) return;
+    actor.onlineQueuedSnapshot = null;
+    syncActorFromSnapshot(actor, queued);
+  }
+
+  function moveActorFromSnapshot(actor, data, x, z) {
+    if (!actor || !actor.mesh) return;
+    const currentX = Number(actor.x);
+    const currentZ = Number(actor.z);
+    const dx = x - currentX;
+    const dz = z - currentZ;
+    if (dx === 0 && dz === 0) {
+      actor.onlineTargetX = x;
+      actor.onlineTargetZ = z;
+      return;
+    }
+    const manhattan = Math.abs(dx) + Math.abs(dz);
+    if (actor.moving) {
+      if (actor.onlineTargetX === x && actor.onlineTargetZ === z) return;
+      actor.onlineQueuedSnapshot = data;
+      return;
+    }
+    if (manhattan !== 1 || typeof rollActor !== "function") {
+      snapActorToSnapshot(actor, x, z);
+      return;
+    }
+    actor.onlineTargetX = x;
+    actor.onlineTargetZ = z;
+    rollActor(actor, dx, dz, () => {
+      actor.x = x;
+      actor.z = z;
+      actor.onlineTargetX = x;
+      actor.onlineTargetZ = z;
+      applyQueuedActorSnapshot(actor);
+    });
+  }
+
   function syncActorFromSnapshot(actor, data) {
     if (!actor || !data) return;
-    actor.x = data.x;
-    actor.z = data.z;
+    const x = Number(data.x);
+    const z = Number(data.z);
+    if (!Number.isInteger(x) || !Number.isInteger(z)) return;
     actor.dir = data.dir || actor.dir;
     actor.nextDir = data.nextDir || actor.nextDir;
     actor.alive = data.alive !== false;
-    if (actor.mesh) {
-      const y = actor.mesh.userData?.baseY || 0.42;
-      actor.mesh.position.set(toWorld(actor.x), y, toWorld(actor.z));
-      actor.mesh.visible = actor.alive;
-    }
+    if (actor.mesh) actor.mesh.visible = actor.alive;
+    if (!actor.alive) snapActorToSnapshot(actor, x, z);
+    else moveActorFromSnapshot(actor, data, x, z);
     const nextTrailKey = getTrailSignature(data.trail);
     if (actor.onlineTrailKey !== nextTrailKey) {
       actor.onlineTrailKey = nextTrailKey;
@@ -1491,12 +1569,7 @@
   async function leaveRoom() {
     if (!session) return;
     setBusy(true);
-    try {
-      await api(`/rooms/${encodeURIComponent(session.roomCode)}/leave`, {
-        method: "POST",
-        body: { playerId: session.playerId }
-      });
-    } catch {}
+    await leaveActiveOnlineMatch("leave_button");
     stopPolling();
     stopRealtimePing();
     if (realtimeSocket) realtimeSocket.close(1000, "leave");
@@ -1510,11 +1583,43 @@
     setBusy(false);
   }
 
+  async function leaveActiveOnlineMatch(reason = "leave") {
+    if (!session?.roomCode || !session?.playerId) return false;
+    const roomCode = session.roomCode;
+    const playerId = session.playerId;
+    try {
+      await api(`/rooms/${encodeURIComponent(roomCode)}/leave`, {
+        method: "POST",
+        body: { playerId, reason }
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function patchResultLobbyReset() {
+    const wrapLobbyExit = (name, reason) => {
+      const original = window[name];
+      if (typeof original !== "function" || original.__degulOnlineRoomWrapped) return;
+      const wrapped = function (...args) {
+        const shouldLeaveOnline = hasActiveOnlineMatchState();
+        if (shouldLeaveOnline) leaveActiveOnlineMatch(reason);
+        const result = original.apply(this, args);
+        if (shouldLeaveOnline) {
+          window.setTimeout(() => resetOnlineLobbyState(onlineText("roomLeft")), 120);
+        }
+        return result;
+      };
+      wrapped.__degulOnlineRoomWrapped = true;
+      window[name] = wrapped;
+    };
+
     const originalCloseResultToLobby = window.closeResultToLobby;
     if (typeof originalCloseResultToLobby === "function" && !originalCloseResultToLobby.__degulOnlineRoomWrapped) {
       const wrapped = function (...args) {
         const shouldResetOnline = hasActiveOnlineMatchState();
+        if (shouldResetOnline) leaveActiveOnlineMatch("result_lobby");
         const result = originalCloseResultToLobby.apply(this, args);
         if (shouldResetOnline) {
           window.setTimeout(() => resetOnlineLobbyState(), 240);
@@ -1524,6 +1629,8 @@
       wrapped.__degulOnlineRoomWrapped = true;
       window.closeResultToLobby = wrapped;
     }
+    wrapLobbyExit("returnToLobby", "return_lobby");
+    wrapLobbyExit("goMainFromPauseMenu", "pause_lobby");
   }
 
   function bind() {
