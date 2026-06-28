@@ -2214,7 +2214,45 @@ let isMobilePhoneBlocked = false;
 
 let forcedDeviceLayout = "";
 let autoPcLayoutApplied = false;
-try { localStorage.removeItem("degulDegulDeviceLayoutChoice"); } catch (e) {}
+const DEVICE_LAYOUT_CHOICE_PREFIX = "degulDegulDeviceLayoutChoiceV2";
+
+function getDeviceLayoutChoiceUid() {
+  try {
+    const authUser = window.DegulAuth && typeof window.DegulAuth.getUser === "function" ? window.DegulAuth.getUser() : null;
+    if (authUser && authUser.id) return `uid:${authUser.id}`;
+  } catch {}
+  return `session:${safeLocalStorageGet("degulDegulGuestSessionV1", "anonymous") || "anonymous"}`;
+}
+
+function getDeviceLayoutChoiceKey() {
+  return `${DEVICE_LAYOUT_CHOICE_PREFIX}:${getDeviceLayoutChoiceUid()}`;
+}
+
+function loadStoredDeviceLayoutChoice() {
+  const choice = safeLocalStorageGet(getDeviceLayoutChoiceKey(), "");
+  return choice === "tablet" || choice === "pc" ? choice : "";
+}
+
+function saveStoredDeviceLayoutChoice(choice) {
+  if (choice !== "tablet" && choice !== "pc") return;
+  safeLocalStorageSet(getDeviceLayoutChoiceKey(), choice);
+}
+
+window.addEventListener("degul:auth-ready", () => {
+  if (!forcedDeviceLayout) {
+    const storedChoice = loadStoredDeviceLayoutChoice();
+    if (storedChoice) {
+      forcedDeviceLayout = storedChoice;
+      autoPcLayoutApplied = false;
+      applyForcedDeviceLayoutClass();
+      updateMobileUIState();
+      fitMobileLobbyToViewport();
+    }
+  } else if (!autoPcLayoutApplied) {
+    saveStoredDeviceLayoutChoice(forcedDeviceLayout);
+  }
+  updateDeviceLayoutChoicePrompt();
+});
 
 function getPhysicalDisplayResolution() {
   const dpr = Math.max(1, Number(window.devicePixelRatio) || 1);
@@ -2274,6 +2312,7 @@ function setForcedDeviceLayout(choice) {
   }
   forcedDeviceLayout = choice === "tablet" ? "tablet" : "pc";
   autoPcLayoutApplied = false;
+  saveStoredDeviceLayoutChoice(forcedDeviceLayout);
   applyForcedDeviceLayoutClass();
 
   const overlay = document.getElementById("deviceLayoutChoiceOverlay");
@@ -2324,6 +2363,10 @@ function setupDeviceLayoutChoicePrompt() {
 }
 
 function updateDeviceLayoutChoicePrompt() {
+  if (!forcedDeviceLayout) {
+    const storedChoice = loadStoredDeviceLayoutChoice();
+    if (storedChoice) forcedDeviceLayout = storedChoice;
+  }
   applyForcedDeviceLayoutClass();
 
   const overlay = document.getElementById("deviceLayoutChoiceOverlay");

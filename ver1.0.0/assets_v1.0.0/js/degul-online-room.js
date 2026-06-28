@@ -1226,11 +1226,7 @@
     try {
       if (!matchStartedAt) matchStartedAt = performance.now() - Math.max(0, Date.now() - Number(snapshot.startAt || Date.now()));
       playIngameBgm();
-      if (serverMode === "item" && !onlineItemSpawnerStarted && typeof startItemSpawner === "function") {
-        onlineItemSpawnerStarted = true;
-        startItemSpawner();
-      }
-      if (serverMode !== "item" && onlineItemSpawnerStarted && typeof stopItemSpawner === "function") {
+      if (onlineItemSpawnerStarted && typeof stopItemSpawner === "function") {
         onlineItemSpawnerStarted = false;
         stopItemSpawner();
       }
@@ -1320,6 +1316,26 @@
     syncActorFromSnapshot(actor, queued);
   }
 
+  function buildOnlineStepPath(actor, x, z) {
+    const path = [];
+    let cx = Number(actor.x);
+    let cz = Number(actor.z);
+    const maxSteps = 6;
+    while ((cx !== x || cz !== z) && path.length < maxSteps) {
+      if (cx !== x) cx += Math.sign(x - cx);
+      else if (cz !== z) cz += Math.sign(z - cz);
+      path.push({ x: cx, z: cz });
+    }
+    return cx === x && cz === z ? path : [];
+  }
+
+  function drainOnlineMoveQueue(actor) {
+    if (!actor || actor.moving || !Array.isArray(actor.onlineMoveQueue) || !actor.onlineMoveQueue.length) return;
+    const next = actor.onlineMoveQueue.shift();
+    if (!next) return;
+    moveActorFromSnapshot(actor, actor.onlineQueuedSnapshot || {}, next.x, next.z);
+  }
+
   function moveActorFromSnapshot(actor, data, x, z) {
     if (!actor || !actor.mesh) return;
     const currentX = Number(actor.x);
@@ -1335,7 +1351,17 @@
     if (actor.moving) {
       if (actor.onlineTargetX === x && actor.onlineTargetZ === z) return;
       actor.onlineQueuedSnapshot = data;
+      actor.onlineMoveQueue = buildOnlineStepPath({ ...actor, x: actor.onlineTargetX ?? currentX, z: actor.onlineTargetZ ?? currentZ }, x, z);
       return;
+    }
+    if (manhattan !== 1 && typeof rollActor === "function") {
+      const path = buildOnlineStepPath(actor, x, z);
+      if (path.length) {
+        const first = path.shift();
+        actor.onlineMoveQueue = path;
+        actor.onlineQueuedSnapshot = data;
+        return moveActorFromSnapshot(actor, data, first.x, first.z);
+      }
     }
     if (manhattan !== 1 || typeof rollActor !== "function") {
       snapActorToSnapshot(actor, x, z);
@@ -1348,9 +1374,10 @@
       actor.z = z;
       actor.onlineTargetX = x;
       actor.onlineTargetZ = z;
-      try {
-        if (gameMode === "item" && typeof checkItemPickup === "function") checkItemPickup(actor);
-      } catch {}
+      if (Array.isArray(actor.onlineMoveQueue) && actor.onlineMoveQueue.length) {
+        drainOnlineMoveQueue(actor);
+        return;
+      }
       applyQueuedActorSnapshot(actor);
     });
   }
@@ -1381,14 +1408,61 @@
     const key = `${result.endedAt || 0}:${result.tick || 0}:${result.reason || ""}`;
     if (realtimeResultKey === key) return;
     realtimeResultKey = key;
+    if (onlineItemSpawnerStarted && typeof stopItemSpawner === "function") {
+      onlineItemSpawnerStarted = false;
+      try { stopItemSpawner(); } catch {}
+    }
     try {
       setGamePhase(GAME_PHASE.ENDED);
       matchEndedAt = performance.now();
       pauseIngameBgm(true);
+      if (typeof DegulSfx !== "undefined" && DegulSfx?.stopAll) DegulSfx.stopAll();
+      if (typeof fadeOutDominanceEdgeOverlay === "function") fadeOutDominanceEdgeOverlay();
+      if (typeof fadeOutDominanceScoreGaugeUI === "function") fadeOutDominanceScoreGaugeUI();
+      keys = {};
     } catch {}
     const winner = Number(result.winnerSlot) === 1 ? p1 : Number(result.winnerSlot) === 2 ? p2 : null;
+    const loser = Number(result.loserSlot) === 1 ? p1 : Number(result.loserSlot) === 2 ? p2 : null;
     const reason = getResultReasonText(result);
-    if (typeof showResultPopup === "function") showResultPopup(winner, reason);
+    playOnlineResultMotion(winner, loser, reason, result);
+  }
+
+  function playOnlineResultMotion(winner, loser, reason, result) {
+    const canPlayDeath = loser && loser.mesh && loser.alive !== false && result?.reason !== "forfeit" && typeof playDeathMotion === "function";
+    const finishWinner = () => {
+      try {
+        if (winner && winner.alive !== false) {
+          if (typeof startWinnerCameraCloseup === "function") startWinnerCameraCloseup(winner);
+          if (typeof window.startDegulOutcomeBgm === "function") window.startDegulOutcomeBgm(winner);
+          if (typeof createVictoryFireworks === "function") createVictoryFireworks(winner);
+        }
+      } catch {}
+      setTimeout(() => {
+        if (typeof showResultPopup === "function") showResultPopup(winner, reason);
+      }, winner ? 1250 : 700);
+    };
+
+    if (!canPlayDeath) {
+      finishWinner();
+      return;
+    }
+
+    try {
+      loser.dying = true;
+      loser.moving = false;
+      loser.rollToken = null;
+      if (loser.mesh.parent !== scene) scene.attach(loser.mesh);
+      loser.mesh.userData.deathLockedPos = loser.mesh.position.clone();
+      playDeathMotion(loser, () => {
+        loser.alive = false;
+        loser.dying = false;
+        if (loser.mesh) loser.mesh.visible = false;
+        if (typeof clearTrail === "function") clearTrail(loser);
+        finishWinner();
+      });
+    } catch {
+      finishWinner();
+    }
   }
 
   function getResultReasonText(result) {

@@ -6,6 +6,7 @@ const ROOM_TTL_MS = 1000 * 60 * 60 * 3;
 const DISCONNECT_FORFEIT_MS = 12_000;
 const SNAPSHOT_INTERVAL_MS = 82;
 const QUICK_MATCH_TTL_MS = 45_000;
+const QUICK_MATCH_MODES = ["speed", "item"];
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
@@ -57,6 +58,10 @@ function sanitizeSkin(value) {
 
 function sanitizeMode(value) {
   return value === "item" ? "item" : "speed";
+}
+
+function waitingKeyForMode(mode) {
+  return `waiting:${sanitizeMode(mode)}`;
 }
 
 function makeRoomCode() {
@@ -558,9 +563,19 @@ export class OnlineMatchmaker {
         return json({ ok: true, status: "matched", ...result.match });
       }
       if (result?.status === "waiting") {
-        await this.state.storage.put(`ticket:${existingTicket}`, { ...result, lastSeenAt: now });
-        await this.state.storage.setAlarm(now + QUICK_MATCH_TTL_MS);
-        return json({ ok: true, status: "waiting", ticket: existingTicket });
+        const expectedMode = sanitizeMode(body.mode || result.mode);
+        if (sanitizeMode(result.mode) !== expectedMode) {
+          await this.cancel({ ticket: existingTicket });
+        } else {
+          await this.state.storage.put(`ticket:${existingTicket}`, { ...result, mode: expectedMode, lastSeenAt: now });
+          const waitingKey = waitingKeyForMode(expectedMode);
+          const waiting = await this.state.storage.get(waitingKey);
+          if (waiting?.ticket === existingTicket) {
+            await this.state.storage.put(waitingKey, { ...waiting, mode: expectedMode, lastSeenAt: now });
+          }
+          await this.state.storage.setAlarm(now + QUICK_MATCH_TTL_MS);
+          return json({ ok: true, status: "waiting", ticket: existingTicket });
+        }
       }
     }
 
@@ -572,9 +587,10 @@ export class OnlineMatchmaker {
       createdAt: now,
       lastSeenAt: now
     };
-    const waiting = await this.state.storage.get("waiting");
+    const waitingKey = waitingKeyForMode(current.mode);
+    const waiting = await this.state.storage.get(waitingKey);
     if (waiting && waiting.ticket !== current.ticket && now - Number(waiting.createdAt || 0) < QUICK_MATCH_TTL_MS) {
-      await this.state.storage.delete("waiting");
+      await this.state.storage.delete(waitingKey);
       const match = await this.createMatchedRoom(waiting, current, request);
       await this.state.storage.put(`ticket:${waiting.ticket}`, {
         status: "matched",
@@ -584,7 +600,7 @@ export class OnlineMatchmaker {
       return json({ ok: true, status: "matched", ...match.player2 });
     }
 
-    await this.state.storage.put("waiting", current);
+    await this.state.storage.put(waitingKey, current);
     await this.state.storage.put(`ticket:${current.ticket}`, { status: "waiting", ...current });
     await this.state.storage.setAlarm(now + QUICK_MATCH_TTL_MS);
     return json({ ok: true, status: "waiting", ticket: current.ticket });
@@ -593,8 +609,13 @@ export class OnlineMatchmaker {
   async cancel(body) {
     const ticket = String(body.ticket || "");
     if (ticket) {
-      const waiting = await this.state.storage.get("waiting");
-      if (waiting?.ticket === ticket) await this.state.storage.delete("waiting");
+      for (const mode of QUICK_MATCH_MODES) {
+        const waitingKey = waitingKeyForMode(mode);
+        const waiting = await this.state.storage.get(waitingKey);
+        if (waiting?.ticket === ticket) await this.state.storage.delete(waitingKey);
+      }
+      const legacyWaiting = await this.state.storage.get("waiting");
+      if (legacyWaiting?.ticket === ticket) await this.state.storage.delete("waiting");
       await this.state.storage.delete(`ticket:${ticket}`);
     }
     return json({ ok: true });
@@ -611,7 +632,7 @@ export class OnlineMatchmaker {
       const createResponse = await roomStub(this.env, code).fetch(new Request(createUrl, {
         method: "POST",
         headers: request.headers,
-        body: JSON.stringify({ nickname: first.nickname, skin: first.skin, mode: sanitizeMode(first.mode || second.mode) })
+        body: JSON.stringify({ nickname: first.nickname, skin: first.skin, mode: sanitizeMode(first.mode) })
       }));
       if (createResponse.status === 409) continue;
       const created = await createResponse.json();
@@ -651,10 +672,18 @@ export class OnlineMatchmaker {
   }
 
   async prune(now = Date.now()) {
-    const waiting = await this.state.storage.get("waiting");
-    if (waiting && now - Number(waiting.lastSeenAt || waiting.createdAt || 0) >= QUICK_MATCH_TTL_MS) {
+    for (const mode of QUICK_MATCH_MODES) {
+      const waitingKey = waitingKeyForMode(mode);
+      const waiting = await this.state.storage.get(waitingKey);
+      if (waiting && now - Number(waiting.lastSeenAt || waiting.createdAt || 0) >= QUICK_MATCH_TTL_MS) {
+        await this.state.storage.delete(waitingKey);
+        await this.state.storage.delete(`ticket:${waiting.ticket}`);
+      }
+    }
+    const legacyWaiting = await this.state.storage.get("waiting");
+    if (legacyWaiting) {
       await this.state.storage.delete("waiting");
-      await this.state.storage.delete(`ticket:${waiting.ticket}`);
+      await this.state.storage.delete(`ticket:${legacyWaiting.ticket}`);
     }
   }
 

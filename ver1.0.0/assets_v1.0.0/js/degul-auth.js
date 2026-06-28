@@ -336,7 +336,7 @@
 
   function announceReady() {
     window.dispatchEvent(new CustomEvent("degul:auth-ready", {
-      detail: { nickname: currentUser?.nickname || null }
+      detail: { id: currentUser?.id || null, nickname: currentUser?.nickname || null }
     }));
   }
 
@@ -625,8 +625,10 @@
 
   window.DegulAuth = {
     getUser: () => currentUser ? {
+      id: currentUser.id,
       nickname: currentUser.nickname,
-      profileColor: currentUser.profileColor
+      profileColor: currentUser.profileColor,
+      localTest: currentUser.localTest === true
     } : null,
     refresh: ensureSession,
     request: api,
