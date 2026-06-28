@@ -24,6 +24,7 @@
   let realtimeSnapshotFrame = 0;
   let realtimeStarted = false;
   let realtimeResultKey = "";
+  let onlineItemSpawnerStarted = false;
   let onlineInputPatched = false;
   let currentRoom = null;
   let selectedSkin = session?.skin || DEFAULT_SKIN;
@@ -1035,6 +1036,7 @@
     realtimeSnapshotFrame = 0;
     realtimeStarted = false;
     realtimeResultKey = "";
+    onlineItemSpawnerStarted = false;
     currentRoom = null;
     quickMatching = false;
     quickMatchState = "idle";
@@ -1182,10 +1184,14 @@
   }
 
   function showServerCountdown(packet) {
+    const snapshot = packet.state || {};
+    const serverMode = snapshot.mode === "item" ? "item" : "speed";
     if (!realtimeStarted) {
       realtimeStarted = true;
       realtimeResultKey = "";
+      onlineItemSpawnerStarted = false;
       try { matchMode = "pvp"; } catch {}
+      try { gameMode = serverMode; } catch {}
       syncOnlineMatchColors(currentRoom);
       try { resetMatch(); } catch {}
       try { pauseLobbyBgm(); } catch {}
@@ -1197,8 +1203,8 @@
     if (countdown) {
       countdown.style.display = "flex";
       countdown.classList.add("online-countdown");
-      countdown.classList.toggle("classic-mode", true);
-      countdown.classList.toggle("item-mode", false);
+      countdown.classList.toggle("classic-mode", serverMode === "speed");
+      countdown.classList.toggle("item-mode", serverMode === "item");
       countdown.classList.toggle("ghost-mode", false);
       renderOnlineCountdownPlayers();
     }
@@ -1209,15 +1215,25 @@
   }
 
   function showServerPlaying(snapshot) {
+    const serverMode = snapshot.mode === "item" ? "item" : "speed";
     const countdown = $("countdownOverlay");
     if (countdown) {
       countdown.style.display = "none";
       countdown.classList.remove("online-countdown");
     }
+    try { gameMode = serverMode; } catch {}
     try { setGamePhase(GAME_PHASE.PLAYING); } catch {}
     try {
       if (!matchStartedAt) matchStartedAt = performance.now() - Math.max(0, Date.now() - Number(snapshot.startAt || Date.now()));
       playIngameBgm();
+      if (serverMode === "item" && !onlineItemSpawnerStarted && typeof startItemSpawner === "function") {
+        onlineItemSpawnerStarted = true;
+        startItemSpawner();
+      }
+      if (serverMode !== "item" && onlineItemSpawnerStarted && typeof stopItemSpawner === "function") {
+        onlineItemSpawnerStarted = false;
+        stopItemSpawner();
+      }
     } catch {}
   }
 
@@ -1332,6 +1348,9 @@
       actor.z = z;
       actor.onlineTargetX = x;
       actor.onlineTargetZ = z;
+      try {
+        if (gameMode === "item" && typeof checkItemPickup === "function") checkItemPickup(actor);
+      } catch {}
       applyQueuedActorSnapshot(actor);
     });
   }
@@ -1390,7 +1409,7 @@
       selectedSkin = getCurrentSelectedSkin();
       const data = await api("/rooms", {
         method: "POST",
-        body: { nickname: getNickname(), skin: selectedSkin }
+        body: { nickname: getNickname(), skin: selectedSkin, mode: onlineGameMode }
       });
       saveSession({
         roomCode: data.room.code,
@@ -1576,6 +1595,7 @@
     realtimeSocket = null;
     realtimeStarted = false;
     realtimeResultKey = "";
+    onlineItemSpawnerStarted = false;
     saveSession(null);
     onlineMode = true;
     renderRoom(null);

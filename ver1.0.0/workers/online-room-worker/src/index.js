@@ -4,7 +4,7 @@ const ROOM_CODE_PATTERN = /^[A-Z0-9]{6}$/;
 const PLAYER_ID_PATTERN = /^[a-f0-9-]{36}$/i;
 const ROOM_TTL_MS = 1000 * 60 * 60 * 3;
 const DISCONNECT_FORFEIT_MS = 12_000;
-const SNAPSHOT_INTERVAL_MS = 145;
+const SNAPSHOT_INTERVAL_MS = 82;
 const QUICK_MATCH_TTL_MS = 45_000;
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -53,6 +53,10 @@ function sanitizeNickname(value) {
 function sanitizeSkin(value) {
   const skin = String(value || "sky").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 32);
   return skin || "sky";
+}
+
+function sanitizeMode(value) {
+  return value === "item" ? "item" : "speed";
 }
 
 function makeRoomCode() {
@@ -153,6 +157,7 @@ export class OnlineRoom {
   publicRoom(room) {
     return {
       code: room.code,
+      mode: sanitizeMode(room.mode),
       createdAt: room.createdAt,
       updatedAt: room.updatedAt,
       players: {
@@ -191,6 +196,7 @@ export class OnlineRoom {
     };
     const room = {
       code,
+      mode: sanitizeMode(body.mode),
       createdAt: now,
       updatedAt: now,
       players: { 1: player, 2: null }
@@ -281,9 +287,10 @@ export class OnlineRoom {
   async maybeStartGame(room) {
     if (!room?.players?.[1] || !room?.players?.[2]) return;
     if (!room.players[1].ready || !room.players[2].ready) return;
+    if (!this.hasConnectedPlayers()) return;
     let game = await this.loadGame();
     if (game.phase === "waiting" || game.phase === "ended") {
-      game = DegulServerGame.createState({ now: Date.now(), mode: "speed" });
+      game = DegulServerGame.createState({ now: Date.now(), mode: sanitizeMode(room.mode) });
       DegulServerGame.beginCountdown(game, Date.now());
       await this.saveGame(game, { force: true });
       this.lastBroadcastLandRevision = 0;
@@ -318,6 +325,7 @@ export class OnlineRoom {
     this.send(server, { type: "hello", slot, playerId, room: this.publicRoom(room), serverNow: Date.now() });
     this.send(server, DegulServerGame.snapshot(game, Date.now(), { full: true }));
     this.broadcastPresence(room);
+    await this.maybeStartGame(room);
     this.scheduleTick();
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -384,6 +392,15 @@ export class OnlineRoom {
 
   broadcastPresence(room) {
     this.broadcast({ type: "room", room: this.publicRoom(room), serverNow: Date.now() });
+  }
+
+  hasConnectedPlayers() {
+    const connected = new Set();
+    for (const ws of this.state.getWebSockets()) {
+      const slot = Number((ws.deserializeAttachment() || {}).slot);
+      if (slot === 1 || slot === 2) connected.add(slot);
+    }
+    return connected.has(1) && connected.has(2);
   }
 
   broadcastSnapshot(game, options = {}) {
@@ -551,6 +568,7 @@ export class OnlineMatchmaker {
       ticket: crypto.randomUUID(),
       nickname: sanitizeNickname(body.nickname),
       skin: sanitizeSkin(body.skin),
+      mode: sanitizeMode(body.mode),
       createdAt: now,
       lastSeenAt: now
     };
@@ -593,7 +611,7 @@ export class OnlineMatchmaker {
       const createResponse = await roomStub(this.env, code).fetch(new Request(createUrl, {
         method: "POST",
         headers: request.headers,
-        body: JSON.stringify({ nickname: first.nickname, skin: first.skin })
+        body: JSON.stringify({ nickname: first.nickname, skin: first.skin, mode: sanitizeMode(first.mode || second.mode) })
       }));
       if (createResponse.status === 409) continue;
       const created = await createResponse.json();

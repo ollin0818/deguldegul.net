@@ -4,6 +4,8 @@ export const DegulServerGame = (() => {
   const P1_LAND = 1;
   const P2_LAND = 2;
   const TICK_MS = 145;
+  const SPEED_TICK_MS = 82;
+  const ITEM_TICK_MS = 145;
   const INPUT_DELAY_TICKS = 2;
   const WIN_RATIO = 0.6;
   const DIRS = {
@@ -95,6 +97,10 @@ export const DegulServerGame = (() => {
     };
   }
 
+  function getTickMs(state) {
+    return state?.mode === "item" ? ITEM_TICK_MS : SPEED_TICK_MS;
+  }
+
   function hydrateState(raw) {
     const state = raw && raw.version ? raw : createState();
     state.land = Array.isArray(state.land) ? state.land : createLand();
@@ -169,7 +175,7 @@ export const DegulServerGame = (() => {
     if (state.phase === "playing" || state.phase === "ended" || state.phase === "countdown") return state;
     state.phase = "countdown";
     state.countdownStartAt = now;
-    state.startAt = now + 4000;
+    state.startAt = now + 3000;
     state.updatedAt = now;
     return state;
   }
@@ -181,8 +187,9 @@ export const DegulServerGame = (() => {
       state.updatedAt = now;
       state.events.push({ type: "start", at: state.startAt });
     }
-    while (state.phase === "playing" && state.updatedAt + TICK_MS <= now) {
-      tick(state, state.updatedAt + TICK_MS);
+    const tickMs = getTickMs(state);
+    while (state.phase === "playing" && state.updatedAt + tickMs <= now) {
+      tick(state, state.updatedAt + tickMs);
     }
     return state;
   }
@@ -424,7 +431,7 @@ export const DegulServerGame = (() => {
     return {
       type: "snapshot",
       serverNow: now,
-      tickMs: TICK_MS,
+      tickMs: getTickMs(state),
       countdownRemainingMs: state.phase === "countdown" ? Math.max(0, state.startAt - now) : 0,
       state: {
         phase: publicState.phase,
@@ -452,6 +459,9 @@ export const DegulServerGame = (() => {
     P1_LAND,
     P2_LAND,
     TICK_MS,
+    SPEED_TICK_MS,
+    ITEM_TICK_MS,
+    getTickMs,
     INPUT_DELAY_TICKS,
     createState,
     hydrateState,
