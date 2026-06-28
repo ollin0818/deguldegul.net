@@ -4,6 +4,7 @@ export const DegulServerGame = (() => {
   const P1_LAND = 1;
   const P2_LAND = 2;
   const TICK_MS = 145;
+  const INPUT_DELAY_TICKS = 2;
   const WIN_RATIO = 0.6;
   const DIRS = {
     up: { dx: 0, dz: -1 },
@@ -64,7 +65,8 @@ export const DegulServerGame = (() => {
       trail: createPointList(),
       alive: true,
       lastSeq: 0,
-      lastInputAt: 0
+      lastInputAt: 0,
+      pendingInputs: []
     };
   }
 
@@ -82,6 +84,8 @@ export const DegulServerGame = (() => {
       mode: options.mode === "item" ? "item" : "speed",
       ghostMode: !!options.ghostMode,
       land: createLand(),
+      landRevision: 0,
+      landChanges: [],
       players: {
         1: createActor(1),
         2: createActor(2)
@@ -94,11 +98,14 @@ export const DegulServerGame = (() => {
   function hydrateState(raw) {
     const state = raw && raw.version ? raw : createState();
     state.land = Array.isArray(state.land) ? state.land : createLand();
+    state.landRevision = Number(state.landRevision || 0);
+    state.landChanges = Array.isArray(state.landChanges) ? state.landChanges : [];
     for (const slot of [1, 2]) {
       const player = state.players && state.players[slot] ? state.players[slot] : createActor(slot);
       player.trail = createPointList(player.trail || []);
       player.dir = normalizeDirObject(player.dir) || (slot === 1 ? { dx: 1, dz: 0 } : { dx: -1, dz: 0 });
       player.nextDir = normalizeDirObject(player.nextDir) || { ...player.dir };
+      player.pendingInputs = Array.isArray(player.pendingInputs) ? player.pendingInputs : [];
       state.players[slot] = player;
     }
     state.events = Array.isArray(state.events) ? state.events : [];
@@ -112,7 +119,8 @@ export const DegulServerGame = (() => {
         1: serializeActor(state.players[1]),
         2: serializeActor(state.players[2])
       },
-      events: []
+      events: [],
+      landChanges: []
     };
   }
 
@@ -147,17 +155,14 @@ export const DegulServerGame = (() => {
     }
     const name = normalizeDirName(direction);
     if (!name) return { accepted: false, reason: "invalid_direction", lastSeq: player.lastSeq };
-    const dir = DIRS[name];
-    if (player.dir && player.dir.dx === -dir.dx && player.dir.dz === -dir.dz) {
-      player.lastSeq = nextSeq;
-      player.lastInputAt = now;
-      return { accepted: true, ignored: true, reason: "reverse_blocked", lastSeq: player.lastSeq };
-    }
-    player.nextDir = { ...dir };
+    const targetTick = Number(state.tick || 0) + INPUT_DELAY_TICKS;
+    player.pendingInputs = (player.pendingInputs || [])
+      .filter((input) => Number(input.seq || 0) > Number(player.lastSeq || 0) && Number(input.targetTick || 0) >= Number(state.tick || 0));
+    player.pendingInputs.push({ seq: nextSeq, direction: name, targetTick, receivedAt: now });
+    player.pendingInputs.sort((a, b) => Number(a.targetTick || 0) - Number(b.targetTick || 0) || Number(a.seq || 0) - Number(b.seq || 0));
     player.lastSeq = nextSeq;
     player.lastInputAt = now;
-    state.updatedAt = now;
-    return { accepted: true, lastSeq: player.lastSeq };
+    return { accepted: true, lastSeq: player.lastSeq, targetTick, inputDelayTicks: INPUT_DELAY_TICKS };
   }
 
   function beginCountdown(state, now = Date.now()) {
@@ -194,6 +199,7 @@ export const DegulServerGame = (() => {
     for (const slot of first) {
       const actor = state.players[slot];
       if (!actor.alive) continue;
+      applyPendingInputs(actor, state.tick);
       actor.dir = { ...actor.nextDir };
       const nx = actor.x + actor.dir.dx;
       const nz = actor.z + actor.dir.dz;
@@ -217,6 +223,22 @@ export const DegulServerGame = (() => {
     }
     checkWinByLand(state, at);
     state.updatedAt = at;
+  }
+
+  function applyPendingInputs(actor, tick) {
+    if (!Array.isArray(actor.pendingInputs) || !actor.pendingInputs.length) return;
+    const remaining = [];
+    for (const input of actor.pendingInputs) {
+      if (Number(input.targetTick || 0) > tick) {
+        remaining.push(input);
+        continue;
+      }
+      const dir = DIRS[normalizeDirName(input.direction)];
+      if (!dir) continue;
+      if (actor.dir && actor.dir.dx === -dir.dx && actor.dir.dz === -dir.dz) continue;
+      actor.nextDir = { ...dir };
+    }
+    actor.pendingInputs = remaining.slice(-8);
   }
 
   function moveActor(state, actor, at) {
@@ -316,7 +338,13 @@ export const DegulServerGame = (() => {
         }
       }
     }
-    state.events.push({ type: "claim", slot: actor.slot, cells: dedupeCells(changed) });
+    const cells = dedupeCells(changed);
+    if (cells.length) {
+      state.landRevision = Number(state.landRevision || 0) + 1;
+      state.landChanges.push({ revision: state.landRevision, slot: actor.slot, cells });
+      state.landChanges = state.landChanges.slice(-8);
+    }
+    state.events.push({ type: "claim", slot: actor.slot, cells });
     clearTrail(actor);
   }
 
@@ -386,8 +414,13 @@ export const DegulServerGame = (() => {
     state.events.push({ type: "ended", result: state.result });
   }
 
-  function snapshot(state, now = Date.now()) {
+  function snapshot(state, now = Date.now(), options = {}) {
     const publicState = serializeState(state);
+    const full = options.full === true || state.phase !== "playing";
+    const sinceLandRevision = Number(options.sinceLandRevision || 0);
+    const landDelta = full ? [] : (state.landChanges || [])
+      .filter((change) => Number(change.revision || 0) > sinceLandRevision)
+      .flatMap((change) => (change.cells || []).map((cell) => ({ ...cell, owner: state.players[change.slot]?.landId || change.slot })));
     return {
       type: "snapshot",
       serverNow: now,
@@ -402,7 +435,9 @@ export const DegulServerGame = (() => {
         startAt: publicState.startAt,
         updatedAt: publicState.updatedAt,
         endedAt: publicState.endedAt,
-        land: publicState.land,
+        land: full ? publicState.land : undefined,
+        landRevision: Number(state.landRevision || 0),
+        landDelta,
         players: publicState.players,
         score: score(state),
         result: publicState.result,
@@ -417,6 +452,7 @@ export const DegulServerGame = (() => {
     P1_LAND,
     P2_LAND,
     TICK_MS,
+    INPUT_DELAY_TICKS,
     createState,
     hydrateState,
     serializeState,

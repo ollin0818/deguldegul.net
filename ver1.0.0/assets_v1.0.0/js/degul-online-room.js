@@ -16,6 +16,7 @@
   let onlineGameMode = "speed";
   let realtimeSocket = null;
   let realtimeInputSeq = 0;
+  let realtimeLastSentDirection = "";
   let realtimePingTimer = null;
   let realtimeRttMs = 0;
   let realtimeSnapshotTick = -1;
@@ -1069,6 +1070,7 @@
     if (!url) return;
     realtimeSocket = new WebSocket(url);
     realtimeSocket.addEventListener("open", () => {
+      realtimeLastSentDirection = "";
       setStatus(onlineText("wsOpen"));
       startRealtimePing();
     });
@@ -1130,6 +1132,8 @@
 
   function sendDirection(direction) {
     if (!realtimeSocket || realtimeSocket.readyState !== WebSocket.OPEN) return;
+    if (direction === realtimeLastSentDirection) return;
+    realtimeLastSentDirection = direction;
     realtimeInputSeq += 1;
     realtimeSocket.send(JSON.stringify({
       type: "input",
@@ -1210,8 +1214,8 @@
 
   function applyAuthoritativeState(snapshot) {
     try {
+      const changedCells = [];
       if (Array.isArray(snapshot.land) && Array.isArray(land)) {
-        const changedCells = [];
         for (let z = 0; z < snapshot.land.length; z++) {
           const snapshotRow = snapshot.land[z];
           if (!Array.isArray(snapshotRow)) continue;
@@ -1223,10 +1227,22 @@
             changedCells.push({ x, z });
           }
         }
-        if (changedCells.length) {
-          if (typeof refreshBoardCells === "function") refreshBoardCells(changedCells);
-          else refreshBoardColors();
+      }
+      if (Array.isArray(snapshot.landDelta) && Array.isArray(land)) {
+        for (const cell of snapshot.landDelta) {
+          const x = Number(cell.x);
+          const z = Number(cell.z);
+          const owner = Number(cell.owner);
+          if (!Number.isInteger(x) || !Number.isInteger(z) || !Number.isFinite(owner)) continue;
+          if (!Array.isArray(land[z])) land[z] = [];
+          if (land[z][x] === owner) continue;
+          land[z][x] = owner;
+          changedCells.push({ x, z });
         }
+      }
+      if (changedCells.length) {
+        if (typeof refreshBoardCells === "function") refreshBoardCells(changedCells);
+        else refreshBoardColors();
       }
       syncActorFromSnapshot(p1, snapshot.players?.[1] || snapshot.players?.["1"]);
       syncActorFromSnapshot(p2, snapshot.players?.[2] || snapshot.players?.["2"]);

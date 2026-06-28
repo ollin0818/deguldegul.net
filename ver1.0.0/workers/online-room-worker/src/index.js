@@ -82,6 +82,10 @@ export class OnlineRoom {
     this.state = state;
     this.env = env;
     this.tickTimer = null;
+    this.roomCache = undefined;
+    this.gameCache = undefined;
+    this.lastGamePersistAt = 0;
+    this.lastBroadcastLandRevision = 0;
   }
 
   async fetch(request) {
@@ -114,22 +118,35 @@ export class OnlineRoom {
   }
 
   async loadRoom() {
-    return await this.state.storage.get("room");
+    if (this.roomCache !== undefined) return this.roomCache;
+    this.roomCache = await this.state.storage.get("room");
+    return this.roomCache;
   }
 
   async saveRoom(room) {
     room.updatedAt = Date.now();
+    this.roomCache = room;
     await this.state.storage.put("room", room);
     await this.state.storage.setAlarm(room.updatedAt + ROOM_TTL_MS);
     return room;
   }
 
   async loadGame() {
-    return DegulServerGame.hydrateState(await this.state.storage.get("game"));
+    if (this.gameCache) return this.gameCache;
+    this.gameCache = DegulServerGame.hydrateState(await this.state.storage.get("game"));
+    return this.gameCache;
   }
 
-  async saveGame(game) {
+  async saveGame(game, options = {}) {
+    this.gameCache = game;
+    const now = Date.now();
+    const shouldPersist = options.force === true
+      || game.phase === "ended"
+      || game.phase === "waiting"
+      || now - this.lastGamePersistAt >= 700;
+    if (!shouldPersist) return game;
     await this.state.storage.put("game", DegulServerGame.serializeState(game));
+    this.lastGamePersistAt = now;
     return game;
   }
 
@@ -243,13 +260,16 @@ export class OnlineRoom {
       const game = await this.loadGame();
       if (game.phase === "countdown" || game.phase === "playing") {
         DegulServerGame.forfeit(game, slot, Date.now());
-        await this.saveGame(game);
+        await this.saveGame(game, { force: true });
         await this.persistResult(room, game.result);
-        this.broadcast(DegulServerGame.snapshot(game));
+        this.broadcastSnapshot(game, { full: true });
       }
       room.players[slot] = null;
       if (!room.players[1] && !room.players[2]) {
+        this.roomCache = null;
+        this.gameCache = null;
         await this.state.storage.delete("room");
+        await this.state.storage.delete("game");
         await this.state.storage.deleteAlarm();
         return json({ ok: true });
       }
@@ -265,8 +285,9 @@ export class OnlineRoom {
     if (game.phase === "waiting" || game.phase === "ended") {
       game = DegulServerGame.createState({ now: Date.now(), mode: "speed" });
       DegulServerGame.beginCountdown(game, Date.now());
-      await this.saveGame(game);
-      this.broadcast(DegulServerGame.snapshot(game));
+      await this.saveGame(game, { force: true });
+      this.lastBroadcastLandRevision = 0;
+      this.broadcastSnapshot(game, { full: true });
       this.scheduleTick();
     }
   }
@@ -295,7 +316,7 @@ export class OnlineRoom {
 
     const game = await this.loadGame();
     this.send(server, { type: "hello", slot, playerId, room: this.publicRoom(room), serverNow: Date.now() });
-    this.send(server, DegulServerGame.snapshot(game));
+    this.send(server, DegulServerGame.snapshot(game, Date.now(), { full: true }));
     this.broadcastPresence(room);
     this.scheduleTick();
     return new Response(null, { status: 101, webSocket: client });
@@ -323,7 +344,6 @@ export class OnlineRoom {
     const ack = DegulServerGame.setDirection(game, slot, data.direction, data.seq, Date.now());
     await this.saveGame(game);
     this.send(ws, { type: "ack", seq: Number(data.seq) || 0, ...ack, serverNow: Date.now() });
-    this.broadcast(DegulServerGame.snapshot(game));
   }
 
   async webSocketClose(ws) {
@@ -366,6 +386,15 @@ export class OnlineRoom {
     this.broadcast({ type: "room", room: this.publicRoom(room), serverNow: Date.now() });
   }
 
+  broadcastSnapshot(game, options = {}) {
+    const snapshot = DegulServerGame.snapshot(game, Date.now(), {
+      full: options.full === true,
+      sinceLandRevision: options.full === true ? 0 : this.lastBroadcastLandRevision
+    });
+    this.broadcast(snapshot);
+    this.lastBroadcastLandRevision = Number(snapshot.state?.landRevision || this.lastBroadcastLandRevision || 0);
+  }
+
   scheduleTick() {
     if (this.tickTimer) return;
     this.tickTimer = setTimeout(() => this.runTick(), SNAPSHOT_INTERVAL_MS);
@@ -374,8 +403,8 @@ export class OnlineRoom {
   async runTick() {
     this.tickTimer = null;
     const game = DegulServerGame.advanceTo(await this.loadGame(), Date.now());
-    await this.saveGame(game);
-    this.broadcast(DegulServerGame.snapshot(game));
+    await this.saveGame(game, { force: game.phase === "ended" });
+    this.broadcastSnapshot(game, { full: game.phase !== "playing" });
     if (game.phase === "ended" && game.result) {
       const room = await this.loadRoom();
       await this.persistResult(room, game.result);
@@ -463,15 +492,17 @@ export class OnlineRoom {
       });
       if (staleSlot) {
         DegulServerGame.forfeit(game, staleSlot, now);
-        await this.saveGame(game);
+        await this.saveGame(game, { force: true });
         await this.persistResult(room, game.result);
-        this.broadcast(DegulServerGame.snapshot(game));
+        this.broadcastSnapshot(game, { full: true });
       } else {
         await this.state.storage.setAlarm(now + DISCONNECT_FORFEIT_MS);
         return;
       }
     }
     if (Date.now() - Number(room.updatedAt || 0) >= ROOM_TTL_MS) {
+      this.roomCache = null;
+      this.gameCache = null;
       await this.state.storage.delete("room");
       await this.state.storage.delete("game");
       await this.state.storage.deleteAlarm();
