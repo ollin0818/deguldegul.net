@@ -1316,6 +1316,17 @@
     syncActorFromSnapshot(actor, queued);
   }
 
+  function applyOnlineTrailFromSnapshot(actor, data) {
+    if (!actor || !data) return;
+    const nextTrailKey = getTrailSignature(data.trail);
+    if (actor.onlineTrailKey === nextTrailKey) return;
+    actor.onlineTrailKey = nextTrailKey;
+    if (typeof clearTrail === "function") clearTrail(actor);
+    if (Array.isArray(data.trail)) {
+      for (const point of data.trail) addTrail(actor, point.x, point.z);
+    }
+  }
+
   function buildOnlineStepPath(actor, x, z) {
     const path = [];
     let cx = Number(actor.x);
@@ -1333,10 +1344,10 @@
     if (!actor || actor.moving || !Array.isArray(actor.onlineMoveQueue) || !actor.onlineMoveQueue.length) return;
     const next = actor.onlineMoveQueue.shift();
     if (!next) return;
-    moveActorFromSnapshot(actor, actor.onlineQueuedSnapshot || {}, next.x, next.z);
+    moveActorFromSnapshot(actor, actor.onlineQueuedSnapshot || {}, next.x, next.z, actor.onlineMoveQueue.length === 0);
   }
 
-  function moveActorFromSnapshot(actor, data, x, z) {
+  function moveActorFromSnapshot(actor, data, x, z, applyTrailOnDone = true) {
     if (!actor || !actor.mesh) return;
     const currentX = Number(actor.x);
     const currentZ = Number(actor.z);
@@ -1360,11 +1371,12 @@
         const first = path.shift();
         actor.onlineMoveQueue = path;
         actor.onlineQueuedSnapshot = data;
-        return moveActorFromSnapshot(actor, data, first.x, first.z);
+        return moveActorFromSnapshot(actor, data, first.x, first.z, path.length === 0);
       }
     }
     if (manhattan !== 1 || typeof rollActor !== "function") {
       snapActorToSnapshot(actor, x, z);
+      if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
       return;
     }
     actor.onlineTargetX = x;
@@ -1378,6 +1390,7 @@
         drainOnlineMoveQueue(actor);
         return;
       }
+      if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
       applyQueuedActorSnapshot(actor);
     });
   }
@@ -1391,15 +1404,15 @@
     actor.nextDir = data.nextDir || actor.nextDir;
     actor.alive = data.alive !== false;
     if (actor.mesh) actor.mesh.visible = actor.alive;
-    if (!actor.alive) snapActorToSnapshot(actor, x, z);
-    else moveActorFromSnapshot(actor, data, x, z);
-    const nextTrailKey = getTrailSignature(data.trail);
-    if (actor.onlineTrailKey !== nextTrailKey) {
-      actor.onlineTrailKey = nextTrailKey;
-      if (typeof clearTrail === "function") clearTrail(actor);
-      if (Array.isArray(data.trail)) {
-        for (const point of data.trail) addTrail(actor, point.x, point.z);
-      }
+    if (!actor.alive) {
+      snapActorToSnapshot(actor, x, z);
+      applyOnlineTrailFromSnapshot(actor, data);
+      return;
+    }
+    const alreadyAtSnapshot = Number(actor.x) === x && Number(actor.z) === z && !actor.moving;
+    moveActorFromSnapshot(actor, data, x, z);
+    if (alreadyAtSnapshot) {
+      applyOnlineTrailFromSnapshot(actor, data);
     }
   }
 
