@@ -24,6 +24,7 @@
   let realtimeSnapshotFrame = 0;
   let realtimeStarted = false;
   let realtimeResultKey = "";
+  let realtimeEventKey = "";
   let onlineItemSpawnerStarted = false;
   let onlineInputPatched = false;
   let currentRoom = null;
@@ -1036,6 +1037,7 @@
     realtimeSnapshotFrame = 0;
     realtimeStarted = false;
     realtimeResultKey = "";
+    realtimeEventKey = "";
     onlineItemSpawnerStarted = false;
     currentRoom = null;
     quickMatching = false;
@@ -1165,6 +1167,7 @@
     }
     window.addEventListener("keydown", event => {
       if (!window.DegulOnlineRoom?.isRealtimeActive?.()) return;
+      if (event.repeat) return;
       const key = event.key;
       if (key === "w" || key === "W" || key === "ArrowUp") sendDirection("up");
       else if (key === "s" || key === "S" || key === "ArrowDown") sendDirection("down");
@@ -1189,6 +1192,7 @@
     if (!realtimeStarted) {
       realtimeStarted = true;
       realtimeResultKey = "";
+      realtimeEventKey = "";
       onlineItemSpawnerStarted = false;
       try { matchMode = "pvp"; } catch {}
       try { gameMode = serverMode; } catch {}
@@ -1267,6 +1271,8 @@
       }
       syncActorFromSnapshot(p1, snapshot.players?.[1] || snapshot.players?.["1"]);
       syncActorFromSnapshot(p2, snapshot.players?.[2] || snapshot.players?.["2"]);
+      syncOnlineItems(snapshot.items || []);
+      playOnlineSnapshotEvents(snapshot.events || []);
       updateScoreUIThrottled(false);
     } catch (error) {
       console.warn("Failed to apply online snapshot", error);
@@ -1293,6 +1299,66 @@
     if (actor.colorData?.skin === "ghost") return 0.56;
     if (actor.colorData?.skin === "chess") return 0.38;
     return 0.42;
+  }
+
+  function syncOnlineItems(serverItems) {
+    if (typeof activeItems === "undefined" || typeof createItemObject !== "function") return;
+    const normalized = Array.isArray(serverItems) ? serverItems : [];
+    if (gameMode !== "item") {
+      if (typeof clearAreaItem === "function") clearAreaItem();
+      return;
+    }
+    const serverIds = new Set(normalized.map(item => String(item.id)));
+    if (Array.isArray(activeItems)) {
+      for (const item of [...activeItems]) {
+        if (!item?.onlineItemId || serverIds.has(String(item.onlineItemId))) continue;
+        if (typeof clearAreaItem === "function") clearAreaItem(item);
+      }
+    }
+    if (!Array.isArray(activeItems)) activeItems = [];
+    for (const serverItem of normalized) {
+      const id = String(serverItem.id || "");
+      if (!id || activeItems.some(item => String(item.onlineItemId || "") === id)) continue;
+      const type = serverItem.type || "area_claim";
+      const group = createItemObject(type);
+      const itemSpawnY = type === "speed_boost" ? 0.54 : 0.78;
+      group.position.set(toWorld(Number(serverItem.x)), itemSpawnY, toWorld(Number(serverItem.z)));
+      scene.add(group);
+      const item = {
+        type,
+        x: Number(serverItem.x),
+        z: Number(serverItem.z),
+        group,
+        core: group.userData.core,
+        ring: group.userData.ring,
+        accent: group.userData.accent,
+        previewMeshes: [],
+        previewOwner: 1,
+        lastPreviewSwap: 0,
+        bornAt: performance.now(),
+        lifetimeMs: 600000,
+        onlineItemId: id,
+        tileGlow: typeof createItemSpawnTileGlow === "function" ? createItemSpawnTileGlow(Number(serverItem.x), Number(serverItem.z)) : null
+      };
+      activeItems.push(item);
+      if (type === "area_claim" && typeof createItemClaimPreview === "function") createItemClaimPreview(item);
+      if (typeof DegulSfx !== "undefined" && DegulSfx?.oneShot) DegulSfx.oneShot("spawn");
+    }
+    if (typeof syncActiveItemReference === "function") syncActiveItemReference();
+  }
+
+  function playOnlineSnapshotEvents(events) {
+    if (!Array.isArray(events) || !events.length) return;
+    for (const event of events) {
+      const key = `${event.type}:${event.slot || ""}:${event.item?.id || ""}:${event.result?.tick || ""}`;
+      if (!event.type || realtimeEventKey === key) continue;
+      realtimeEventKey = key;
+      if (event.type === "item_pickup") {
+        try {
+          if (typeof DegulSfx !== "undefined" && DegulSfx?.playItemPickup) DegulSfx.playItemPickup(event.item?.type || "area_claim");
+        } catch {}
+      }
+    }
   }
 
   function snapActorToSnapshot(actor, x, z) {
@@ -1327,26 +1393,6 @@
     }
   }
 
-  function buildOnlineStepPath(actor, x, z) {
-    const path = [];
-    let cx = Number(actor.x);
-    let cz = Number(actor.z);
-    const maxSteps = 6;
-    while ((cx !== x || cz !== z) && path.length < maxSteps) {
-      if (cx !== x) cx += Math.sign(x - cx);
-      else if (cz !== z) cz += Math.sign(z - cz);
-      path.push({ x: cx, z: cz });
-    }
-    return cx === x && cz === z ? path : [];
-  }
-
-  function drainOnlineMoveQueue(actor) {
-    if (!actor || actor.moving || !Array.isArray(actor.onlineMoveQueue) || !actor.onlineMoveQueue.length) return;
-    const next = actor.onlineMoveQueue.shift();
-    if (!next) return;
-    moveActorFromSnapshot(actor, actor.onlineQueuedSnapshot || {}, next.x, next.z, actor.onlineMoveQueue.length === 0);
-  }
-
   function moveActorFromSnapshot(actor, data, x, z, applyTrailOnDone = true) {
     if (!actor || !actor.mesh) return;
     const currentX = Number(actor.x);
@@ -1360,19 +1406,9 @@
     }
     const manhattan = Math.abs(dx) + Math.abs(dz);
     if (actor.moving) {
-      if (actor.onlineTargetX === x && actor.onlineTargetZ === z) return;
       actor.onlineQueuedSnapshot = data;
-      actor.onlineMoveQueue = buildOnlineStepPath({ ...actor, x: actor.onlineTargetX ?? currentX, z: actor.onlineTargetZ ?? currentZ }, x, z);
+      if (actor.onlineTargetX === x && actor.onlineTargetZ === z) return;
       return;
-    }
-    if (manhattan !== 1 && typeof rollActor === "function") {
-      const path = buildOnlineStepPath(actor, x, z);
-      if (path.length) {
-        const first = path.shift();
-        actor.onlineMoveQueue = path;
-        actor.onlineQueuedSnapshot = data;
-        return moveActorFromSnapshot(actor, data, first.x, first.z, path.length === 0);
-      }
     }
     if (manhattan !== 1 || typeof rollActor !== "function") {
       snapActorToSnapshot(actor, x, z);
@@ -1386,10 +1422,6 @@
       actor.z = z;
       actor.onlineTargetX = x;
       actor.onlineTargetZ = z;
-      if (Array.isArray(actor.onlineMoveQueue) && actor.onlineMoveQueue.length) {
-        drainOnlineMoveQueue(actor);
-        return;
-      }
       if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
       applyQueuedActorSnapshot(actor);
     });
@@ -1811,6 +1843,7 @@
     setOnlineGameMode,
     setOnlineMode,
     applyOnlineRoomText,
+    hasActiveMatchState: hasActiveOnlineMatchState,
     isRealtimeActive: () => !!(onlineMode && session && realtimeSocket && realtimeSocket.readyState === WebSocket.OPEN && realtimeStarted)
   };
 

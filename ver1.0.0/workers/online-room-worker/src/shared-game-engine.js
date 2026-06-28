@@ -5,8 +5,12 @@ export const DegulServerGame = (() => {
   const P2_LAND = 2;
   const TICK_MS = 145;
   const SPEED_TICK_MS = 82;
-  const ITEM_TICK_MS = 145;
-  const INPUT_DELAY_TICKS = 2;
+  const ITEM_TICK_MS = 105;
+  const INPUT_DELAY_TICKS = 1;
+  const ITEM_LIFETIME_MS = 6000;
+  const ITEM_FIRST_SPAWN_DELAY_MS = 3500;
+  const ITEM_SPAWN_INTERVAL_MS = 4500;
+  const ITEM_TYPES = ["area_claim"];
   const WIN_RATIO = 0.6;
   const DIRS = {
     up: { dx: 0, dz: -1 },
@@ -88,6 +92,9 @@ export const DegulServerGame = (() => {
       land: createLand(),
       landRevision: 0,
       landChanges: [],
+      items: [],
+      nextItemId: 1,
+      nextItemSpawnAt: 0,
       players: {
         1: createActor(1),
         2: createActor(2)
@@ -114,6 +121,9 @@ export const DegulServerGame = (() => {
       player.pendingInputs = Array.isArray(player.pendingInputs) ? player.pendingInputs : [];
       state.players[slot] = player;
     }
+    state.items = Array.isArray(state.items) ? state.items : [];
+    state.nextItemId = Number(state.nextItemId || 1);
+    state.nextItemSpawnAt = Number(state.nextItemSpawnAt || 0);
     state.events = Array.isArray(state.events) ? state.events : [];
     return state;
   }
@@ -121,6 +131,7 @@ export const DegulServerGame = (() => {
   function serializeState(state) {
     return {
       ...state,
+      items: (state.items || []).map((item) => ({ ...item })),
       players: {
         1: serializeActor(state.players[1]),
         2: serializeActor(state.players[2])
@@ -162,10 +173,7 @@ export const DegulServerGame = (() => {
     const name = normalizeDirName(direction);
     if (!name) return { accepted: false, reason: "invalid_direction", lastSeq: player.lastSeq };
     const targetTick = Number(state.tick || 0) + INPUT_DELAY_TICKS;
-    player.pendingInputs = (player.pendingInputs || [])
-      .filter((input) => Number(input.seq || 0) > Number(player.lastSeq || 0) && Number(input.targetTick || 0) >= Number(state.tick || 0));
-    player.pendingInputs.push({ seq: nextSeq, direction: name, targetTick, receivedAt: now });
-    player.pendingInputs.sort((a, b) => Number(a.targetTick || 0) - Number(b.targetTick || 0) || Number(a.seq || 0) - Number(b.seq || 0));
+    player.pendingInputs = [{ seq: nextSeq, direction: name, targetTick, receivedAt: now }];
     player.lastSeq = nextSeq;
     player.lastInputAt = now;
     return { accepted: true, lastSeq: player.lastSeq, targetTick, inputDelayTicks: INPUT_DELAY_TICKS };
@@ -185,6 +193,7 @@ export const DegulServerGame = (() => {
     if (state.phase === "countdown" && now >= state.startAt) {
       state.phase = "playing";
       state.updatedAt = now;
+      if (state.mode === "item" && !state.nextItemSpawnAt) state.nextItemSpawnAt = now + ITEM_FIRST_SPAWN_DELAY_MS;
       state.events.push({ type: "start", at: state.startAt });
     }
     const tickMs = getTickMs(state);
@@ -228,6 +237,7 @@ export const DegulServerGame = (() => {
       if (state.phase !== "playing" || !actor.alive) continue;
       moveActor(state, actor, at);
     }
+    updateItems(state, at);
     checkWinByLand(state, at);
     state.updatedAt = at;
   }
@@ -273,6 +283,7 @@ export const DegulServerGame = (() => {
     const currentLand = state.land[nz][nx];
     if (currentLand !== actor.landId) addTrail(actor, nx, nz);
     if (actor.trail.length > 0 && currentLand === actor.landId) claimArea(state, actor);
+    pickupItemAtActor(state, actor, at);
   }
 
   function addTrail(actor, x, z) {
@@ -367,6 +378,75 @@ export const DegulServerGame = (() => {
     return result;
   }
 
+  function addLandChanges(state, slot, cells) {
+    const deduped = dedupeCells(cells);
+    if (!deduped.length) return;
+    state.landRevision = Number(state.landRevision || 0) + 1;
+    state.landChanges.push({ revision: state.landRevision, slot, cells: deduped });
+    state.landChanges = state.landChanges.slice(-8);
+  }
+
+  function updateItems(state, at) {
+    if (state.mode !== "item" || state.phase !== "playing") {
+      state.items = [];
+      return;
+    }
+    state.items = (state.items || []).filter((item) => at - Number(item.bornAt || 0) <= ITEM_LIFETIME_MS);
+    if (!state.nextItemSpawnAt) state.nextItemSpawnAt = at + ITEM_FIRST_SPAWN_DELAY_MS;
+    if (at < state.nextItemSpawnAt) return;
+    spawnItem(state, at);
+    state.nextItemSpawnAt = at + ITEM_SPAWN_INTERVAL_MS;
+  }
+
+  function spawnItem(state, at) {
+    const candidates = [];
+    for (let z = 2; z < GRID_SIZE - 2; z += 1) {
+      for (let x = 2; x < GRID_SIZE - 2; x += 1) {
+        if (state.players[1]?.alive && state.players[1].x === x && state.players[1].z === z) continue;
+        if (state.players[2]?.alive && state.players[2].x === x && state.players[2].z === z) continue;
+        if (containsPoint(state.players[1]?.trail, x, z) || containsPoint(state.players[2]?.trail, x, z)) continue;
+        if ((state.items || []).some((item) => item.x === x && item.z === z)) continue;
+        candidates.push({ x, z });
+      }
+    }
+    if (!candidates.length) return;
+    const spot = candidates[Math.floor(Math.random() * candidates.length)];
+    const type = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)] || "area_claim";
+    const item = {
+      id: state.nextItemId,
+      type,
+      x: spot.x,
+      z: spot.z,
+      bornAt: at,
+      lifetimeMs: ITEM_LIFETIME_MS
+    };
+    state.nextItemId = Number(state.nextItemId || 1) + 1;
+    state.items = [...(state.items || []), item].slice(-4);
+    state.events.push({ type: "item_spawn", item });
+  }
+
+  function pickupItemAtActor(state, actor, at) {
+    if (state.mode !== "item" || !Array.isArray(state.items) || !state.items.length) return;
+    const index = state.items.findIndex((item) => item && item.x === actor.x && item.z === actor.z);
+    if (index < 0) return;
+    const [item] = state.items.splice(index, 1);
+    if (!item) return;
+    if (item.type === "area_claim") claimItemArea(state, actor, item.x, item.z);
+    state.events.push({ type: "item_pickup", slot: actor.slot, item });
+  }
+
+  function claimItemArea(state, actor, cx, cz) {
+    const changed = [];
+    for (let z = cz - 2; z <= cz + 2; z += 1) {
+      for (let x = cx - 2; x <= cx + 2; x += 1) {
+        if (!inBounds(x, z)) continue;
+        if (state.land[z][x] !== actor.landId) changed.push({ x, z });
+        state.land[z][x] = actor.landId;
+      }
+    }
+    addLandChanges(state, actor.slot, changed);
+  }
+
   function countLand(state, owner) {
     let count = 0;
     for (let z = 0; z < GRID_SIZE; z += 1) {
@@ -445,6 +525,7 @@ export const DegulServerGame = (() => {
         land: full ? publicState.land : undefined,
         landRevision: Number(state.landRevision || 0),
         landDelta,
+        items: publicState.items || [],
         players: publicState.players,
         score: score(state),
         result: publicState.result,

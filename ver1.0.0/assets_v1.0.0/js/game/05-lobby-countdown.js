@@ -733,6 +733,7 @@ function showResultPopup(winner, reasonText) {
   const resultSubtitle = winner ? "" : tr("drawSubtitle");
   const reasonLabel = winner ? tr("winReason") : tr("resultReason");
   const unlockNotice = pendingSkinUnlockNotice ? `<span class="skinUnlockNotice">${pendingSkinUnlockNotice}</span>` : "";
+  const hideRetry = !!(window.DegulOnlineRoom && typeof window.DegulOnlineRoom.hasActiveMatchState === "function" && window.DegulOnlineRoom.hasActiveMatchState());
   pendingSkinUnlockNotice = "";
 
   result.innerHTML = `
@@ -749,7 +750,7 @@ function showResultPopup(winner, reasonText) {
     </div>
     <div class="resultReasonBox"><b>${escapeResultHtml(reasonLabel)}</b>${safeReason}${unlockNotice}</div>
     <div class="resultActions">
-      <button onclick="retryResultMatch()">${escapeResultHtml(tr("retry"))}</button>
+      ${hideRetry ? "" : `<button onclick="retryResultMatch()">${escapeResultHtml(tr("retry"))}</button>`}
       <button class="secondary" onclick="closeResultToLobby()">${escapeResultHtml(tr("backToLobby"))}</button>
     </div>
   `;
