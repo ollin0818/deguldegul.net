@@ -20,6 +20,7 @@
   let realtimePingTimer = null;
   let realtimeRttMs = 0;
   let realtimeSnapshotTick = -1;
+  let realtimeLastAppliedPhase = "";
   let realtimeLandRevision = 0;
   let realtimeLastAckSeq = 0;
   let realtimeLastAppliedTick = -1;
@@ -1101,6 +1102,7 @@
       realtimeLandRevision = 0;
       realtimeLastAckSeq = 0;
       realtimeLastAppliedTick = -1;
+      realtimeLastAppliedPhase = "";
       setStatus(onlineText("wsOpen"));
       startRealtimePing();
     });
@@ -1168,18 +1170,19 @@
 
   function queueServerSnapshot(packet) {
     const snapshot = packet?.state;
-    if (!snapshot || snapshot.tick <= realtimeLastAppliedTick) {
+    const tick = Number(snapshot?.tick || 0);
+    const phase = String(snapshot?.phase || "");
+    if (!snapshot || tick < realtimeLastAppliedTick || (tick === realtimeLastAppliedTick && phase === realtimeLastAppliedPhase)) {
       realtimeNetStats.stalePackets += 1;
       return;
     }
-    if (snapshot.phase !== "playing") {
+    if (snapshot.phase !== "playing" || (snapshot.phase === "playing" && !realtimeStarted)) {
       realtimeSnapshotBuffer = [];
       if (realtimeTimelineTimer) window.clearTimeout(realtimeTimelineTimer);
       realtimeTimelineTimer = 0;
       applyServerSnapshot(packet);
       return;
     }
-    const tick = Number(snapshot.tick || 0);
     const existingIndex = realtimeSnapshotBuffer.findIndex(item => Number(item?.state?.tick || 0) === tick);
     if (existingIndex >= 0) realtimeSnapshotBuffer[existingIndex] = packet;
     else realtimeSnapshotBuffer.push(packet);
@@ -1302,6 +1305,7 @@
     applyAuthoritativeState(snapshot);
     realtimeNetStats.snapshotsApplied += 1;
     realtimeLastAppliedTick = snapshot.tick;
+    realtimeLastAppliedPhase = snapshot.phase || "";
     updateOnlineMetrics();
     if (snapshot.phase === "ended") showServerResult(snapshot.result);
   }
