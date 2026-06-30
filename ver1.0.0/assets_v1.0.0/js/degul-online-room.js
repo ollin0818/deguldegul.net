@@ -24,6 +24,7 @@
   let realtimeLastAckSeq = 0;
   let realtimeLastAppliedTick = -1;
   let realtimeResyncRequestedAt = 0;
+  let realtimeLastChecksumTick = -1;
   let pendingRealtimeSnapshotPacket = null;
   let realtimeSnapshotFrame = 0;
   let realtimeStarted = false;
@@ -1331,23 +1332,25 @@
       }
       if (Array.isArray(snapshot.landDelta) && Array.isArray(land)) {
         const orderedDelta = [...snapshot.landDelta].sort((a, b) => Number(a.revision || 0) - Number(b.revision || 0));
+        let maxAppliedRevision = realtimeLandRevision;
         for (const cell of orderedDelta) {
           const x = Number(cell.x);
           const z = Number(cell.z);
           const owner = Number(cell.owner);
           const revision = Number(cell.revision || snapshot.landRevision || 0);
           if (!Number.isInteger(x) || !Number.isInteger(z) || !Number.isFinite(owner)) continue;
-          if (revision && revision <= realtimeLandRevision) continue;
+          if (revision && revision < realtimeLandRevision) continue;
           if (revision && revision > realtimeLandRevision + 1) requestRealtimeResync("land_revision_gap");
           if (!Array.isArray(land[z])) land[z] = [];
           if (land[z][x] === owner) {
-            if (revision) realtimeLandRevision = Math.max(realtimeLandRevision, revision);
+            if (revision) maxAppliedRevision = Math.max(maxAppliedRevision, revision);
             continue;
           }
           land[z][x] = owner;
           changedCells.push({ x, z });
-          if (revision) realtimeLandRevision = Math.max(realtimeLandRevision, revision);
+          if (revision) maxAppliedRevision = Math.max(maxAppliedRevision, revision);
         }
+        realtimeLandRevision = Math.max(realtimeLandRevision, maxAppliedRevision);
       }
       realtimeNetStats.deltaCells += changedCells.length;
       if (changedCells.length) {
@@ -1355,7 +1358,11 @@
         else refreshBoardColors();
       }
       if (Number.isFinite(Number(snapshot.landRevision))) realtimeLandRevision = Math.max(realtimeLandRevision, Number(snapshot.landRevision));
-      if (Number.isFinite(Number(snapshot.landChecksum)) && computeLocalLandChecksum() !== Number(snapshot.landChecksum)) {
+      const shouldCheckChecksum = snapshot.full === true
+        || Number(snapshot.tick || 0) - realtimeLastChecksumTick >= 30
+        || changedCells.length > 0;
+      if (shouldCheckChecksum) realtimeLastChecksumTick = Number(snapshot.tick || realtimeLastChecksumTick || 0);
+      if (shouldCheckChecksum && Number.isFinite(Number(snapshot.landChecksum)) && computeLocalLandChecksum() !== Number(snapshot.landChecksum)) {
         requestRealtimeResync("land_checksum_mismatch");
       }
       const p1Snapshot = snapshot.players?.[1] || snapshot.players?.["1"];

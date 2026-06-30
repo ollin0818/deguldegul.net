@@ -12,7 +12,7 @@ export const DegulServerGame = (() => {
   const ITEM_SPAWN_INTERVAL_MS = 4500;
   const ITEM_TYPES = ["area_claim"];
   const WIN_RATIO = 0.6;
-  const FULL_SNAPSHOT_EVERY_TICKS = 60;
+  const FULL_SNAPSHOT_EVERY_TICKS = 120;
   const DIRS = {
     up: { dx: 0, dz: -1 },
     down: { dx: 0, dz: 1 },
