@@ -20,7 +20,6 @@
   let realtimePingTimer = null;
   let realtimeRttMs = 0;
   let realtimeSnapshotTick = -1;
-  let realtimeLastAppliedPhase = "";
   let realtimeLandRevision = 0;
   let realtimeLastAckSeq = 0;
   let realtimeLastAppliedTick = -1;
@@ -28,8 +27,6 @@
   let realtimeLastChecksumTick = -1;
   let pendingRealtimeSnapshotPacket = null;
   let realtimeSnapshotFrame = 0;
-  let realtimeSnapshotBuffer = [];
-  let realtimeTimelineTimer = 0;
   let realtimeStarted = false;
   let realtimeResultKey = "";
   let realtimeEventKey = "";
@@ -41,7 +38,6 @@
   let suppressPanelSync = false;
   const ONLINE_INTERPOLATION_DELAY_MS = 130;
   const ONLINE_INTERPOLATION_MAX_BUFFER = 8;
-  const ONLINE_RENDER_DELAY_TICKS = 2;
   const realtimeNetStats = {
     bytesIn: 0,
     bytesOut: 0,
@@ -1102,7 +1098,6 @@
       realtimeLandRevision = 0;
       realtimeLastAckSeq = 0;
       realtimeLastAppliedTick = -1;
-      realtimeLastAppliedPhase = "";
       setStatus(onlineText("wsOpen"));
       startRealtimePing();
     });
@@ -1170,54 +1165,31 @@
 
   function queueServerSnapshot(packet) {
     const snapshot = packet?.state;
-    const tick = Number(snapshot?.tick || 0);
-    const phase = String(snapshot?.phase || "");
-    if (!snapshot || tick < realtimeLastAppliedTick || (tick === realtimeLastAppliedTick && phase === realtimeLastAppliedPhase)) {
+    if (!snapshot) {
       realtimeNetStats.stalePackets += 1;
       return;
     }
-    if (snapshot.phase !== "playing" || (snapshot.phase === "playing" && !realtimeStarted)) {
-      realtimeSnapshotBuffer = [];
-      if (realtimeTimelineTimer) window.clearTimeout(realtimeTimelineTimer);
-      realtimeTimelineTimer = 0;
+    if (snapshot.phase === "countdown" || snapshot.phase === "ended") {
       applyServerSnapshot(packet);
       return;
     }
-    const existingIndex = realtimeSnapshotBuffer.findIndex(item => Number(item?.state?.tick || 0) === tick);
-    if (existingIndex >= 0) realtimeSnapshotBuffer[existingIndex] = packet;
-    else realtimeSnapshotBuffer.push(packet);
-    realtimeSnapshotBuffer.sort((a, b) => Number(a?.state?.tick || 0) - Number(b?.state?.tick || 0));
-    if (realtimeSnapshotBuffer.length > 10) {
-      const dropCount = realtimeSnapshotBuffer.length - 6;
-      realtimeSnapshotBuffer.splice(0, dropCount);
-      realtimeNetStats.stalePackets += dropCount;
-    }
-    scheduleSnapshotTimeline(Number(packet.tickMs || snapshot.tickMs || 90));
-  }
-
-  function scheduleSnapshotTimeline(tickMs = 90) {
-    if (realtimeTimelineTimer) return;
-    const interval = Math.max(55, Math.min(120, Number(tickMs || 90)));
-    realtimeTimelineTimer = window.setTimeout(() => {
-      realtimeTimelineTimer = 0;
-      drainSnapshotTimeline(interval);
-    }, realtimeSnapshotBuffer.length > ONLINE_RENDER_DELAY_TICKS ? 0 : interval);
-  }
-
-  function drainSnapshotTimeline(tickMs = 90) {
-    if (!realtimeSnapshotBuffer.length) return;
-    if (realtimeSnapshotBuffer.length <= ONLINE_RENDER_DELAY_TICKS) {
-      scheduleSnapshotTimeline(tickMs);
+    if (snapshot.tick < realtimeSnapshotTick) {
+      realtimeNetStats.stalePackets += 1;
       return;
     }
-    const packet = realtimeSnapshotBuffer.shift();
-    if (packet) applyServerSnapshot(packet);
-    if (realtimeSnapshotBuffer.length) {
-      realtimeTimelineTimer = window.setTimeout(() => {
-        realtimeTimelineTimer = 0;
-        drainSnapshotTimeline(tickMs);
-      }, Math.max(55, Math.min(120, Number(tickMs || 90))));
+    const pendingTick = pendingRealtimeSnapshotPacket?.state?.tick ?? -1;
+    if (snapshot.tick < pendingTick) {
+      realtimeNetStats.stalePackets += 1;
+      return;
     }
+    pendingRealtimeSnapshotPacket = packet;
+    if (realtimeSnapshotFrame) return;
+    realtimeSnapshotFrame = window.requestAnimationFrame(() => {
+      realtimeSnapshotFrame = 0;
+      const nextPacket = pendingRealtimeSnapshotPacket;
+      pendingRealtimeSnapshotPacket = null;
+      if (nextPacket) applyServerSnapshot(nextPacket);
+    });
   }
 
   function sendDirection(direction) {
@@ -1305,7 +1277,6 @@
     applyAuthoritativeState(snapshot);
     realtimeNetStats.snapshotsApplied += 1;
     realtimeLastAppliedTick = snapshot.tick;
-    realtimeLastAppliedPhase = snapshot.phase || "";
     updateOnlineMetrics();
     if (snapshot.phase === "ended") showServerResult(snapshot.result);
   }
