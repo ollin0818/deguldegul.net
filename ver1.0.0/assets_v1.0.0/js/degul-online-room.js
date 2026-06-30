@@ -27,6 +27,7 @@
   let realtimeLastChecksumTick = -1;
   let pendingRealtimeSnapshotPacket = null;
   let realtimeSnapshotFrame = 0;
+  let realtimeLocalPredictTimer = 0;
   let realtimeStarted = false;
   let realtimeResultKey = "";
   let realtimeEventKey = "";
@@ -1217,6 +1218,7 @@
     if (actor.mesh) {
       actor.mesh.rotation.y = Math.atan2(dir.dx, dir.dz || 0.0001);
     }
+    predictLocalActorStep(true);
   }
 
   function directionToVector(direction) {
@@ -1225,6 +1227,49 @@
     if (direction === "left") return { dx: -1, dz: 0 };
     if (direction === "right") return { dx: 1, dz: 0 };
     return null;
+  }
+
+  function getLocalOnlineActor() {
+    return Number(session?.slot) === 2 ? p2 : p1;
+  }
+
+  function isOnlinePlaying() {
+    return !!(onlineMode && session && realtimeStarted && window.DegulOnlineRoom?.isRealtimeActive?.());
+  }
+
+  function startLocalPredictionLoop(tickMs = 90) {
+    if (realtimeLocalPredictTimer) return;
+    const interval = Math.max(55, Math.min(120, Number(tickMs || 90)));
+    const loop = () => {
+      realtimeLocalPredictTimer = 0;
+      if (!isOnlinePlaying()) return;
+      predictLocalActorStep(false);
+      realtimeLocalPredictTimer = window.setTimeout(loop, interval);
+    };
+    realtimeLocalPredictTimer = window.setTimeout(loop, Math.max(45, Math.min(90, interval * 0.5)));
+  }
+
+  function predictLocalActorStep(force = false) {
+    const actor = getLocalOnlineActor();
+    if (!actor || actor.alive === false || !actor.mesh) return;
+    if (actor.onlineMotionToken && !force) return;
+    const dir = actor.dir || actor.nextDir;
+    if (!dir || Math.abs(Number(dir.dx || 0)) + Math.abs(Number(dir.dz || 0)) !== 1) return;
+    const baseX = Number.isFinite(Number(actor.onlineTargetX)) ? Number(actor.onlineTargetX) : Number(actor.x);
+    const baseZ = Number.isFinite(Number(actor.onlineTargetZ)) ? Number(actor.onlineTargetZ) : Number(actor.z);
+    const authoritativeLead = Math.abs(baseX - Number(actor.x || 0)) + Math.abs(baseZ - Number(actor.z || 0));
+    if (authoritativeLead >= 3) return;
+    const nx = baseX + Number(dir.dx || 0);
+    const nz = baseZ + Number(dir.dz || 0);
+    if (typeof inBounds === "function" && !inBounds(nx, nz)) return;
+    if (typeof GRID_SIZE !== "undefined" && (nx < 0 || nz < 0 || nx >= GRID_SIZE || nz >= GRID_SIZE)) return;
+    actor.onlineTargetX = nx;
+    actor.onlineTargetZ = nz;
+    smoothOnlineActorTo(actor, nx, nz, {
+      dir,
+      tickMs: Number(window.DegulOnlineMetrics?.tickMs || 82) || 82,
+      predictedVisual: true
+    }, false);
   }
 
   function patchOnlineInput() {
@@ -1322,6 +1367,7 @@
         onlineItemSpawnerStarted = false;
         stopItemSpawner();
       }
+      startLocalPredictionLoop(Number(snapshot.tickMs || 90));
     } catch {}
   }
 
@@ -1428,6 +1474,7 @@
       fps: typeof performanceMetrics !== "undefined" ? Number(performanceMetrics.fps || 0) : 0,
       ping: realtimeRttMs,
       tick: realtimeLastAppliedTick,
+      tickMs: Number(p1?.tickMs || p2?.tickMs || 82),
       serverTickMs: realtimeNetStats.serverTickMs,
       bytesIn: realtimeNetStats.bytesIn,
       bytesOut: realtimeNetStats.bytesOut,
@@ -1721,12 +1768,15 @@
     const dir = data.dir || actor.dir || {};
     const targetRotY = Math.atan2(Number(dir.dx || 0), Number(dir.dz || 0) || 0.0001);
     const startRotY = mesh.rotation.y;
-    const startRotX = mesh.rotation.x;
     const startRotZ = mesh.rotation.z;
     const moveDx = x - Number(actor.onlineVisualCellX ?? actor.x ?? x);
     const moveDz = z - Number(actor.onlineVisualCellZ ?? actor.z ?? z);
     const rollStepX = Math.sign(moveDx || Number(dir.dx || 0));
     const rollStepZ = Math.sign(moveDz || Number(dir.dz || 0));
+    const startQuaternion = mesh.quaternion.clone();
+    const rollAxis = new THREE.Vector3(rollStepZ, 0, -rollStepX);
+    if (rollAxis.lengthSq() > 0) rollAxis.normalize();
+    const rollQuaternion = new THREE.Quaternion();
     const isGhostSkin = actor.colorData && actor.colorData.skin === "ghost";
     const isKnightSkin = actor.colorData && actor.colorData.skin === "chess";
     try {
@@ -1745,23 +1795,21 @@
       if (isGhostSkin || isKnightSkin) {
         mesh.position.y = endPos.y + Math.sin(eased * Math.PI) * (isKnightSkin ? 0.1 : 0.15);
         mesh.rotation.z = startRotZ + Math.sin(eased * Math.PI * 2) * (isKnightSkin ? 0.03 : 0.07);
+        mesh.rotation.y = startRotY + (targetRotY - startRotY) * eased;
       } else {
-        mesh.rotation.x = startRotX + rollStepZ * eased * Math.PI / 2;
-        mesh.rotation.z = startRotZ - rollStepX * eased * Math.PI / 2;
+        rollQuaternion.setFromAxisAngle(rollAxis, eased * Math.PI / 2);
+        mesh.quaternion.copy(startQuaternion).premultiply(rollQuaternion);
       }
-      mesh.rotation.y = startRotY + (targetRotY - startRotY) * eased;
       if (t < 1) return true;
       mesh.position.copy(endPos);
-      if (!isGhostSkin && !isKnightSkin) {
-        mesh.rotation.x = Math.round(mesh.rotation.x / (Math.PI / 2)) * (Math.PI / 2);
-        mesh.rotation.z = Math.round(mesh.rotation.z / (Math.PI / 2)) * (Math.PI / 2);
-      }
       actor.onlineVisualCellX = x;
       actor.onlineVisualCellZ = z;
       actor.onlineMotionToken = null;
       actor.moving = false;
-      actor.x = x;
-      actor.z = z;
+      if (data.predictedVisual !== true) {
+        actor.x = x;
+        actor.z = z;
+      }
       actor.onlineTargetX = x;
       actor.onlineTargetZ = z;
       if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
@@ -1777,6 +1825,7 @@
     if (!Number.isInteger(x) || !Number.isInteger(z)) return;
     actor.dir = data.dir || actor.dir;
     actor.nextDir = data.nextDir || actor.nextDir;
+    actor.tickMs = Number(data.tickMs || actor.tickMs || 82);
     actor.alive = data.alive !== false;
     if (actor.mesh) actor.mesh.visible = actor.alive;
     if (!actor.alive) {
