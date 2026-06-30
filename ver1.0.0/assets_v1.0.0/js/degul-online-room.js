@@ -27,6 +27,8 @@
   let realtimeLastChecksumTick = -1;
   let pendingRealtimeSnapshotPacket = null;
   let realtimeSnapshotFrame = 0;
+  let realtimeSnapshotBuffer = [];
+  let realtimeTimelineTimer = 0;
   let realtimeStarted = false;
   let realtimeResultKey = "";
   let realtimeEventKey = "";
@@ -38,6 +40,7 @@
   let suppressPanelSync = false;
   const ONLINE_INTERPOLATION_DELAY_MS = 130;
   const ONLINE_INTERPOLATION_MAX_BUFFER = 8;
+  const ONLINE_RENDER_DELAY_TICKS = 2;
   const realtimeNetStats = {
     bytesIn: 0,
     bytesOut: 0,
@@ -1165,23 +1168,53 @@
 
   function queueServerSnapshot(packet) {
     const snapshot = packet?.state;
-    if (!snapshot || snapshot.tick < realtimeSnapshotTick) {
+    if (!snapshot || snapshot.tick <= realtimeLastAppliedTick) {
       realtimeNetStats.stalePackets += 1;
       return;
     }
-    const pendingTick = pendingRealtimeSnapshotPacket?.state?.tick ?? -1;
-    if (snapshot.tick < pendingTick) {
-      realtimeNetStats.stalePackets += 1;
+    if (snapshot.phase !== "playing") {
+      realtimeSnapshotBuffer = [];
+      if (realtimeTimelineTimer) window.clearTimeout(realtimeTimelineTimer);
+      realtimeTimelineTimer = 0;
+      applyServerSnapshot(packet);
       return;
     }
-    pendingRealtimeSnapshotPacket = packet;
-    if (realtimeSnapshotFrame) return;
-    realtimeSnapshotFrame = window.requestAnimationFrame(() => {
-      realtimeSnapshotFrame = 0;
-      const nextPacket = pendingRealtimeSnapshotPacket;
-      pendingRealtimeSnapshotPacket = null;
-      if (nextPacket) applyServerSnapshot(nextPacket);
-    });
+    const tick = Number(snapshot.tick || 0);
+    const existingIndex = realtimeSnapshotBuffer.findIndex(item => Number(item?.state?.tick || 0) === tick);
+    if (existingIndex >= 0) realtimeSnapshotBuffer[existingIndex] = packet;
+    else realtimeSnapshotBuffer.push(packet);
+    realtimeSnapshotBuffer.sort((a, b) => Number(a?.state?.tick || 0) - Number(b?.state?.tick || 0));
+    if (realtimeSnapshotBuffer.length > 10) {
+      const dropCount = realtimeSnapshotBuffer.length - 6;
+      realtimeSnapshotBuffer.splice(0, dropCount);
+      realtimeNetStats.stalePackets += dropCount;
+    }
+    scheduleSnapshotTimeline(Number(packet.tickMs || snapshot.tickMs || 90));
+  }
+
+  function scheduleSnapshotTimeline(tickMs = 90) {
+    if (realtimeTimelineTimer) return;
+    const interval = Math.max(55, Math.min(120, Number(tickMs || 90)));
+    realtimeTimelineTimer = window.setTimeout(() => {
+      realtimeTimelineTimer = 0;
+      drainSnapshotTimeline(interval);
+    }, realtimeSnapshotBuffer.length > ONLINE_RENDER_DELAY_TICKS ? 0 : interval);
+  }
+
+  function drainSnapshotTimeline(tickMs = 90) {
+    if (!realtimeSnapshotBuffer.length) return;
+    if (realtimeSnapshotBuffer.length <= ONLINE_RENDER_DELAY_TICKS) {
+      scheduleSnapshotTimeline(tickMs);
+      return;
+    }
+    const packet = realtimeSnapshotBuffer.shift();
+    if (packet) applyServerSnapshot(packet);
+    if (realtimeSnapshotBuffer.length) {
+      realtimeTimelineTimer = window.setTimeout(() => {
+        realtimeTimelineTimer = 0;
+        drainSnapshotTimeline(tickMs);
+      }, Math.max(55, Math.min(120, Number(tickMs || 90))));
+    }
   }
 
   function sendDirection(direction) {
