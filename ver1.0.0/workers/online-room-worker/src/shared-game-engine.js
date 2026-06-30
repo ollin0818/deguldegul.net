@@ -6,7 +6,7 @@ export const DegulServerGame = (() => {
   const TICK_MS = 145;
   const SPEED_TICK_MS = 82;
   const ITEM_TICK_MS = 105;
-  const INPUT_DELAY_TICKS = 1;
+  const INPUT_DELAY_TICKS = 0;
   const ITEM_LIFETIME_MS = 6000;
   const ITEM_FIRST_SPAWN_DELAY_MS = 3500;
   const ITEM_SPAWN_INTERVAL_MS = 4500;

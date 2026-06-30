@@ -1214,6 +1214,9 @@
     if (actor.dir && actor.dir.dx === -dir.dx && actor.dir.dz === -dir.dz) return;
     actor.nextDir = { ...dir };
     actor.dir = { ...dir };
+    if (actor.mesh) {
+      actor.mesh.rotation.y = Math.atan2(dir.dx, dir.dz || 0.0001);
+    }
   }
 
   function directionToVector(direction) {
@@ -1238,10 +1241,19 @@
       if (!window.DegulOnlineRoom?.isRealtimeActive?.()) return;
       if (event.repeat) return;
       const key = event.key;
-      if (key === "w" || key === "W" || key === "ArrowUp") sendDirection("up");
-      else if (key === "s" || key === "S" || key === "ArrowDown") sendDirection("down");
-      else if (key === "a" || key === "A" || key === "ArrowLeft") sendDirection("left");
-      else if (key === "d" || key === "D" || key === "ArrowRight") sendDirection("right");
+      if (key === "w" || key === "W" || key === "ArrowUp") {
+        event.preventDefault();
+        sendDirection("up");
+      } else if (key === "s" || key === "S" || key === "ArrowDown") {
+        event.preventDefault();
+        sendDirection("down");
+      } else if (key === "a" || key === "A" || key === "ArrowLeft") {
+        event.preventDefault();
+        sendDirection("left");
+      } else if (key === "d" || key === "D" || key === "ArrowRight") {
+        event.preventDefault();
+        sendDirection("right");
+      }
     }, true);
   }
 
@@ -1513,9 +1525,16 @@
   function playOnlineSnapshotEvents(events) {
     if (!Array.isArray(events) || !events.length) return;
     for (const event of events) {
-      const key = `${event.type}:${event.slot || ""}:${event.item?.id || ""}:${event.result?.tick || ""}`;
+      const key = `${event.type}:${event.slot || ""}:${event.item?.id || ""}:${event.result?.tick || realtimeSnapshotTick || ""}:${event.cells?.length || ""}`;
       if (!event.type || realtimeEventKey === key) continue;
       realtimeEventKey = key;
+      if (event.type === "claim" && Array.isArray(event.cells) && event.cells.length) {
+        const actor = Number(event.slot) === 2 ? p2 : p1;
+        try {
+          if (actor && typeof createLandClaimGlow === "function") createLandClaimGlow(actor, event.cells);
+          if (actor && typeof DegulSfx !== "undefined" && DegulSfx?.playCapture) DegulSfx.playCapture(actor);
+        } catch {}
+      }
       if (event.type === "item_pickup") {
         try {
           if (typeof DegulSfx !== "undefined" && DegulSfx?.playItemPickup) DegulSfx.playItemPickup(event.item?.type || "area_claim");
@@ -1530,6 +1549,8 @@
     actor.z = z;
     actor.onlineTargetX = x;
     actor.onlineTargetZ = z;
+    actor.onlineVisualCellX = x;
+    actor.onlineVisualCellZ = z;
     actor.onlineQueuedSnapshot = null;
     actor.moving = false;
     actor.rollToken = null;
@@ -1700,6 +1721,14 @@
     const dir = data.dir || actor.dir || {};
     const targetRotY = Math.atan2(Number(dir.dx || 0), Number(dir.dz || 0) || 0.0001);
     const startRotY = mesh.rotation.y;
+    const startRotX = mesh.rotation.x;
+    const startRotZ = mesh.rotation.z;
+    const moveDx = x - Number(actor.onlineVisualCellX ?? actor.x ?? x);
+    const moveDz = z - Number(actor.onlineVisualCellZ ?? actor.z ?? z);
+    const rollStepX = Math.sign(moveDx || Number(dir.dx || 0));
+    const rollStepZ = Math.sign(moveDz || Number(dir.dz || 0));
+    const isGhostSkin = actor.colorData && actor.colorData.skin === "ghost";
+    const isKnightSkin = actor.colorData && actor.colorData.skin === "chess";
     try {
       if (typeof DegulSfx !== "undefined" && DegulSfx?.beginRoll) DegulSfx.beginRoll(actor);
     } catch {}
@@ -1713,9 +1742,22 @@
       const t = Math.min(1, (now - startAt) / duration);
       const eased = t * t * (3 - 2 * t);
       mesh.position.lerpVectors(startPos, endPos, eased);
+      if (isGhostSkin || isKnightSkin) {
+        mesh.position.y = endPos.y + Math.sin(eased * Math.PI) * (isKnightSkin ? 0.1 : 0.15);
+        mesh.rotation.z = startRotZ + Math.sin(eased * Math.PI * 2) * (isKnightSkin ? 0.03 : 0.07);
+      } else {
+        mesh.rotation.x = startRotX + rollStepZ * eased * Math.PI / 2;
+        mesh.rotation.z = startRotZ - rollStepX * eased * Math.PI / 2;
+      }
       mesh.rotation.y = startRotY + (targetRotY - startRotY) * eased;
       if (t < 1) return true;
       mesh.position.copy(endPos);
+      if (!isGhostSkin && !isKnightSkin) {
+        mesh.rotation.x = Math.round(mesh.rotation.x / (Math.PI / 2)) * (Math.PI / 2);
+        mesh.rotation.z = Math.round(mesh.rotation.z / (Math.PI / 2)) * (Math.PI / 2);
+      }
+      actor.onlineVisualCellX = x;
+      actor.onlineVisualCellZ = z;
       actor.onlineMotionToken = null;
       actor.moving = false;
       actor.x = x;
