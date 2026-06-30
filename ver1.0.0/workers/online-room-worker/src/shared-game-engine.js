@@ -12,6 +12,7 @@ export const DegulServerGame = (() => {
   const ITEM_SPAWN_INTERVAL_MS = 4500;
   const ITEM_TYPES = ["area_claim"];
   const WIN_RATIO = 0.6;
+  const FULL_SNAPSHOT_EVERY_TICKS = 60;
   const DIRS = {
     up: { dx: 0, dz: -1 },
     down: { dx: 0, dz: 1 },
@@ -469,6 +470,17 @@ export const DegulServerGame = (() => {
     };
   }
 
+  function landChecksum(state) {
+    let hash = 2166136261;
+    for (let z = 0; z < GRID_SIZE; z += 1) {
+      for (let x = 0; x < GRID_SIZE; x += 1) {
+        hash ^= Number(state.land?.[z]?.[x] || 0) + 31 * x + 997 * z;
+        hash = Math.imul(hash, 16777619) >>> 0;
+      }
+    }
+    return hash >>> 0;
+  }
+
   function checkWinByLand(state, at) {
     if (state.phase !== "playing") return;
     const counts = score(state);
@@ -503,11 +515,17 @@ export const DegulServerGame = (() => {
 
   function snapshot(state, now = Date.now(), options = {}) {
     const publicState = serializeState(state);
-    const full = options.full === true || state.phase !== "playing";
+    const full = options.full === true
+      || state.phase !== "playing"
+      || (state.phase === "playing" && state.tick > 0 && state.tick % FULL_SNAPSHOT_EVERY_TICKS === 0);
     const sinceLandRevision = Number(options.sinceLandRevision || 0);
     const landDelta = full ? [] : (state.landChanges || [])
       .filter((change) => Number(change.revision || 0) > sinceLandRevision)
-      .flatMap((change) => (change.cells || []).map((cell) => ({ ...cell, owner: state.players[change.slot]?.landId || change.slot })));
+      .flatMap((change) => (change.cells || []).map((cell) => ({
+        ...cell,
+        revision: Number(change.revision || 0),
+        owner: state.players[change.slot]?.landId || change.slot
+      })));
     return {
       type: "snapshot",
       serverNow: now,
@@ -524,6 +542,8 @@ export const DegulServerGame = (() => {
         endedAt: publicState.endedAt,
         land: full ? publicState.land : undefined,
         landRevision: Number(state.landRevision || 0),
+        landChecksum: landChecksum(state),
+        full,
         landDelta,
         items: publicState.items || [],
         players: publicState.players,

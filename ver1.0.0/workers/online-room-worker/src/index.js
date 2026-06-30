@@ -95,6 +95,9 @@ export class OnlineRoom {
     this.gameCache = undefined;
     this.lastGamePersistAt = 0;
     this.lastBroadcastLandRevision = 0;
+    this.lastBroadcastTick = -1;
+    this.lastBroadcastChecksum = 0;
+    this.lastTickDurationMs = 0;
   }
 
   async fetch(request) {
@@ -328,7 +331,9 @@ export class OnlineRoom {
 
     const game = await this.loadGame();
     this.send(server, { type: "hello", slot, playerId, room: this.publicRoom(room), serverNow: Date.now() });
-    this.send(server, DegulServerGame.snapshot(game, Date.now(), { full: true }));
+    const initialSnapshot = DegulServerGame.snapshot(game, Date.now(), { full: true });
+    initialSnapshot.tickDurationMs = this.lastTickDurationMs;
+    this.send(server, initialSnapshot);
     this.broadcastPresence(room);
     await this.maybeStartGame(room);
     this.scheduleTick();
@@ -351,12 +356,19 @@ export class OnlineRoom {
       this.send(ws, { type: "pong", clientNow: data.clientNow || 0, serverNow: Date.now() });
       return;
     }
+    if (data.type === "resync") {
+      const game = DegulServerGame.advanceTo(await this.loadGame(), Date.now());
+      const snapshot = DegulServerGame.snapshot(game, Date.now(), { full: true });
+      snapshot.tickDurationMs = this.lastTickDurationMs;
+      this.send(ws, snapshot);
+      return;
+    }
     if (data.type !== "input") return;
     const slot = Number(attachment.slot);
     const game = DegulServerGame.advanceTo(await this.loadGame(), Date.now());
     const ack = DegulServerGame.setDirection(game, slot, data.direction, data.seq, Date.now());
     await this.saveGame(game);
-    this.send(ws, { type: "ack", seq: Number(data.seq) || 0, ...ack, serverNow: Date.now() });
+    this.send(ws, { type: "ack", seq: Number(data.seq) || 0, tick: game.tick, ...ack, serverNow: Date.now() });
   }
 
   async webSocketClose(ws) {
@@ -409,12 +421,23 @@ export class OnlineRoom {
   }
 
   broadcastSnapshot(game, options = {}) {
+    const full = options.full === true;
+    if (!full && game.phase === "playing") {
+      const unchangedTick = Number(game.tick || 0) === this.lastBroadcastTick;
+      const unchangedLand = Number(game.landRevision || 0) === this.lastBroadcastLandRevision;
+      if (unchangedTick && unchangedLand && !(game.events || []).length) return false;
+    }
     const snapshot = DegulServerGame.snapshot(game, Date.now(), {
-      full: options.full === true,
-      sinceLandRevision: options.full === true ? 0 : this.lastBroadcastLandRevision
+      full,
+      sinceLandRevision: full ? 0 : this.lastBroadcastLandRevision,
+      tickDurationMs: this.lastTickDurationMs
     });
+    snapshot.tickDurationMs = this.lastTickDurationMs;
     this.broadcast(snapshot);
     this.lastBroadcastLandRevision = Number(snapshot.state?.landRevision || this.lastBroadcastLandRevision || 0);
+    this.lastBroadcastTick = Number(snapshot.state?.tick || this.lastBroadcastTick || 0);
+    this.lastBroadcastChecksum = Number(snapshot.state?.landChecksum || this.lastBroadcastChecksum || 0);
+    return true;
   }
 
   scheduleTick() {
@@ -424,8 +447,10 @@ export class OnlineRoom {
 
   async runTick() {
     this.tickTimer = null;
+    const startedAt = Date.now();
     const game = DegulServerGame.advanceTo(await this.loadGame(), Date.now());
     await this.saveGame(game, { force: game.phase === "ended" });
+    this.lastTickDurationMs = Date.now() - startedAt;
     this.broadcastSnapshot(game, { full: game.phase !== "playing" });
     if (game.phase === "ended" && game.result) {
       const room = await this.loadRoom();

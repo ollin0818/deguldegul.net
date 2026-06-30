@@ -20,6 +20,10 @@
   let realtimePingTimer = null;
   let realtimeRttMs = 0;
   let realtimeSnapshotTick = -1;
+  let realtimeLandRevision = 0;
+  let realtimeLastAckSeq = 0;
+  let realtimeLastAppliedTick = -1;
+  let realtimeResyncRequestedAt = 0;
   let pendingRealtimeSnapshotPacket = null;
   let realtimeSnapshotFrame = 0;
   let realtimeStarted = false;
@@ -31,6 +35,20 @@
   let selectedSkin = session?.skin || DEFAULT_SKIN;
   let selectedSolidSkin = session?.skin || DEFAULT_SKIN;
   let suppressPanelSync = false;
+  const ONLINE_INTERPOLATION_DELAY_MS = 130;
+  const ONLINE_INTERPOLATION_MAX_BUFFER = 8;
+  const realtimeNetStats = {
+    bytesIn: 0,
+    bytesOut: 0,
+    snapshotsIn: 0,
+    snapshotsApplied: 0,
+    stalePackets: 0,
+    deltaCells: 0,
+    fullSnapshots: 0,
+    acks: 0,
+    serverTickMs: 0,
+    lastPacketAt: 0
+  };
   const ONLINE_TEXT = {
     ko: {
       wsOpen: "실시간 서버에 연결했습니다.",
@@ -1076,10 +1094,15 @@
     realtimeSocket = new WebSocket(url);
     realtimeSocket.addEventListener("open", () => {
       realtimeLastSentDirection = "";
+      realtimeLandRevision = 0;
+      realtimeLastAckSeq = 0;
+      realtimeLastAppliedTick = -1;
       setStatus(onlineText("wsOpen"));
       startRealtimePing();
     });
     realtimeSocket.addEventListener("message", event => {
+      realtimeNetStats.bytesIn += String(event.data || "").length;
+      realtimeNetStats.lastPacketAt = performance.now();
       const message = JSON.parse(event.data || "{}");
       handleRealtimeMessage(message);
     });
@@ -1097,7 +1120,7 @@
     stopRealtimePing();
     realtimePingTimer = window.setInterval(() => {
       if (!realtimeSocket || realtimeSocket.readyState !== WebSocket.OPEN) return;
-      realtimeSocket.send(JSON.stringify({ type: "ping", clientNow: performance.now() }));
+      sendRealtimePacket({ type: "ping", clientNow: performance.now() });
     }, 1200);
   }
 
@@ -1109,6 +1132,16 @@
   function handleRealtimeMessage(message) {
     if (message.type === "pong") {
       realtimeRttMs = Math.max(0, Math.round(performance.now() - Number(message.clientNow || 0)));
+      return;
+    }
+    if (message.type === "ack") {
+      const seq = Number(message.seq || 0);
+      if (seq <= realtimeLastAckSeq) {
+        realtimeNetStats.stalePackets += 1;
+        return;
+      }
+      realtimeLastAckSeq = seq;
+      realtimeNetStats.acks += 1;
       return;
     }
     if (message.type === "hello") {
@@ -1123,15 +1156,23 @@
       return;
     }
     if (message.type === "snapshot") {
+      realtimeNetStats.snapshotsIn += 1;
+      realtimeNetStats.serverTickMs = Number(message.tickDurationMs || realtimeNetStats.serverTickMs || 0);
       queueServerSnapshot(message);
     }
   }
 
   function queueServerSnapshot(packet) {
     const snapshot = packet?.state;
-    if (!snapshot || snapshot.tick < realtimeSnapshotTick) return;
+    if (!snapshot || snapshot.tick < realtimeSnapshotTick) {
+      realtimeNetStats.stalePackets += 1;
+      return;
+    }
     const pendingTick = pendingRealtimeSnapshotPacket?.state?.tick ?? -1;
-    if (snapshot.tick < pendingTick) return;
+    if (snapshot.tick < pendingTick) {
+      realtimeNetStats.stalePackets += 1;
+      return;
+    }
     pendingRealtimeSnapshotPacket = packet;
     if (realtimeSnapshotFrame) return;
     realtimeSnapshotFrame = window.requestAnimationFrame(() => {
@@ -1147,12 +1188,38 @@
     if (direction === realtimeLastSentDirection) return;
     realtimeLastSentDirection = direction;
     realtimeInputSeq += 1;
-    realtimeSocket.send(JSON.stringify({
+    applyLocalDirectionPrediction(direction);
+    sendRealtimePacket({
       type: "input",
       seq: realtimeInputSeq,
       direction,
       clientNow: performance.now()
-    }));
+    });
+  }
+
+  function sendRealtimePacket(payload) {
+    if (!realtimeSocket || realtimeSocket.readyState !== WebSocket.OPEN) return;
+    const text = JSON.stringify(payload);
+    realtimeNetStats.bytesOut += text.length;
+    realtimeSocket.send(text);
+  }
+
+  function applyLocalDirectionPrediction(direction) {
+    const actor = Number(session?.slot) === 2 ? p2 : p1;
+    if (!actor || actor.alive === false) return;
+    const dir = directionToVector(direction);
+    if (!dir) return;
+    if (actor.dir && actor.dir.dx === -dir.dx && actor.dir.dz === -dir.dz) return;
+    actor.nextDir = { ...dir };
+    actor.dir = { ...dir };
+  }
+
+  function directionToVector(direction) {
+    if (direction === "up") return { dx: 0, dz: -1 };
+    if (direction === "down") return { dx: 0, dz: 1 };
+    if (direction === "left") return { dx: -1, dz: 0 };
+    if (direction === "right") return { dx: 1, dz: 0 };
+    return null;
   }
 
   function patchOnlineInput() {
@@ -1178,11 +1245,18 @@
 
   function applyServerSnapshot(packet) {
     const snapshot = packet.state;
-    if (!snapshot || snapshot.tick < realtimeSnapshotTick) return;
+    if (!snapshot || snapshot.tick < realtimeSnapshotTick) {
+      realtimeNetStats.stalePackets += 1;
+      return;
+    }
     realtimeSnapshotTick = snapshot.tick;
     if (snapshot.phase === "countdown") showServerCountdown(packet);
     if (snapshot.phase === "playing") showServerPlaying(snapshot);
+    snapshot.tickMs = Number(packet.tickMs || snapshot.tickMs || 90);
     applyAuthoritativeState(snapshot);
+    realtimeNetStats.snapshotsApplied += 1;
+    realtimeLastAppliedTick = snapshot.tick;
+    updateOnlineMetrics();
     if (snapshot.phase === "ended") showServerResult(snapshot.result);
   }
 
@@ -1241,6 +1315,7 @@
     try {
       const changedCells = [];
       if (Array.isArray(snapshot.land) && Array.isArray(land)) {
+        realtimeNetStats.fullSnapshots += 1;
         for (let z = 0; z < snapshot.land.length; z++) {
           const snapshotRow = snapshot.land[z];
           if (!Array.isArray(snapshotRow)) continue;
@@ -1252,25 +1327,49 @@
             changedCells.push({ x, z });
           }
         }
+        realtimeLandRevision = Number(snapshot.landRevision || realtimeLandRevision || 0);
       }
       if (Array.isArray(snapshot.landDelta) && Array.isArray(land)) {
-        for (const cell of snapshot.landDelta) {
+        const orderedDelta = [...snapshot.landDelta].sort((a, b) => Number(a.revision || 0) - Number(b.revision || 0));
+        for (const cell of orderedDelta) {
           const x = Number(cell.x);
           const z = Number(cell.z);
           const owner = Number(cell.owner);
+          const revision = Number(cell.revision || snapshot.landRevision || 0);
           if (!Number.isInteger(x) || !Number.isInteger(z) || !Number.isFinite(owner)) continue;
+          if (revision && revision <= realtimeLandRevision) continue;
+          if (revision && revision > realtimeLandRevision + 1) requestRealtimeResync("land_revision_gap");
           if (!Array.isArray(land[z])) land[z] = [];
-          if (land[z][x] === owner) continue;
+          if (land[z][x] === owner) {
+            if (revision) realtimeLandRevision = Math.max(realtimeLandRevision, revision);
+            continue;
+          }
           land[z][x] = owner;
           changedCells.push({ x, z });
+          if (revision) realtimeLandRevision = Math.max(realtimeLandRevision, revision);
         }
       }
+      realtimeNetStats.deltaCells += changedCells.length;
       if (changedCells.length) {
         if (typeof refreshBoardCells === "function") refreshBoardCells(changedCells);
         else refreshBoardColors();
       }
-      syncActorFromSnapshot(p1, snapshot.players?.[1] || snapshot.players?.["1"]);
-      syncActorFromSnapshot(p2, snapshot.players?.[2] || snapshot.players?.["2"]);
+      if (Number.isFinite(Number(snapshot.landRevision))) realtimeLandRevision = Math.max(realtimeLandRevision, Number(snapshot.landRevision));
+      if (Number.isFinite(Number(snapshot.landChecksum)) && computeLocalLandChecksum() !== Number(snapshot.landChecksum)) {
+        requestRealtimeResync("land_checksum_mismatch");
+      }
+      const p1Snapshot = snapshot.players?.[1] || snapshot.players?.["1"];
+      const p2Snapshot = snapshot.players?.[2] || snapshot.players?.["2"];
+      if (p1Snapshot) {
+        p1Snapshot.tick = snapshot.tick;
+        p1Snapshot.tickMs = snapshot.tickMs;
+      }
+      if (p2Snapshot) {
+        p2Snapshot.tick = snapshot.tick;
+        p2Snapshot.tickMs = snapshot.tickMs;
+      }
+      syncActorFromSnapshot(p1, p1Snapshot);
+      syncActorFromSnapshot(p2, p2Snapshot);
       syncOnlineItems(snapshot.items || []);
       playOnlineSnapshotEvents(snapshot.events || []);
       updateScoreUIThrottled(false);
@@ -1283,6 +1382,62 @@
     if (!Array.isArray(points) || !points.length) return "";
     return `${points.length}:${points[0].x},${points[0].z}:${points[points.length - 1].x},${points[points.length - 1].z}`;
   }
+
+  function computeLocalLandChecksum() {
+    if (!Array.isArray(land)) return 0;
+    let hash = 2166136261;
+    for (let z = 0; z < 31; z++) {
+      for (let x = 0; x < 31; x++) {
+        hash ^= Number(land?.[z]?.[x] || 0) + 31 * x + 997 * z;
+        hash = Math.imul(hash, 16777619) >>> 0;
+      }
+    }
+    return hash >>> 0;
+  }
+
+  function requestRealtimeResync(reason) {
+    const now = performance.now();
+    if (now - realtimeResyncRequestedAt < 1200) return;
+    realtimeResyncRequestedAt = now;
+    sendRealtimePacket({ type: "resync", reason, tick: realtimeSnapshotTick, landRevision: realtimeLandRevision });
+  }
+
+  function updateOnlineMetrics() {
+    const metrics = {
+      active: !!(onlineMode && session && realtimeStarted),
+      fps: typeof performanceMetrics !== "undefined" ? Number(performanceMetrics.fps || 0) : 0,
+      ping: realtimeRttMs,
+      tick: realtimeLastAppliedTick,
+      serverTickMs: realtimeNetStats.serverTickMs,
+      bytesIn: realtimeNetStats.bytesIn,
+      bytesOut: realtimeNetStats.bytesOut,
+      snapshotsIn: realtimeNetStats.snapshotsIn,
+      snapshotsApplied: realtimeNetStats.snapshotsApplied,
+      stalePackets: realtimeNetStats.stalePackets,
+      deltaCells: realtimeNetStats.deltaCells,
+      fullSnapshots: realtimeNetStats.fullSnapshots,
+      acks: realtimeNetStats.acks,
+      landRevision: realtimeLandRevision
+    };
+    window.DegulOnlineMetrics = metrics;
+    appendOnlineMetricsToHud(metrics);
+  }
+
+  function appendOnlineMetricsToHud(metrics = window.DegulOnlineMetrics) {
+    const hud = document.getElementById("performanceHud");
+    if (!hud || !hud.classList.contains("show") || !metrics?.active) return;
+    const baseText = String(hud.textContent || "").split("\nOnline ")[0].trimEnd();
+    const onlineText = [
+      `Online PING ${Math.round(metrics.ping || 0)}ms  Tick ${metrics.tick}  Srv ${Number(metrics.serverTickMs || 0).toFixed(1)}ms`,
+      `Online In ${(metrics.bytesIn / 1024).toFixed(1)}KB  Out ${(metrics.bytesOut / 1024).toFixed(1)}KB  Snap ${metrics.snapshotsApplied}/${metrics.snapshotsIn}`,
+      `Online Delta ${metrics.deltaCells}  Full ${metrics.fullSnapshots}  Ack ${metrics.acks}  Stale ${metrics.stalePackets}`
+    ].join("\n");
+    hud.textContent = `${baseText}${baseText ? "\n" : ""}${onlineText}`;
+  }
+
+  window.setInterval(() => {
+    if (onlineMode && session && realtimeStarted) updateOnlineMetrics();
+  }, 600);
 
   function syncOnlineMatchColors(room = currentRoom) {
     if (!room || typeof selectedColors === "undefined" || typeof COLOR_CHOICES === "undefined" || !Array.isArray(COLOR_CHOICES)) return;
@@ -1375,6 +1530,73 @@
     }
   }
 
+  function isLocalOnlineActor(actor) {
+    const slot = Number(session?.slot) || 1;
+    return (slot === 1 && actor === p1) || (slot === 2 && actor === p2);
+  }
+
+  function queueRemoteActorInterpolation(actor, data, x, z) {
+    if (!actor || !actor.mesh) return;
+    const now = performance.now();
+    const buffer = actor.onlineInterpolationBuffer || [];
+    const last = buffer[buffer.length - 1];
+    const fromX = Number.isFinite(Number(last?.x)) ? Number(last.x) : Number(actor.onlineVisualX ?? actor.x ?? x);
+    const fromZ = Number.isFinite(Number(last?.z)) ? Number(last.z) : Number(actor.onlineVisualZ ?? actor.z ?? z);
+    if (!buffer.length && !Number.isFinite(Number(actor.onlineVisualX))) {
+      actor.onlineVisualX = Number(actor.x ?? x);
+      actor.onlineVisualZ = Number(actor.z ?? z);
+    }
+    buffer.push({
+      tick: Number(data.tick || realtimeSnapshotTick || 0),
+      fromX,
+      fromZ,
+      x,
+      z,
+      data,
+      startAt: now + ONLINE_INTERPOLATION_DELAY_MS,
+      endAt: now + ONLINE_INTERPOLATION_DELAY_MS + Math.max(60, Number(data.tickMs || 90))
+    });
+    actor.onlineInterpolationBuffer = buffer.slice(-ONLINE_INTERPOLATION_MAX_BUFFER);
+    ensureRemoteInterpolationLoop();
+  }
+
+  function ensureRemoteInterpolationLoop() {
+    if (ensureRemoteInterpolationLoop.frame) return;
+    const step = (now) => {
+      let active = false;
+      for (const actor of [p1, p2]) {
+        if (!actor?.onlineInterpolationBuffer?.length || !actor.mesh) continue;
+        active = true;
+        const buffer = actor.onlineInterpolationBuffer;
+        while (buffer.length > 1 && now >= buffer[0].endAt) {
+          const finished = buffer.shift();
+          actor.onlineVisualX = finished.x;
+          actor.onlineVisualZ = finished.z;
+          applyOnlineTrailFromSnapshot(actor, finished.data);
+        }
+        const current = buffer[0];
+        if (!current) continue;
+        const span = Math.max(1, current.endAt - current.startAt);
+        const t = Math.max(0, Math.min(1, (now - current.startAt) / span));
+        const smooth = t * t * (3 - 2 * t);
+        const vx = current.fromX + (current.x - current.fromX) * smooth;
+        const vz = current.fromZ + (current.z - current.fromZ) * smooth;
+        actor.onlineVisualX = vx;
+        actor.onlineVisualZ = vz;
+        actor.mesh.position.set(toWorld(vx), getActorBaseY(actor), toWorld(vz));
+        if (t >= 1) {
+          buffer.shift();
+          actor.onlineVisualX = current.x;
+          actor.onlineVisualZ = current.z;
+          applyOnlineTrailFromSnapshot(actor, current.data);
+        }
+      }
+      if (active) ensureRemoteInterpolationLoop.frame = window.requestAnimationFrame(step);
+      else ensureRemoteInterpolationLoop.frame = 0;
+    };
+    ensureRemoteInterpolationLoop.frame = window.requestAnimationFrame(step);
+  }
+
   function applyQueuedActorSnapshot(actor) {
     const queued = actor?.onlineQueuedSnapshot;
     if (!queued) return;
@@ -1439,6 +1661,18 @@
     if (!actor.alive) {
       snapActorToSnapshot(actor, x, z);
       applyOnlineTrailFromSnapshot(actor, data);
+      return;
+    }
+    if (!isLocalOnlineActor(actor)) {
+      if (!Number.isFinite(Number(actor.onlineVisualX))) {
+        actor.onlineVisualX = Number(actor.x);
+        actor.onlineVisualZ = Number(actor.z);
+      }
+      actor.x = x;
+      actor.z = z;
+      actor.onlineTargetX = x;
+      actor.onlineTargetZ = z;
+      queueRemoteActorInterpolation(actor, data, x, z);
       return;
     }
     const alreadyAtSnapshot = Number(actor.x) === x && Number(actor.z) === z && !actor.moving;
