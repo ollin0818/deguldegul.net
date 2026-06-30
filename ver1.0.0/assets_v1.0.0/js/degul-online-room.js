@@ -38,6 +38,7 @@
   let suppressPanelSync = false;
   const ONLINE_INTERPOLATION_DELAY_MS = 130;
   const ONLINE_INTERPOLATION_MAX_BUFFER = 8;
+  const ONLINE_LOCAL_CORRECTION_MS = 72;
   const realtimeNetStats = {
     bytesIn: 0,
     bytesOut: 0,
@@ -1524,6 +1525,7 @@
   }
 
   function snapActorToSnapshot(actor, x, z) {
+    cancelOnlineActorMotion(actor);
     actor.x = x;
     actor.z = z;
     actor.onlineTargetX = x;
@@ -1535,6 +1537,21 @@
       actor.mesh.position.set(toWorld(x), getActorBaseY(actor), toWorld(z));
       actor.mesh.visible = actor.alive;
     }
+  }
+
+  function cancelOnlineActorMotion(actor) {
+    if (!actor) return;
+    actor.onlineMotionToken = null;
+    actor.onlineInterpolationBuffer = [];
+    actor.onlineQueuedSnapshot = null;
+    actor.moving = false;
+    actor.rollToken = null;
+    try {
+      if (actor.mesh && actor.mesh.parent !== scene) scene.attach(actor.mesh);
+    } catch {}
+    try {
+      if (typeof DegulSfx !== "undefined" && DegulSfx?.endRoll) DegulSfx.endRoll(actor);
+    } catch {}
   }
 
   function isLocalOnlineActor(actor) {
@@ -1561,7 +1578,7 @@
       z,
       data,
       startAt: now + ONLINE_INTERPOLATION_DELAY_MS,
-      endAt: now + ONLINE_INTERPOLATION_DELAY_MS + Math.max(60, Number(data.tickMs || 90))
+      endAt: now + ONLINE_INTERPOLATION_DELAY_MS + Math.max(55, Math.min(120, Number(data.tickMs || 90)))
     });
     actor.onlineInterpolationBuffer = buffer.slice(-ONLINE_INTERPOLATION_MAX_BUFFER);
     ensureRemoteInterpolationLoop();
@@ -1616,43 +1633,98 @@
     const nextTrailKey = getTrailSignature(data.trail);
     if (actor.onlineTrailKey === nextTrailKey) return;
     actor.onlineTrailKey = nextTrailKey;
+    const nextTrail = Array.isArray(data.trail) ? data.trail : [];
+    const currentTrail = Array.isArray(actor.trail) ? actor.trail : [];
+    if (!nextTrail.length) {
+      if (currentTrail.length && typeof clearTrail === "function") clearTrail(actor);
+      return;
+    }
+    let canAppend = currentTrail.length <= nextTrail.length;
+    for (let index = 0; canAppend && index < currentTrail.length; index += 1) {
+      const current = currentTrail[index];
+      const next = nextTrail[index];
+      if (!next || current.x !== next.x || current.z !== next.z) canAppend = false;
+    }
+    if (canAppend && typeof addTrail === "function") {
+      for (let index = currentTrail.length; index < nextTrail.length; index += 1) {
+        const point = nextTrail[index];
+        addTrail(actor, point.x, point.z);
+      }
+      return;
+    }
     if (typeof clearTrail === "function") clearTrail(actor);
-    if (Array.isArray(data.trail)) {
-      for (const point of data.trail) addTrail(actor, point.x, point.z);
+    if (typeof addTrail === "function") {
+      for (const point of nextTrail) addTrail(actor, point.x, point.z);
     }
   }
 
   function moveActorFromSnapshot(actor, data, x, z, applyTrailOnDone = true) {
     if (!actor || !actor.mesh) return;
-    const currentX = Number(actor.x);
-    const currentZ = Number(actor.z);
+    const currentX = Number(actor.onlineTargetX ?? actor.x);
+    const currentZ = Number(actor.onlineTargetZ ?? actor.z);
     const dx = x - currentX;
     const dz = z - currentZ;
     if (dx === 0 && dz === 0) {
       actor.onlineTargetX = x;
       actor.onlineTargetZ = z;
+      if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
       return;
     }
     const manhattan = Math.abs(dx) + Math.abs(dz);
-    if (actor.moving) {
-      actor.onlineQueuedSnapshot = data;
-      if (actor.onlineTargetX === x && actor.onlineTargetZ === z) return;
-      return;
-    }
-    if (manhattan !== 1 || typeof rollActor !== "function") {
+    if (manhattan > 2) {
       snapActorToSnapshot(actor, x, z);
       if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
       return;
     }
+    actor.x = x;
+    actor.z = z;
     actor.onlineTargetX = x;
     actor.onlineTargetZ = z;
-    rollActor(actor, dx, dz, () => {
+    smoothOnlineActorTo(actor, x, z, data, applyTrailOnDone);
+  }
+
+  function smoothOnlineActorTo(actor, x, z, data, applyTrailOnDone = true) {
+    if (!actor || !actor.mesh) return;
+    const token = Symbol("online-motion");
+    actor.onlineMotionToken = token;
+    actor.moving = true;
+    actor.rollToken = null;
+    const mesh = actor.mesh;
+    try {
+      if (mesh.parent !== scene) scene.attach(mesh);
+    } catch {}
+    const startPos = mesh.position.clone();
+    const endPos = new THREE.Vector3(toWorld(x), getActorBaseY(actor), toWorld(z));
+    const startAt = performance.now();
+    const duration = Math.max(45, Math.min(ONLINE_LOCAL_CORRECTION_MS, Number(data.tickMs || ONLINE_LOCAL_CORRECTION_MS) * 0.85));
+    const dir = data.dir || actor.dir || {};
+    const targetRotY = Math.atan2(Number(dir.dx || 0), Number(dir.dz || 0) || 0.0001);
+    const startRotY = mesh.rotation.y;
+    try {
+      if (typeof DegulSfx !== "undefined" && DegulSfx?.beginRoll) DegulSfx.beginRoll(actor);
+    } catch {}
+
+    addFrameTask((now) => {
+      if (actor.onlineMotionToken !== token || actor.dying) {
+        actor.moving = false;
+        try { if (typeof DegulSfx !== "undefined" && DegulSfx?.endRoll) DegulSfx.endRoll(actor); } catch {}
+        return false;
+      }
+      const t = Math.min(1, (now - startAt) / duration);
+      const eased = t * t * (3 - 2 * t);
+      mesh.position.lerpVectors(startPos, endPos, eased);
+      mesh.rotation.y = startRotY + (targetRotY - startRotY) * eased;
+      if (t < 1) return true;
+      mesh.position.copy(endPos);
+      actor.onlineMotionToken = null;
+      actor.moving = false;
       actor.x = x;
       actor.z = z;
       actor.onlineTargetX = x;
       actor.onlineTargetZ = z;
       if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
-      applyQueuedActorSnapshot(actor);
+      try { if (typeof DegulSfx !== "undefined" && DegulSfx?.endRoll) DegulSfx.endRoll(actor); } catch {}
+      return false;
     });
   }
 
