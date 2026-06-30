@@ -2,6 +2,7 @@
   "use strict";
 
   const API_BASE = window.location.protocol === "file:" ? "https://deguldegul.net/api/online" : "/api/online";
+  const SHARED_ENGINE_URL = "assets_v1.0.0/js/degul-shared-game-engine.js?v=1";
   const SESSION_KEY = "degulDegulOnlineRoomSessionV1";
   const QUICK_TICKET_KEY = "degulDegulQuickMatchTicketV1";
   const DEFAULT_SKIN = "sky";
@@ -27,6 +28,12 @@
   let realtimeLastChecksumTick = -1;
   let pendingRealtimeSnapshotPacket = null;
   let realtimeSnapshotFrame = 0;
+  let realtimeSharedEnginePromise = null;
+  let realtimeSharedEngine = null;
+  let realtimeClientGame = null;
+  let realtimePendingServerSnapshot = null;
+  let realtimeClientTickTimer = 0;
+  let realtimeClientLastAdvanceAt = 0;
   let realtimeStarted = false;
   let realtimeResultKey = "";
   let realtimeEventKey = "";
@@ -38,6 +45,7 @@
   let suppressPanelSync = false;
   const ONLINE_INTERPOLATION_DELAY_MS = 130;
   const ONLINE_INTERPOLATION_MAX_BUFFER = 8;
+  const ONLINE_CLIENT_RENDER_DELAY_MS = 18;
   const realtimeNetStats = {
     bytesIn: 0,
     bytesOut: 0,
@@ -1042,6 +1050,7 @@
     stopPolling();
     stopQuickPolling();
     stopRealtimePing();
+    stopClientTickLoop();
     if (realtimeSocket) {
       try {
         realtimeSocket.close(1000, "reset");
@@ -1098,7 +1107,11 @@
       realtimeLandRevision = 0;
       realtimeLastAckSeq = 0;
       realtimeLastAppliedTick = -1;
+      realtimeClientGame = null;
+      realtimePendingServerSnapshot = null;
+      realtimeClientLastAdvanceAt = 0;
       setStatus(onlineText("wsOpen"));
+      ensureSharedEngine();
       startRealtimePing();
     });
     realtimeSocket.addEventListener("message", event => {
@@ -1128,6 +1141,103 @@
   function stopRealtimePing() {
     if (realtimePingTimer) window.clearInterval(realtimePingTimer);
     realtimePingTimer = null;
+  }
+
+  function ensureSharedEngine() {
+    if (realtimeSharedEngine) return Promise.resolve(realtimeSharedEngine);
+    if (!realtimeSharedEnginePromise) {
+      realtimeSharedEnginePromise = import(SHARED_ENGINE_URL)
+        .then(module => {
+          realtimeSharedEngine = module.DegulServerGame;
+          return realtimeSharedEngine;
+        })
+        .catch(error => {
+          console.warn("Failed to load shared online engine", error);
+          realtimeSharedEnginePromise = null;
+          return null;
+        });
+    }
+    return realtimeSharedEnginePromise;
+  }
+
+  function startClientTickLoop(tickMs = 90) {
+    if (realtimeClientTickTimer) return;
+    const interval = Math.max(55, Math.min(120, Number(tickMs || 90)));
+    const run = async () => {
+      realtimeClientTickTimer = 0;
+      if (!onlineMode || !session || !realtimeStarted) return;
+      const engine = realtimeSharedEngine || await ensureSharedEngine();
+      if (!engine) return;
+      runClientEngineTick(engine);
+      realtimeClientTickTimer = window.setTimeout(run, interval);
+    };
+    realtimeClientTickTimer = window.setTimeout(run, ONLINE_CLIENT_RENDER_DELAY_MS);
+  }
+
+  function stopClientTickLoop() {
+    if (realtimeClientTickTimer) window.clearTimeout(realtimeClientTickTimer);
+    realtimeClientTickTimer = 0;
+    realtimeClientGame = null;
+    realtimePendingServerSnapshot = null;
+    realtimeClientLastAdvanceAt = 0;
+  }
+
+  function runClientEngineTick(engine) {
+    const pending = realtimePendingServerSnapshot;
+    if (pending) {
+      realtimePendingServerSnapshot = null;
+      applyAuthoritativeState(pending, { actors: false });
+      reconcileClientGameFromSnapshot(engine, pending);
+    }
+    if (!realtimeClientGame) return;
+    const now = Date.now();
+    engine.advanceTo(realtimeClientGame, now);
+    if (realtimeClientGame.phase === "ended" && !realtimeClientGame.serverConfirmedResult) {
+      realtimeClientGame.phase = "playing";
+      realtimeClientGame.result = null;
+    }
+    realtimeClientLastAdvanceAt = now;
+    renderClientEngineActors(realtimeClientGame, engine);
+  }
+
+  function reconcileClientGameFromSnapshot(engine, snapshot) {
+    if (!engine || !snapshot) return;
+    const state = {
+      version: 1,
+      phase: snapshot.phase,
+      tick: Number(snapshot.tick || 0),
+      createdAt: Number(snapshot.createdAt || snapshot.startAt || Date.now()),
+      updatedAt: Number(snapshot.updatedAt || Date.now()),
+      countdownStartAt: Number(snapshot.countdownStartAt || 0),
+      startAt: Number(snapshot.startAt || 0),
+      endedAt: Number(snapshot.endedAt || 0),
+      mode: snapshot.mode === "item" ? "item" : "speed",
+      ghostMode: !!snapshot.ghostMode,
+      land: Array.isArray(land) ? land.map(row => Array.isArray(row) ? row.slice() : []) : snapshot.land,
+      landRevision: Number(snapshot.landRevision || 0),
+      landChanges: [],
+      items: Array.isArray(snapshot.items) ? snapshot.items.map(item => ({ ...item })) : [],
+      nextItemId: 1,
+      nextItemSpawnAt: 0,
+      players: {
+        1: { ...(snapshot.players?.[1] || snapshot.players?.["1"] || {}) },
+        2: { ...(snapshot.players?.[2] || snapshot.players?.["2"] || {}) }
+      },
+      result: snapshot.result || null,
+      events: [],
+      serverConfirmedResult: snapshot.phase === "ended" && !!snapshot.result
+    };
+    realtimeClientGame = engine.hydrateState(state);
+    realtimeClientGame.serverConfirmedResult = state.serverConfirmedResult;
+  }
+
+  function renderClientEngineActors(game, engine) {
+    if (!game?.players) return;
+    const tickMs = engine?.getTickMs ? engine.getTickMs(game) : 90;
+    const p1State = game.players[1] ? { ...game.players[1], tick: game.tick, tickMs, clientTimeline: true } : null;
+    const p2State = game.players[2] ? { ...game.players[2], tick: game.tick, tickMs, clientTimeline: true } : null;
+    syncActorFromSnapshot(p1, p1State);
+    syncActorFromSnapshot(p2, p2State);
   }
 
   function handleRealtimeMessage(message) {
@@ -1198,6 +1308,11 @@
     realtimeLastSentDirection = direction;
     realtimeInputSeq += 1;
     applyLocalDirectionPrediction(direction);
+    if (realtimeSharedEngine && realtimeClientGame && session?.slot) {
+      try {
+        realtimeSharedEngine.setDirection(realtimeClientGame, Number(session.slot), direction, realtimeInputSeq, Date.now());
+      } catch {}
+    }
     sendRealtimePacket({
       type: "input",
       seq: realtimeInputSeq,
@@ -1274,7 +1389,24 @@
     if (snapshot.phase === "countdown") showServerCountdown(packet);
     if (snapshot.phase === "playing") showServerPlaying(snapshot);
     snapshot.tickMs = Number(packet.tickMs || snapshot.tickMs || 90);
-    applyAuthoritativeState(snapshot);
+    if (snapshot.phase === "playing") {
+      realtimePendingServerSnapshot = snapshot;
+      ensureSharedEngine().then(engine => {
+        if (!engine) {
+          applyAuthoritativeState(snapshot);
+          return;
+        }
+        if (!realtimeClientGame) {
+          applyAuthoritativeState(snapshot, { actors: false });
+          reconcileClientGameFromSnapshot(engine, snapshot);
+          renderClientEngineActors(realtimeClientGame, engine);
+        }
+        startClientTickLoop(snapshot.tickMs);
+      });
+    } else {
+      applyAuthoritativeState(snapshot);
+      if (snapshot.phase === "ended") stopClientTickLoop();
+    }
     realtimeNetStats.snapshotsApplied += 1;
     realtimeLastAppliedTick = snapshot.tick;
     updateOnlineMetrics();
@@ -1332,7 +1464,7 @@
     } catch {}
   }
 
-  function applyAuthoritativeState(snapshot) {
+  function applyAuthoritativeState(snapshot, options = {}) {
     try {
       const changedCells = [];
       if (Array.isArray(snapshot.land) && Array.isArray(land)) {
@@ -1385,18 +1517,20 @@
       if (shouldCheckChecksum && Number.isFinite(Number(snapshot.landChecksum)) && computeLocalLandChecksum() !== Number(snapshot.landChecksum)) {
         requestRealtimeResync("land_checksum_mismatch");
       }
-      const p1Snapshot = snapshot.players?.[1] || snapshot.players?.["1"];
-      const p2Snapshot = snapshot.players?.[2] || snapshot.players?.["2"];
-      if (p1Snapshot) {
-        p1Snapshot.tick = snapshot.tick;
-        p1Snapshot.tickMs = snapshot.tickMs;
+      if (options.actors !== false) {
+        const p1Snapshot = snapshot.players?.[1] || snapshot.players?.["1"];
+        const p2Snapshot = snapshot.players?.[2] || snapshot.players?.["2"];
+        if (p1Snapshot) {
+          p1Snapshot.tick = snapshot.tick;
+          p1Snapshot.tickMs = snapshot.tickMs;
+        }
+        if (p2Snapshot) {
+          p2Snapshot.tick = snapshot.tick;
+          p2Snapshot.tickMs = snapshot.tickMs;
+        }
+        syncActorFromSnapshot(p1, p1Snapshot);
+        syncActorFromSnapshot(p2, p2Snapshot);
       }
-      if (p2Snapshot) {
-        p2Snapshot.tick = snapshot.tick;
-        p2Snapshot.tickMs = snapshot.tickMs;
-      }
-      syncActorFromSnapshot(p1, p1Snapshot);
-      syncActorFromSnapshot(p2, p2Snapshot);
       syncOnlineItems(snapshot.items || []);
       playOnlineSnapshotEvents(snapshot.events || []);
       updateScoreUIThrottled(false);
@@ -1833,7 +1967,7 @@
       applyOnlineTrailFromSnapshot(actor, data);
       return;
     }
-    if (!isLocalOnlineActor(actor)) {
+    if (!isLocalOnlineActor(actor) && data.clientTimeline !== true) {
       if (!Number.isFinite(Number(actor.onlineVisualX))) {
         actor.onlineVisualX = Number(actor.x);
         actor.onlineVisualZ = Number(actor.z);
