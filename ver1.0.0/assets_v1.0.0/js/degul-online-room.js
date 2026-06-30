@@ -1616,6 +1616,10 @@
     actor.rollToken = null;
     try {
       if (actor.mesh && actor.mesh.parent !== scene) scene.attach(actor.mesh);
+      if (actor.onlinePivot) {
+        scene.remove(actor.onlinePivot);
+        actor.onlinePivot = null;
+      }
     } catch {}
     try {
       if (typeof DegulSfx !== "undefined" && DegulSfx?.endRoll) DegulSfx.endRoll(actor);
@@ -1760,6 +1764,10 @@
     const mesh = actor.mesh;
     try {
       if (mesh.parent !== scene) scene.attach(mesh);
+      if (actor.onlinePivot) {
+        scene.remove(actor.onlinePivot);
+        actor.onlinePivot = null;
+      }
     } catch {}
     const startPos = mesh.position.clone();
     const endPos = new THREE.Vector3(toWorld(x), getActorBaseY(actor), toWorld(z));
@@ -1773,35 +1781,68 @@
     const moveDz = z - Number(actor.onlineVisualCellZ ?? actor.z ?? z);
     const rollStepX = Math.sign(moveDx || Number(dir.dx || 0));
     const rollStepZ = Math.sign(moveDz || Number(dir.dz || 0));
-    const startQuaternion = mesh.quaternion.clone();
-    const rollAxis = new THREE.Vector3(rollStepZ, 0, -rollStepX);
-    if (rollAxis.lengthSq() > 0) rollAxis.normalize();
-    const rollQuaternion = new THREE.Quaternion();
     const isGhostSkin = actor.colorData && actor.colorData.skin === "ghost";
     const isKnightSkin = actor.colorData && actor.colorData.skin === "chess";
+    const canPivotRoll = !isGhostSkin && !isKnightSkin && (Math.abs(rollStepX) + Math.abs(rollStepZ) === 1);
+    let pivot = null;
+    let axis = null;
+    if (canPivotRoll) {
+      pivot = new THREE.Group();
+      actor.onlinePivot = pivot;
+      scene.add(pivot);
+      const halfSize = 0.4;
+      const edgeOffset = new THREE.Vector3(rollStepX * halfSize, -halfSize, rollStepZ * halfSize);
+      pivot.position.copy(startPos).add(edgeOffset);
+      try {
+        scene.attach(mesh);
+        pivot.attach(mesh);
+      } catch {}
+      axis = new THREE.Vector3(rollStepZ, 0, -rollStepX).normalize();
+    }
     try {
       if (typeof DegulSfx !== "undefined" && DegulSfx?.beginRoll) DegulSfx.beginRoll(actor);
     } catch {}
 
     addFrameTask((now) => {
       if (actor.onlineMotionToken !== token || actor.dying) {
+        try {
+          if (pivot) {
+            scene.attach(mesh);
+            scene.remove(pivot);
+            if (actor.onlinePivot === pivot) actor.onlinePivot = null;
+          }
+        } catch {}
         actor.moving = false;
         try { if (typeof DegulSfx !== "undefined" && DegulSfx?.endRoll) DegulSfx.endRoll(actor); } catch {}
         return false;
       }
       const t = Math.min(1, (now - startAt) / duration);
       const eased = t * t * (3 - 2 * t);
-      mesh.position.lerpVectors(startPos, endPos, eased);
       if (isGhostSkin || isKnightSkin) {
+        mesh.position.lerpVectors(startPos, endPos, eased);
         mesh.position.y = endPos.y + Math.sin(eased * Math.PI) * (isKnightSkin ? 0.1 : 0.15);
         mesh.rotation.z = startRotZ + Math.sin(eased * Math.PI * 2) * (isKnightSkin ? 0.03 : 0.07);
         mesh.rotation.y = startRotY + (targetRotY - startRotY) * eased;
+      } else if (pivot && axis) {
+        pivot.rotation.set(0, 0, 0);
+        pivot.rotateOnAxis(axis, eased * Math.PI / 2);
       } else {
-        rollQuaternion.setFromAxisAngle(rollAxis, eased * Math.PI / 2);
-        mesh.quaternion.copy(startQuaternion).premultiply(rollQuaternion);
+        mesh.position.lerpVectors(startPos, endPos, eased);
       }
       if (t < 1) return true;
+      if (pivot) {
+        try {
+          scene.attach(mesh);
+          scene.remove(pivot);
+          if (actor.onlinePivot === pivot) actor.onlinePivot = null;
+        } catch {}
+      }
       mesh.position.copy(endPos);
+      if (canPivotRoll) {
+        mesh.rotation.x = Math.round(mesh.rotation.x / (Math.PI / 2)) * (Math.PI / 2);
+        mesh.rotation.y = Math.round(mesh.rotation.y / (Math.PI / 2)) * (Math.PI / 2);
+        mesh.rotation.z = Math.round(mesh.rotation.z / (Math.PI / 2)) * (Math.PI / 2);
+      }
       actor.onlineVisualCellX = x;
       actor.onlineVisualCellZ = z;
       actor.onlineMotionToken = null;
@@ -1845,11 +1886,21 @@
       queueRemoteActorInterpolation(actor, data, x, z);
       return;
     }
-    const alreadyAtSnapshot = Number(actor.x) === x && Number(actor.z) === z && !actor.moving;
-    moveActorFromSnapshot(actor, data, x, z);
-    if (alreadyAtSnapshot) {
+    actor.x = x;
+    actor.z = z;
+    const visualX = Number(actor.onlineTargetX ?? actor.onlineVisualCellX ?? x);
+    const visualZ = Number(actor.onlineTargetZ ?? actor.onlineVisualCellZ ?? z);
+    const visualLead = Math.abs(visualX - x) + Math.abs(visualZ - z);
+    if (!Number.isFinite(visualX) || !Number.isFinite(visualZ) || visualLead > 3) {
+      snapActorToSnapshot(actor, x, z);
       applyOnlineTrailFromSnapshot(actor, data);
+      return;
     }
+    if (!actor.onlineMotionToken && visualLead === 0) {
+      moveActorFromSnapshot(actor, data, x, z);
+      return;
+    }
+    applyOnlineTrailFromSnapshot(actor, data);
   }
 
   function showServerResult(result) {
