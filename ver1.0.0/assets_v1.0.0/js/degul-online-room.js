@@ -27,7 +27,6 @@
   let realtimeLastChecksumTick = -1;
   let pendingRealtimeSnapshotPacket = null;
   let realtimeSnapshotFrame = 0;
-  let realtimeLocalPredictTimer = 0;
   let realtimeStarted = false;
   let realtimeResultKey = "";
   let realtimeEventKey = "";
@@ -39,7 +38,6 @@
   let suppressPanelSync = false;
   const ONLINE_INTERPOLATION_DELAY_MS = 130;
   const ONLINE_INTERPOLATION_MAX_BUFFER = 8;
-  const ONLINE_LOCAL_CORRECTION_MS = 72;
   const realtimeNetStats = {
     bytesIn: 0,
     bytesOut: 0,
@@ -1218,7 +1216,6 @@
     if (actor.mesh) {
       actor.mesh.rotation.y = Math.atan2(dir.dx, dir.dz || 0.0001);
     }
-    predictLocalActorStep(true);
   }
 
   function directionToVector(direction) {
@@ -1227,49 +1224,6 @@
     if (direction === "left") return { dx: -1, dz: 0 };
     if (direction === "right") return { dx: 1, dz: 0 };
     return null;
-  }
-
-  function getLocalOnlineActor() {
-    return Number(session?.slot) === 2 ? p2 : p1;
-  }
-
-  function isOnlinePlaying() {
-    return !!(onlineMode && session && realtimeStarted && window.DegulOnlineRoom?.isRealtimeActive?.());
-  }
-
-  function startLocalPredictionLoop(tickMs = 90) {
-    if (realtimeLocalPredictTimer) return;
-    const interval = Math.max(55, Math.min(120, Number(tickMs || 90)));
-    const loop = () => {
-      realtimeLocalPredictTimer = 0;
-      if (!isOnlinePlaying()) return;
-      predictLocalActorStep(false);
-      realtimeLocalPredictTimer = window.setTimeout(loop, interval);
-    };
-    realtimeLocalPredictTimer = window.setTimeout(loop, Math.max(45, Math.min(90, interval * 0.5)));
-  }
-
-  function predictLocalActorStep(force = false) {
-    const actor = getLocalOnlineActor();
-    if (!actor || actor.alive === false || !actor.mesh) return;
-    if (actor.onlineMotionToken && !force) return;
-    const dir = actor.dir || actor.nextDir;
-    if (!dir || Math.abs(Number(dir.dx || 0)) + Math.abs(Number(dir.dz || 0)) !== 1) return;
-    const baseX = Number.isFinite(Number(actor.onlineTargetX)) ? Number(actor.onlineTargetX) : Number(actor.x);
-    const baseZ = Number.isFinite(Number(actor.onlineTargetZ)) ? Number(actor.onlineTargetZ) : Number(actor.z);
-    const authoritativeLead = Math.abs(baseX - Number(actor.x || 0)) + Math.abs(baseZ - Number(actor.z || 0));
-    if (authoritativeLead >= 3) return;
-    const nx = baseX + Number(dir.dx || 0);
-    const nz = baseZ + Number(dir.dz || 0);
-    if (typeof inBounds === "function" && !inBounds(nx, nz)) return;
-    if (typeof GRID_SIZE !== "undefined" && (nx < 0 || nz < 0 || nx >= GRID_SIZE || nz >= GRID_SIZE)) return;
-    actor.onlineTargetX = nx;
-    actor.onlineTargetZ = nz;
-    smoothOnlineActorTo(actor, nx, nz, {
-      dir,
-      tickMs: Number(window.DegulOnlineMetrics?.tickMs || 82) || 82,
-      predictedVisual: true
-    }, false);
   }
 
   function patchOnlineInput() {
@@ -1367,7 +1321,6 @@
         onlineItemSpawnerStarted = false;
         stopItemSpawner();
       }
-      startLocalPredictionLoop(Number(snapshot.tickMs || 90));
     } catch {}
   }
 
@@ -1772,7 +1725,7 @@
     const startPos = mesh.position.clone();
     const endPos = new THREE.Vector3(toWorld(x), getActorBaseY(actor), toWorld(z));
     const startAt = performance.now();
-    const duration = Math.max(45, Math.min(ONLINE_LOCAL_CORRECTION_MS, Number(data.tickMs || ONLINE_LOCAL_CORRECTION_MS) * 0.85));
+    const duration = Math.max(45, Math.min(90, Number(data.tickMs || 82) * 0.9));
     const dir = data.dir || actor.dir || {};
     const targetRotY = Math.atan2(Number(dir.dx || 0), Number(dir.dz || 0) || 0.0001);
     const startRotY = mesh.rotation.y;
@@ -1847,10 +1800,8 @@
       actor.onlineVisualCellZ = z;
       actor.onlineMotionToken = null;
       actor.moving = false;
-      if (data.predictedVisual !== true) {
-        actor.x = x;
-        actor.z = z;
-      }
+      actor.x = x;
+      actor.z = z;
       actor.onlineTargetX = x;
       actor.onlineTargetZ = z;
       if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
@@ -1886,21 +1837,11 @@
       queueRemoteActorInterpolation(actor, data, x, z);
       return;
     }
-    actor.x = x;
-    actor.z = z;
-    const visualX = Number(actor.onlineTargetX ?? actor.onlineVisualCellX ?? x);
-    const visualZ = Number(actor.onlineTargetZ ?? actor.onlineVisualCellZ ?? z);
-    const visualLead = Math.abs(visualX - x) + Math.abs(visualZ - z);
-    if (!Number.isFinite(visualX) || !Number.isFinite(visualZ) || visualLead > 3) {
-      snapActorToSnapshot(actor, x, z);
+    const alreadyAtSnapshot = Number(actor.x) === x && Number(actor.z) === z && !actor.moving;
+    moveActorFromSnapshot(actor, data, x, z);
+    if (alreadyAtSnapshot) {
       applyOnlineTrailFromSnapshot(actor, data);
-      return;
     }
-    if (!actor.onlineMotionToken && visualLead === 0) {
-      moveActorFromSnapshot(actor, data, x, z);
-      return;
-    }
-    applyOnlineTrailFromSnapshot(actor, data);
   }
 
   function showServerResult(result) {
