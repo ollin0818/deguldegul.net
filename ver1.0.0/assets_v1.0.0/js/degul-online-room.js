@@ -1319,8 +1319,17 @@
       if (!isLocalSlot) {
         if (serverActor.dir) actor.dir = { ...serverActor.dir };
         if (serverActor.nextDir) actor.nextDir = { ...serverActor.nextDir };
-        actor.x = Number(serverActor.x ?? actor.x);
-        actor.z = Number(serverActor.z ?? actor.z);
+        const serverX = Number(serverActor.x ?? actor.x);
+        const serverZ = Number(serverActor.z ?? actor.z);
+        const actorX = Number(actor.x ?? serverX);
+        const actorZ = Number(actor.z ?? serverZ);
+        const error = Math.abs(serverX - actorX) + Math.abs(serverZ - actorZ);
+        actor.onlineServerX = serverX;
+        actor.onlineServerZ = serverZ;
+        if (error > getOnlineSoftCorrectionCells()) {
+          actor.x = serverX;
+          actor.z = serverZ;
+        }
         actor.trail = Array.isArray(serverActor.trail)
           ? serverActor.trail.map(point => ({ x: point.x, z: point.z }))
           : actor.trail;
@@ -1337,6 +1346,12 @@
       }
     }
     realtimeNetStats.correctionCount += Math.abs(drift) >= 2 ? 1 : 0;
+  }
+
+  function getOnlineSoftCorrectionCells() {
+    const ping = Number(realtimeRttMs || 0);
+    if (ping >= 180) return 2;
+    return 1;
   }
 
   function renderClientEngineActors(game, engine) {
@@ -2155,6 +2170,13 @@
     }
     if (applyTrailOnDone) applyOnlineTrailBeforeMotion(actor, data, x, z);
     if (actor.onlineMotionToken) {
+      const queue = Array.isArray(actor.onlineMotionQueue) ? actor.onlineMotionQueue : [];
+      const lastQueued = queue[queue.length - 1];
+      if ((Number(actor.onlineTargetX) === x && Number(actor.onlineTargetZ) === z)
+        || (lastQueued && lastQueued.x === x && lastQueued.z === z)) {
+        if (applyTrailOnDone) applyOnlineTrailBeforeMotion(actor, data, x, z);
+        return;
+      }
       queueOnlineMotionSteps(actor, data, x, z, applyTrailOnDone);
       realtimeNetStats.motionQueued += 1;
       realtimeNetStats.maxMotionQueue = Math.max(realtimeNetStats.maxMotionQueue, getOnlineMotionQueueLength());
