@@ -485,16 +485,20 @@ function getBoardTileStyle(x, z) {
   };
 }
 
-function getBoardTileBucketKey(style) {
+function getBoardTileBucketKey(style, tile = null) {
   const mapKey = style.map ? style.map.uuid : "none";
-  return [
+  const parts = [
     mapKey,
     Number(style.emissive || 0).toString(16),
     Number(style.emissiveIntensity || 0).toFixed(3),
     Number(style.roughness || 0).toFixed(3),
     Number(style.metalness || 0).toFixed(3),
     style.specialType || "normal"
-  ].join("|");
+  ];
+  if (style.specialType && tile) {
+    parts.push(`cell:${tile.x},${tile.z}`);
+  }
+  return parts.join("|");
 }
 
 function clearBoardTileRenderGroup() {
@@ -513,7 +517,7 @@ function disposeBoardTileStates() {
   // 논리 타일에는 GPU 리소스를 보관하지 않는다.
 }
 
-function createBoardTileBucket(key, style) {
+function createBoardTileBucket(key, style, tile = null) {
   const material = new THREE.MeshStandardMaterial({
     color: 0xffffff,
     map: style.map || null,
@@ -529,6 +533,11 @@ function createBoardTileBucket(key, style) {
   mesh.receiveShadow = false;
   mesh.frustumCulled = false;
   mesh.userData.specialType = style.specialType || "";
+  if (style.specialType && tile) {
+    mesh.userData.tileX = tile.x;
+    mesh.userData.tileZ = tile.z;
+    mesh.userData.sparklePhase = ((tile.x * 12.9898 + tile.z * 78.233) % 6.283) + (tile.x + tile.z) * 0.071;
+  }
   const bucket = { key, style, material, mesh, tiles: [] };
   boardTileBuckets.set(key, bucket);
   boardTileRenderGroup.add(mesh);
@@ -564,7 +573,7 @@ function removeTileFromBoardBucket(tile) {
 }
 
 function moveTileToBoardBucket(tile, style) {
-  const key = getBoardTileBucketKey(style);
+  const key = getBoardTileBucketKey(style, tile);
   tile.renderColor = style.color;
   tile.position.y = style.y;
   tile.scale.y = style.scaleY;
@@ -577,7 +586,7 @@ function moveTileToBoardBucket(tile, style) {
     return;
   }
   removeTileFromBoardBucket(tile);
-  const bucket = boardTileBuckets.get(key) || createBoardTileBucket(key, style);
+  const bucket = boardTileBuckets.get(key) || createBoardTileBucket(key, style, tile);
   tile.bucketKey = key;
   tile.bucketSlot = bucket.tiles.length;
   bucket.tiles.push(tile);
@@ -730,7 +739,9 @@ function updateExtremeAiLandSparkle() {
   for (let index = 0; index < specialBoardInstanceMeshes.length; index++) {
     const mesh = specialBoardInstanceMeshes[index];
     if (!mesh || !mesh.material) continue;
-    const phase = index * 0.83;
+    const phase = Number.isFinite(mesh.userData.sparklePhase)
+      ? mesh.userData.sparklePhase
+      : index * 0.83;
     const type = mesh.userData.specialType;
     const isHell = type === "hell";
     const isChaos = type === "chaos";
