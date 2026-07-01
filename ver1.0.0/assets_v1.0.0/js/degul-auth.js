@@ -29,7 +29,26 @@
     localTest: true
   };
 
-  if (params.has("degul_test")) {
+  function isOperatorTestHost() {
+    const host = String(window.location.hostname || "").toLowerCase();
+    return host === "operator-test.deguldegul.pages.dev"
+      || /^[a-f0-9]{8}\.deguldegul\.pages\.dev$/.test(host);
+  }
+
+  function canUseLocalTestMode() {
+    const { protocol, hostname } = window.location;
+    return protocol === "file:"
+      || /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(hostname || "")
+      || isOperatorTestHost();
+  }
+
+  if (!canUseLocalTestMode()) {
+    try {
+      localStorage.removeItem(TEST_FLAG_KEY);
+    } catch {}
+  }
+
+  if (canUseLocalTestMode() && params.has("degul_test")) {
     try {
       if (params.get("degul_test") !== "0") localStorage.setItem(TEST_FLAG_KEY, "1");
       else localStorage.removeItem(TEST_FLAG_KEY);
@@ -189,6 +208,7 @@
   }
 
   function isLocalTestMode() {
+    if (!canUseLocalTestMode()) return false;
     try {
       if (localStorage.getItem(TEST_FLAG_KEY) === "1") return true;
     } catch {}
@@ -196,7 +216,7 @@
       if (window.DegulTestGuard?.isTestMode?.() === true) return true;
     } catch {}
     const { protocol, hostname } = window.location;
-    return protocol === "file:" || /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(hostname || "");
+    return protocol === "file:" || /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(hostname || "") || isOperatorTestHost();
   }
 
   function ensureLocalTestUser() {

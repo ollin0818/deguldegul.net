@@ -15,6 +15,16 @@
     return /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(window.location.hostname || "");
   }
 
+  function isOperatorTestHost() {
+    const host = String(window.location.hostname || "").toLowerCase();
+    return host === "operator-test.deguldegul.pages.dev"
+      || /^[a-f0-9]{8}\.deguldegul\.pages\.dev$/.test(host);
+  }
+
+  function canUseTestMode() {
+    return isLocalFile() || isLocalHost() || isOperatorTestHost();
+  }
+
   function readFlag() {
     try {
       return localStorage.getItem(TEST_FLAG_KEY) === "1";
@@ -30,12 +40,16 @@
     } catch {}
   }
 
-  if (params.has("degul_test")) {
+  if (!canUseTestMode()) {
+    writeFlag(false);
+  }
+
+  if (canUseTestMode() && params.has("degul_test")) {
     writeFlag(params.get("degul_test") !== "0");
   }
 
   function isTestMode() {
-    return isLocalFile() || isLocalHost() || readFlag();
+    return canUseTestMode() && (isLocalFile() || isLocalHost() || isOperatorTestHost() || readFlag());
   }
 
   function clearLogin() {
@@ -113,6 +127,7 @@
   window.DegulTestGuard = {
     isTestMode,
     enableTestMode() {
+      if (!canUseTestMode()) return false;
       writeFlag(true);
       install();
       return true;
