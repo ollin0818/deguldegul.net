@@ -64,7 +64,9 @@
     snapCount: 0,
     motionQueued: 0,
     maxMotionQueue: 0,
-    tickDrift: 0
+    tickDrift: 0,
+    resyncCount: 0,
+    lastResyncReason: ""
   };
   const ONLINE_TEXT = {
     ko: {
@@ -1623,9 +1625,10 @@
         else refreshBoardColors();
       }
       if (Number.isFinite(Number(snapshot.landRevision))) realtimeLandRevision = Math.max(realtimeLandRevision, Number(snapshot.landRevision));
-      const shouldCheckChecksum = snapshot.full === true
-        || Number(snapshot.tick || 0) - realtimeLastChecksumTick >= 30
-        || changedCells.length > 0;
+      const shouldCheckChecksum = snapshot.full !== true && (
+        Number(snapshot.tick || 0) - realtimeLastChecksumTick >= 60
+        || changedCells.length > 0
+      );
       if (shouldCheckChecksum) realtimeLastChecksumTick = Number(snapshot.tick || realtimeLastChecksumTick || 0);
       if (shouldCheckChecksum && Number.isFinite(Number(snapshot.landChecksum)) && computeLocalLandChecksum() !== Number(snapshot.landChecksum)) {
         requestRealtimeResync("land_checksum_mismatch");
@@ -1671,8 +1674,10 @@
 
   function requestRealtimeResync(reason) {
     const now = performance.now();
-    if (now - realtimeResyncRequestedAt < 1200) return;
+    if (now - realtimeResyncRequestedAt < 3500) return;
     realtimeResyncRequestedAt = now;
+    realtimeNetStats.resyncCount += 1;
+    realtimeNetStats.lastResyncReason = String(reason || "unknown").slice(0, 40);
     sendRealtimePacket({ type: "resync", reason, tick: realtimeSnapshotTick, landRevision: realtimeLandRevision });
   }
 
@@ -1699,7 +1704,9 @@
       snaps: realtimeNetStats.snapCount,
       motionQueue: getOnlineMotionQueueLength(),
       maxMotionQueue: realtimeNetStats.maxMotionQueue,
-      activeFrameTasks: typeof frameTasks !== "undefined" && frameTasks?.size ? frameTasks.size : 0
+      activeFrameTasks: typeof frameTasks !== "undefined" && frameTasks?.size ? frameTasks.size : 0,
+      resyncs: realtimeNetStats.resyncCount,
+      resyncReason: realtimeNetStats.lastResyncReason
     };
     window.DegulOnlineMetrics = metrics;
     appendOnlineMetricsToHud(metrics);
@@ -1713,7 +1720,8 @@
       `Online PING ${Math.round(metrics.ping || 0)}ms  Tick ${metrics.tick}  Srv ${Number(metrics.serverTickMs || 0).toFixed(1)}ms`,
       `Online In ${(metrics.bytesIn / 1024).toFixed(1)}KB  Out ${(metrics.bytesOut / 1024).toFixed(1)}KB  Snap ${metrics.snapshotsApplied}/${metrics.snapshotsIn}`,
       `Online Delta ${metrics.deltaCells}  Full ${metrics.fullSnapshots}  Ack ${metrics.acks}  Stale ${metrics.stalePackets}`,
-      `Online Drift ${metrics.tickDrift}  Corr ${metrics.corrections}  Snap ${metrics.snaps}  MotionQ ${metrics.motionQueue}/${metrics.maxMotionQueue}  Tasks ${metrics.activeFrameTasks}`
+      `Online Drift ${metrics.tickDrift}  Corr ${metrics.corrections}  Snap ${metrics.snaps}  MotionQ ${metrics.motionQueue}/${metrics.maxMotionQueue}  Tasks ${metrics.activeFrameTasks}`,
+      `Online Resync ${metrics.resyncs} ${metrics.resyncReason || ""}`.trimEnd()
     ].join("\n");
     hud.textContent = `${baseText}${baseText ? "\n" : ""}${onlineText}`;
   }
@@ -1829,6 +1837,7 @@
     actor.onlineInterpolationBuffer = [];
     actor.onlineQueuedSnapshot = null;
     actor.onlineQueuedMotion = null;
+    actor.onlineMotionQueue = [];
     actor.moving = false;
     actor.rollToken = null;
     try {
@@ -1844,7 +1853,7 @@
   }
 
   function getOnlineMotionQueueLength() {
-    return [p1, p2].reduce((count, actor) => count + (actor?.onlineQueuedMotion ? 1 : 0), 0);
+    return [p1, p2].reduce((count, actor) => count + (Array.isArray(actor?.onlineMotionQueue) ? actor.onlineMotionQueue.length : 0), 0);
   }
 
   function isLocalOnlineActor(actor) {
@@ -1964,15 +1973,21 @@
       return;
     }
     if (actor.onlineMotionToken) {
-      actor.onlineQueuedMotion = { data, x, z, applyTrailOnDone };
+      queueOnlineMotionSteps(actor, data, x, z, applyTrailOnDone);
       realtimeNetStats.motionQueued += 1;
       realtimeNetStats.maxMotionQueue = Math.max(realtimeNetStats.maxMotionQueue, getOnlineMotionQueueLength());
       return;
     }
     const manhattan = Math.abs(dx) + Math.abs(dz);
-    if (manhattan > 2) {
+    if (manhattan > 4) {
       snapActorToSnapshot(actor, x, z);
       if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
+      return;
+    }
+    if (manhattan > 1) {
+      queueOnlineMotionSteps(actor, data, x, z, applyTrailOnDone);
+      const next = actor.onlineMotionQueue.shift();
+      if (next) moveActorFromSnapshot(actor, next.data, next.x, next.z, next.applyTrailOnDone);
       return;
     }
     actor.x = x;
@@ -1980,6 +1995,40 @@
     actor.onlineTargetX = x;
     actor.onlineTargetZ = z;
     smoothOnlineActorTo(actor, x, z, data, applyTrailOnDone);
+  }
+
+  function queueOnlineMotionSteps(actor, data, targetX, targetZ, applyTrailOnDone = true) {
+    if (!actor) return;
+    const queue = Array.isArray(actor.onlineMotionQueue) ? actor.onlineMotionQueue : [];
+    let cursorX = Number(queue.length ? queue[queue.length - 1].x : (actor.onlineTargetX ?? actor.x));
+    let cursorZ = Number(queue.length ? queue[queue.length - 1].z : (actor.onlineTargetZ ?? actor.z));
+    const finalX = Number(targetX);
+    const finalZ = Number(targetZ);
+    if (!Number.isFinite(cursorX) || !Number.isFinite(cursorZ) || !Number.isFinite(finalX) || !Number.isFinite(finalZ)) return;
+    let guard = 0;
+    while ((cursorX !== finalX || cursorZ !== finalZ) && guard < 6) {
+      const step = chooseOnlineMotionStep(cursorX, cursorZ, finalX, finalZ, data);
+      cursorX += step.dx;
+      cursorZ += step.dz;
+      queue.push({
+        data: { ...data, x: cursorX, z: cursorZ },
+        x: cursorX,
+        z: cursorZ,
+        applyTrailOnDone: cursorX === finalX && cursorZ === finalZ ? applyTrailOnDone : false
+      });
+      guard += 1;
+    }
+    actor.onlineMotionQueue = queue.slice(-6);
+  }
+
+  function chooseOnlineMotionStep(fromX, fromZ, toX, toZ, data) {
+    const dir = data?.dir || {};
+    const dirDx = Math.sign(Number(dir.dx || 0));
+    const dirDz = Math.sign(Number(dir.dz || 0));
+    if (dirDx && fromX !== toX && Math.sign(toX - fromX) === dirDx) return { dx: dirDx, dz: 0 };
+    if (dirDz && fromZ !== toZ && Math.sign(toZ - fromZ) === dirDz) return { dx: 0, dz: dirDz };
+    if (fromX !== toX) return { dx: Math.sign(toX - fromX), dz: 0 };
+    return { dx: 0, dz: Math.sign(toZ - fromZ) };
   }
 
   function smoothOnlineActorTo(actor, x, z, data, applyTrailOnDone = true) {
@@ -2079,7 +2128,7 @@
       actor.onlineTargetX = x;
       actor.onlineTargetZ = z;
       if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
-      const queued = actor.onlineQueuedMotion;
+      const queued = Array.isArray(actor.onlineMotionQueue) ? actor.onlineMotionQueue.shift() : null;
       actor.onlineQueuedMotion = null;
       try { if (typeof DegulSfx !== "undefined" && DegulSfx?.endRoll) DegulSfx.endRoll(actor); } catch {}
       if (queued && (queued.x !== x || queued.z !== z)) {
