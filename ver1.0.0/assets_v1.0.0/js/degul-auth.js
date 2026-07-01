@@ -179,9 +179,6 @@
   }
 
   function isLocalTestMode() {
-    try {
-      if (window.DegulTestGuard?.isTestMode?.() === true) return true;
-    } catch {}
     const { protocol, hostname } = window.location;
     return protocol === "file:" || /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(hostname || "");
   }
@@ -336,8 +333,13 @@
 
   function announceReady() {
     window.dispatchEvent(new CustomEvent("degul:auth-ready", {
-      detail: { id: currentUser?.id || null, nickname: currentUser?.nickname || null }
+      detail: {
+        id: currentUser?.id || null,
+        nickname: currentUser?.nickname || null,
+        role: currentUser?.role || null
+      }
     }));
+    if (typeof window.updateGameModeUI === "function") window.updateGameModeUI();
   }
 
   async function ensureSession() {
@@ -628,6 +630,7 @@
       id: currentUser.id,
       nickname: currentUser.nickname,
       profileColor: currentUser.profileColor,
+      role: currentUser.role || null,
       localTest: currentUser.localTest === true
     } : null,
     refresh: ensureSession,

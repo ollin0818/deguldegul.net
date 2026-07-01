@@ -99,6 +99,10 @@
     return protocol === "file:" || /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(hostname || "");
   }
 
+  function isOperatorUser(user = auth()?.getUser?.()) {
+    return user?.role === "operator" || user?.id === "local-operator";
+  }
+
   function formatTime(ms) {
     if (!Number.isFinite(ms) || ms < 0) return "--:--.-";
     const totalSeconds = Math.floor(ms / 1000);
@@ -305,14 +309,14 @@
     updateLabels();
 
     try {
-      if (isLocalTestMode()) {
+      const api = auth();
+      const user = await api?.refresh?.();
+      if (!api?.request || !user?.nickname) throw new Error("nickname_required");
+      if (isLocalTestMode() && !isOperatorUser(user)) {
         if (generation !== refreshGeneration) return;
         renderRanking({ top: [], me: null });
         return;
       }
-      const api = auth();
-      const user = await api?.refresh?.();
-      if (!api?.request || !user?.nickname) throw new Error("nickname_required");
       const difficulty = getDifficulty();
       const data = await api.request(
         `/api/ai/rankings?difficulty=${encodeURIComponent(difficulty)}&mode=${encodeURIComponent(rankingMode)}`,

@@ -665,8 +665,18 @@ function saveAiDifficultyClears() {
 function isAiDifficultyUnlocked(level) {
   const index = AI_DIFFICULTY_ORDER.indexOf(level);
   if (index < 0) return false;
+  if (isDegulOperatorUser()) return true;
   if (index <= 2) return true; // 첫 방문 기본 해금: 이지, 노말, 하드
   return aiClearedDifficulties.has(AI_DIFFICULTY_ORDER[index - 1]);
+}
+
+function isDegulOperatorUser() {
+  try {
+    const user = window.DegulAuth?.getUser?.();
+    return user?.role === "operator" || user?.id === "local-operator";
+  } catch {
+    return false;
+  }
 }
 
 function getFirstUnlockedAiDifficulty() {
