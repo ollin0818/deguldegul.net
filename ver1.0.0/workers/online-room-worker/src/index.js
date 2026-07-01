@@ -451,7 +451,7 @@ export class OnlineRoom {
     const game = DegulServerGame.advanceTo(await this.loadGame(), Date.now());
     await this.saveGame(game, { force: game.phase === "ended" });
     this.lastTickDurationMs = Date.now() - startedAt;
-    this.broadcastSnapshot(game, { full: game.phase !== "playing" });
+    this.broadcastSnapshot(game, { full: game.phase === "ended" });
     if (game.phase === "ended" && game.result) {
       const room = await this.loadRoom();
       await this.persistResult(room, game.result);

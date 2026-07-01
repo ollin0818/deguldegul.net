@@ -1463,7 +1463,12 @@
       actor.mesh.rotation.y = Math.atan2(dir.dx, dir.dz || 0.0001);
     }
     if (realtimeSharedEngine && realtimeClientGame) {
-      realtimeClientTickCarryMs = Math.max(realtimeClientTickCarryMs, Math.max(0, Number(actor.tickMs || realtimeClientTickMs || 82) - 16));
+      const tickMs = Math.max(55, Math.min(120, Number(actor.tickMs || realtimeClientTickMs || 82)));
+      const now = Date.now();
+      if (realtimeClientGame.phase === "playing") {
+        realtimeClientGame.updatedAt = Math.min(Number(realtimeClientGame.updatedAt || now), now - tickMs);
+      }
+      realtimeClientTickCarryMs = Math.max(realtimeClientTickCarryMs, tickMs);
     }
   }
 
