@@ -813,6 +813,7 @@ function saveUnlockedSkins() {
 }
 
 function isSkinUnlocked(skin) {
+  if (isLocalTestMode() || isDegulOperatorUser()) return true;
   return !skin || unlockedSkins.has(skin);
 }
 

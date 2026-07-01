@@ -739,30 +739,39 @@ function updateExtremeAiLandSparkle() {
   for (let index = 0; index < specialBoardInstanceMeshes.length; index++) {
     const mesh = specialBoardInstanceMeshes[index];
     if (!mesh || !mesh.material) continue;
-    const phase = Number.isFinite(mesh.userData.sparklePhase)
-      ? mesh.userData.sparklePhase
-      : index * 0.83;
     const type = mesh.userData.specialType;
     const isHell = type === "hell";
     const isChaos = type === "chaos";
-    const pulse = isHell
-      ? 0.42 + Math.max(0, Math.sin(now * 0.0068 + phase)) * 0.56
-      : (isChaos
-        ? 0.38 + Math.max(0, Math.sin(now * 0.0115 + phase)) * 0.64
-        : 0.34 + Math.max(0, Math.sin(now * 0.0055 + phase)) * 0.46);
+    const data = mesh.userData;
+
+    if (!Number.isFinite(data.sparkleNextAt) || now >= data.sparkleNextAt) {
+      const base = isHell ? 0.42 : (isChaos ? 0.38 : 0.34);
+      const range = isHell ? 0.56 : (isChaos ? 0.64 : 0.46);
+      data.sparkleTarget = base + Math.random() * range;
+      data.sparkleLiftTarget = Math.random() * (isHell ? 0.026 : (isChaos ? 0.036 : 0.018));
+      data.sparkleHot = Math.random();
+      data.sparkleNextAt = now + 70 + Math.random() * (isChaos ? 120 : 230);
+    }
+
+    const blend = isChaos ? 0.46 : 0.28;
+    data.sparkleCurrent = Number.isFinite(data.sparkleCurrent)
+      ? data.sparkleCurrent + ((data.sparkleTarget || 0) - data.sparkleCurrent) * blend
+      : (data.sparkleTarget || 0);
+    data.sparkleLift = Number.isFinite(data.sparkleLift)
+      ? data.sparkleLift + ((data.sparkleLiftTarget || 0) - data.sparkleLift) * blend
+      : (data.sparkleLiftTarget || 0);
+
     if (isHell) {
-      const lavaWave = Math.max(0, Math.sin(now * 0.009 + phase));
-      mesh.material.emissive.set(lavaWave > 0.58 ? 0xffb000 : (lavaWave > 0.25 ? 0xff4500 : 0x6b0000));
-      mesh.position.y = Math.max(0, Math.sin(now * 0.008 + phase)) * 0.026;
+      const heat = data.sparkleHot || 0;
+      mesh.material.emissive.set(heat > 0.68 ? 0xffb000 : (heat > 0.30 ? 0xff4500 : 0x6b0000));
     } else if (isChaos) {
-      const glitch = Math.sin(now * 0.041 + phase * 2.1) > 0.72;
+      const glitch = (data.sparkleHot || 0) > 0.72;
       mesh.material.emissive.set(glitch ? 0x00ffcc : 0x00ff78);
-      mesh.position.y = Math.max(0, Math.sin(now * 0.010 + phase)) * 0.024 + (glitch ? 0.012 : 0);
     } else {
       mesh.material.emissive.set(0x843cff);
-      mesh.position.y = Math.max(0, Math.sin(now * 0.006 + phase)) * 0.018;
     }
-    mesh.material.emissiveIntensity = pulse;
+    mesh.position.y = data.sparkleLift || 0;
+    mesh.material.emissiveIntensity = data.sparkleCurrent || 0;
   }
 }
 
