@@ -40,6 +40,8 @@ const MOVE_TIME = 145;
 const PERFORMANCE_STORAGE_KEY = "degulDegulPerformanceLevel";
 const PERFORMANCE_TABLET_STORAGE_KEY = "degulDegulTabletPerformanceLevel";
 const PERFORMANCE_HUD_STORAGE_KEY = "degulDegulPerformanceHud";
+const PERFORMANCE_MAX_PIXEL_RATIO = 1.5;
+const PERFORMANCE_APPLE_MAX_PIXEL_RATIO = 1.25;
 const PERFORMANCE_PRESETS = {
   low: { fps: 45, pixelRatio: 1, glowTiles: 36, effectInterval: 2, specialTileInterval: 4, backgroundInterval: 5, ghostFogDots: 20, enableSpecialTileAnimation: false },
   medium: { fps: 60, pixelRatio: 1.5, glowTiles: 80, effectInterval: 2, specialTileInterval: 2, backgroundInterval: 3, ghostFogDots: 40, enableSpecialTileAnimation: true },
@@ -82,10 +84,29 @@ function getPerformanceStorageKeyForCurrentDevice() {
   return isTabletPerformanceMode() ? PERFORMANCE_TABLET_STORAGE_KEY : PERFORMANCE_STORAGE_KEY;
 }
 
+function shouldPreferLowPerformanceByEnvironment() {
+  const ua = navigator.userAgent || "";
+  const vendor = navigator.vendor || "";
+  const dpr = Math.max(1, Number(window.devicePixelRatio) || 1);
+  const isAppleDevice = /Macintosh|Mac OS X|iPad|iPhone|iPod/i.test(ua) || /Apple/i.test(vendor);
+  const isSafari = /Safari/i.test(ua) && !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|OPiOS|Android/i.test(ua);
+  return dpr >= 2 && (isAppleDevice || isSafari);
+}
+
+function getPerformancePixelRatioLimit() {
+  const nativeDpr = Math.max(1, Number(window.devicePixelRatio) || 1);
+  const presetLimit = Number(performanceConfig?.pixelRatio) || 1;
+  const deviceLimit = shouldPreferLowPerformanceByEnvironment()
+    ? PERFORMANCE_APPLE_MAX_PIXEL_RATIO
+    : PERFORMANCE_MAX_PIXEL_RATIO;
+  return Math.max(1, Math.min(nativeDpr, presetLimit, deviceLimit));
+}
+
 function getInitialPerformanceLevel() {
   const storageKey = getPerformanceStorageKeyForCurrentDevice();
   const saved = safeLocalStorageGet(storageKey);
   if (PERFORMANCE_PRESETS[saved]) return saved;
+  if (shouldPreferLowPerformanceByEnvironment()) return "low";
   if (storageKey === PERFORMANCE_TABLET_STORAGE_KEY) return "low";
   const lowPowerDevice = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4)
     || (navigator.deviceMemory && navigator.deviceMemory <= 4)
@@ -166,8 +187,7 @@ function resetGhostVisionFogDots() {
 
 function applyRendererPerformanceConfig() {
   if (!renderer) return;
-  const dpr = Math.max(1, Number(window.devicePixelRatio) || 1);
-  renderer.setPixelRatio(Math.min(dpr, performanceConfig.pixelRatio));
+  renderer.setPixelRatio(getPerformancePixelRatioLimit());
   // 내부 렌더링 배율만 성능 옵션에 따라 조절하고, 캔버스 표시 크기는
   // 항상 현재 기기의 뷰포트 전체를 사용한다.
   renderer.setSize(window.innerWidth, window.innerHeight, true);
@@ -298,7 +318,7 @@ function updateAutomaticPerformanceLevel(now) {
     performanceAutoTune.lowFpsStartedAt = 0;
     return;
   }
-  setPerformanceLevel(performanceLevel === "high" ? "medium" : "low", { automatic: true });
+  setPerformanceLevel("low", { automatic: true });
 }
 
 function setPerformanceLevel(level, options = {}) {
@@ -333,7 +353,7 @@ function syncPerformanceLevelForCurrentDevice() {
   const saved = safeLocalStorageGet(nextStorageKey);
   const nextLevel = PERFORMANCE_PRESETS[saved]
     ? saved
-    : (nextStorageKey === PERFORMANCE_TABLET_STORAGE_KEY ? "low" : "medium");
+    : (nextStorageKey === PERFORMANCE_TABLET_STORAGE_KEY || shouldPreferLowPerformanceByEnvironment() ? "low" : "medium");
   setPerformanceLevel(nextLevel, { persist: false });
 }
 

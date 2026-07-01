@@ -183,7 +183,9 @@ function rebuildGhostFogTexture() {
 
 function resizeGhostVisionOverlay() {
   if (!ghostVisionCanvas) return;
-  const dpr = Math.max(1, Math.min(performanceConfig.pixelRatio, window.devicePixelRatio || 1));
+  const dpr = typeof getPerformancePixelRatioLimit === "function"
+    ? getPerformancePixelRatioLimit()
+    : Math.max(1, Math.min(performanceConfig.pixelRatio, window.devicePixelRatio || 1));
   ghostVisionCanvas.width = Math.floor(window.innerWidth * dpr);
   ghostVisionCanvas.height = Math.floor(window.innerHeight * dpr);
   ghostVisionCanvas.style.width = `${window.innerWidth}px`;
