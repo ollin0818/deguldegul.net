@@ -2165,7 +2165,10 @@
     if (dx === 0 && dz === 0) {
       actor.onlineTargetX = x;
       actor.onlineTargetZ = z;
-      if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
+      if (applyTrailOnDone) {
+        if (actor.onlineMotionToken || actor.moving) applyOnlineTrailBeforeMotion(actor, data, x, z);
+        else applyOnlineTrailFromSnapshot(actor, data);
+      }
       return;
     }
     if (applyTrailOnDone) applyOnlineTrailBeforeMotion(actor, data, x, z);
