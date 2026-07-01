@@ -1,6 +1,8 @@
 (function () {
   const SESSION_KEY = "degulDegulGuestSessionV1";
   const CONSENT_KEY = "degulDegulPrivacyConsent";
+  const TEST_FLAG_KEY = "degulDegulTestMode";
+  const params = new URLSearchParams(window.location.search || "");
   const apiBase = String(
     window.DEGUL_API_BASE
       || document.querySelector('meta[name="degul-api-base"]')?.content
@@ -25,6 +27,13 @@
     role: "operator",
     localTest: true
   };
+
+  if (params.has("degul_test")) {
+    try {
+      if (params.get("degul_test") !== "0") localStorage.setItem(TEST_FLAG_KEY, "1");
+      else localStorage.removeItem(TEST_FLAG_KEY);
+    } catch {}
+  }
 
   const texts = {
     ko: {
@@ -179,6 +188,12 @@
   }
 
   function isLocalTestMode() {
+    try {
+      if (localStorage.getItem(TEST_FLAG_KEY) === "1") return true;
+    } catch {}
+    try {
+      if (window.DegulTestGuard?.isTestMode?.() === true) return true;
+    } catch {}
     const { protocol, hostname } = window.location;
     return protocol === "file:" || /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(hostname || "");
   }
@@ -200,8 +215,9 @@
   }
 
   async function api(path, options = {}) {
+    const { remoteInTest, ...fetchOptions } = options;
     const localUser = ensureLocalTestUser();
-    if (localUser) {
+    if (localUser && remoteInTest !== true) {
       if (path.startsWith("/api/auth/")) {
         return { user: localUser, sessionToken: "" };
       }
@@ -216,13 +232,13 @@
       }
     }
 
-    const headers = new Headers(options.headers || {});
+    const headers = new Headers(fetchOptions.headers || {});
     headers.set("Accept", "application/json");
-    if (options.body) headers.set("Content-Type", "application/json");
+    if (fetchOptions.body) headers.set("Content-Type", "application/json");
     if (sessionToken) headers.set("Authorization", `Bearer ${sessionToken}`);
 
     const response = await fetch(`${apiBase}${path}`, {
-      ...options,
+      ...fetchOptions,
       headers,
       cache: "no-store"
     });

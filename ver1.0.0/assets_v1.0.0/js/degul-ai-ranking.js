@@ -320,7 +320,7 @@
       const difficulty = getDifficulty();
       const data = await api.request(
         `/api/ai/rankings?difficulty=${encodeURIComponent(difficulty)}&mode=${encodeURIComponent(rankingMode)}`,
-        { method: "GET" }
+        { method: "GET", remoteInTest: isOperatorUser(user) }
       );
       if (generation !== refreshGeneration) return;
       renderRanking(data);
