@@ -516,7 +516,8 @@ export const DegulServerGame = (() => {
   function snapshot(state, now = Date.now(), options = {}) {
     const publicState = serializeState(state);
     const full = options.full === true
-      || state.phase !== "playing"
+      || state.phase === "waiting"
+      || state.phase === "ended"
       || (state.phase === "playing" && state.tick > 0 && state.tick % FULL_SNAPSHOT_EVERY_TICKS === 0);
     const sinceLandRevision = Number(options.sinceLandRevision || 0);
     const landDelta = full ? [] : (state.landChanges || [])

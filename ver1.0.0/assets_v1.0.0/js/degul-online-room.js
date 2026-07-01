@@ -2,7 +2,7 @@
   "use strict";
 
   const API_BASE = window.location.protocol === "file:" ? "https://deguldegul.net/api/online" : "/api/online";
-  const SHARED_ENGINE_URL = "assets_v1.0.0/js/degul-shared-game-engine.js?v=1";
+  const SHARED_ENGINE_URL = "assets_v1.0.0/js/degul-shared-game-engine.js?v=2";
   const SESSION_KEY = "degulDegulOnlineRoomSessionV1";
   const QUICK_TICKET_KEY = "degulDegulQuickMatchTicketV1";
   const DEFAULT_SKIN = "sky";
@@ -1455,10 +1455,15 @@
     const dir = directionToVector(direction);
     if (!dir) return;
     if (actor.dir && actor.dir.dx === -dir.dx && actor.dir.dz === -dir.dz) return;
+    actor.onlineMotionQueue = [];
+    actor.onlineQueuedMotion = null;
     actor.nextDir = { ...dir };
     actor.dir = { ...dir };
     if (actor.mesh) {
       actor.mesh.rotation.y = Math.atan2(dir.dx, dir.dz || 0.0001);
+    }
+    if (realtimeSharedEngine && realtimeClientGame) {
+      realtimeClientTickCarryMs = Math.max(realtimeClientTickCarryMs, Math.max(0, Number(actor.tickMs || realtimeClientTickMs || 82) - 16));
     }
   }
 
@@ -1703,7 +1708,9 @@
       try {
         if (batch.length && typeof refreshBoardCells === "function") refreshBoardCells(batch);
       } catch {}
-      return realtimePendingBoardCells.size > 0;
+      if (realtimePendingBoardCells.size > 0) return true;
+      realtimeBoardRefreshTask = null;
+      return false;
     };
     realtimeBoardRefreshTask = typeof addFrameTask === "function" ? addFrameTask(flush) : null;
     if (!realtimeBoardRefreshTask) {
@@ -2034,7 +2041,7 @@
       return;
     }
     const manhattan = Math.abs(dx) + Math.abs(dz);
-    if (manhattan > 4) {
+    if (manhattan > 3) {
       snapActorToSnapshot(actor, x, z);
       if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
       return;
@@ -2054,14 +2061,14 @@
 
   function queueOnlineMotionSteps(actor, data, targetX, targetZ, applyTrailOnDone = true) {
     if (!actor) return;
-    const queue = Array.isArray(actor.onlineMotionQueue) ? actor.onlineMotionQueue : [];
-    let cursorX = Number(queue.length ? queue[queue.length - 1].x : (actor.onlineTargetX ?? actor.x));
-    let cursorZ = Number(queue.length ? queue[queue.length - 1].z : (actor.onlineTargetZ ?? actor.z));
+    const queue = [];
+    let cursorX = Number(actor.onlineMotionToken ? (actor.onlineTargetX ?? actor.x) : actor.x);
+    let cursorZ = Number(actor.onlineMotionToken ? (actor.onlineTargetZ ?? actor.z) : actor.z);
     const finalX = Number(targetX);
     const finalZ = Number(targetZ);
     if (!Number.isFinite(cursorX) || !Number.isFinite(cursorZ) || !Number.isFinite(finalX) || !Number.isFinite(finalZ)) return;
     let guard = 0;
-    while ((cursorX !== finalX || cursorZ !== finalZ) && guard < 6) {
+    while ((cursorX !== finalX || cursorZ !== finalZ) && guard < 3) {
       const step = chooseOnlineMotionStep(cursorX, cursorZ, finalX, finalZ, data);
       cursorX += step.dx;
       cursorZ += step.dz;
@@ -2073,7 +2080,8 @@
       });
       guard += 1;
     }
-    actor.onlineMotionQueue = queue.slice(-6);
+    actor.onlineMotionQueue = queue;
+    realtimeNetStats.maxMotionQueue = Math.max(realtimeNetStats.maxMotionQueue, getOnlineMotionQueueLength());
   }
 
   function chooseOnlineMotionStep(fromX, fromZ, toX, toZ, data) {
