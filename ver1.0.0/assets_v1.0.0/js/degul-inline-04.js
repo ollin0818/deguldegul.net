@@ -8,7 +8,7 @@
     const card = document.querySelector("#lobby .lobbyCard");
     const arrow = document.getElementById("lobbyOnlineArrow");
     if (!card) return;
-    activePanel = panel === "online" ? "online" : "main";
+    activePanel = "main";
     card.classList.toggle("online-match-active", activePanel === "online");
     if (arrow) {
       arrow.classList.toggle("is-back", activePanel === "online");
@@ -19,7 +19,7 @@
   };
 
   window.toggleLobbyPanel = function() {
-    window.setLobbyPanel(activePanel === "online" ? "main" : "online");
+    window.setLobbyPanel("main");
   };
 
   window.setOnlineMatchColor = function(color, button) {
@@ -53,8 +53,7 @@
       const dx = event.clientX - dragStartX;
       const dy = event.clientY - dragStartY;
       if (Math.abs(dx) < 64 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
-      if (dx < 0) window.setLobbyPanel("online");
-      if (dx > 0) window.setLobbyPanel("main");
+      window.setLobbyPanel("main");
     });
 
     slider.addEventListener("pointercancel", () => {

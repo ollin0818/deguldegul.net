@@ -123,3 +123,129 @@ body.ghost-mode-lock .aiMatchHistoryEmpty {
     gap: 5px;
   }
 }
+
+#matchSelectWrap > .localMatchSplitCard {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+#lobby .lobbyCard #matchSelectWrap > .localMatchSplitCard {
+  width: 100%;
+}
+
+#lobby .lobbyCard #matchSelectWrap .localMatchSplitCard .matchButton {
+  min-height: 72px !important;
+}
+
+#lobby .lobbyCard #matchSelectWrap .localMatchSplitCard .matchButton strong {
+  font-size: 18px;
+}
+
+.aiRecordPopup {
+  width: min(760px, calc(100vw - 28px));
+}
+
+.aiRankingPanel {
+  gap: 12px;
+}
+
+.aiRankingMine {
+  border: 2px solid rgba(37, 99, 235, 0.28);
+  background:
+    linear-gradient(135deg, rgba(239, 246, 255, 0.98), rgba(255, 255, 255, 0.88)),
+    radial-gradient(circle at 16% 20%, rgba(59, 130, 246, 0.18), transparent 36%);
+}
+
+.aiRankingMineIcon {
+  background: linear-gradient(135deg, #2563eb, #14b8a6);
+  color: #fff;
+}
+
+.aiRankingMineMain strong {
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.aiRankingMineBest span {
+  font-size: 15px;
+}
+
+.aiRankingTable {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.aiRankingTableHead,
+.aiRankingRow {
+  grid-template-columns: 72px minmax(150px, 1.35fr) minmax(104px, 0.9fr) minmax(86px, 0.75fr);
+}
+
+.aiRankingTableHead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.aiRankingList {
+  max-height: min(54vh, 560px);
+}
+
+.aiRankingRow {
+  min-height: 42px;
+}
+
+.aiRankingRow.mine {
+  position: relative;
+  border-color: rgba(37, 99, 235, 0.62);
+  background: linear-gradient(135deg, rgba(219, 234, 254, 0.98), rgba(240, 253, 250, 0.92));
+  box-shadow: inset 4px 0 0 #2563eb, 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.aiRankingRow.mine::after {
+  content: "ME";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+body.dark-mode .aiRankingMine,
+body.ghost-mode-lock .aiRankingMine {
+  border-color: rgba(147, 197, 253, 0.34);
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.88)),
+    radial-gradient(circle at 16% 20%, rgba(59, 130, 246, 0.24), transparent 36%);
+}
+
+body.dark-mode .aiRankingRow.mine,
+body.ghost-mode-lock .aiRankingRow.mine {
+  border-color: rgba(147, 197, 253, 0.62);
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.34), rgba(20, 83, 45, 0.20));
+  box-shadow: inset 4px 0 0 #93c5fd, 0 0 0 2px rgba(147, 197, 253, 0.14);
+}
+
+@media (max-width: 720px) {
+  .aiRankingMine {
+    grid-template-columns: auto 1fr;
+  }
+
+  .aiRankingMineBest {
+    grid-column: 1 / -1;
+  }
+
+  .aiRankingTableHead,
+  .aiRankingRow {
+    grid-template-columns: 54px minmax(104px, 1fr) 78px 66px;
+  }
+}

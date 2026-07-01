@@ -20,7 +20,7 @@
       time: "클리어 시간",
       territory: "점령률",
       myRank: "내 순위",
-      myBest: "내 최고 기록",
+      myBest: "내 기록",
       unranked: "미등록",
       ghost: "고스트 모드 적용 기록"
     },
@@ -39,7 +39,7 @@
       time: "Clear Time",
       territory: "Territory",
       myRank: "My Rank",
-      myBest: "My Best",
+      myBest: "My Record",
       unranked: "Unranked",
       ghost: "Ghost mode record"
     },
@@ -58,7 +58,7 @@
       time: "クリアタイム",
       territory: "占領率",
       myRank: "自分の順位",
-      myBest: "自己ベスト",
+      myBest: "自分の記録",
       unranked: "未登録",
       ghost: "ゴーストモード記録"
     },
@@ -77,7 +77,7 @@
       time: "通关时间",
       territory: "占领率",
       myRank: "我的排名",
-      myBest: "我的最佳",
+      myBest: "我的记录",
       unranked: "未上榜",
       ghost: "幽灵模式记录"
     }
@@ -243,7 +243,7 @@
       return;
     }
 
-    data.top.forEach(row => {
+    data.top.slice(0, 100).forEach(row => {
       const item = document.createElement("div");
       item.className = "aiRankingRow";
       if (row.rank <= 3) item.classList.add(`rank-${row.rank}`);

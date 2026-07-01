@@ -34,8 +34,7 @@
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-qhd-uniform.min.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-auth.min.css?v=4">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-tablet-performance.css?v=100">
-<link rel="stylesheet" href="assets_v1.0.0/css/degul-ai-history.css?v=100">
-<link rel="stylesheet" href="assets_v1.0.0/css/degul-online-room.css?v=110-online-dark-ui">
+<link rel="stylesheet" href="assets_v1.0.0/css/degul-ai-history.css?v=102-ranking-chart-only">
 </head>
 <body>
 <div id="dominanceEdgeOverlay" aria-hidden="true"></div>
@@ -230,7 +229,7 @@
     </div>
     <button class="lobbyPrivacyButton" id="privacyToggle" type="button" onclick="openPrivacyPopup(false)" aria-label="개인정보 및 광고 안내 열기" title="개인정보 및 광고 안내">🛡</button>
     <button class="lobbySettingsButton" id="lobbySettingsButton" type="button" onclick="openSettingsPopup()" aria-label="설정 열기" title="설정">⚙</button>
-    <button class="lobbyAuthProfileButton" id="lobbyAuthProfileButton" type="button" hidden onclick="window.DegulAuth?.openProfile()" aria-label="온라인 프로필 열기">
+    <button class="lobbyAuthProfileButton" id="lobbyAuthProfileButton" type="button" hidden onclick="window.DegulAuth?.openProfile()" aria-label="AI 프로필 열기">
       <span class="profileBlockCharacter profileBlockCharacterSmall" id="lobbyAuthProfileAvatar" aria-hidden="true"><i></i><i></i></span>
     </button>
     <div class="lobbyKicker">2인용 territory rolling game</div>
@@ -241,7 +240,7 @@
     <div class="lobbyPanelSlider" id="lobbyPanelSlider" aria-label="로비 패널 슬라이드">
       <div class="lobbyPanelTrack" id="lobbyPanelTrack">
         <section class="lobbyPanelSlide mainLobbySlide" aria-label="로컬 대전 설정">
-    <div class="matchSelectWrap onlineCompactMatchSelect" id="matchSelectWrap" aria-label="대전 방식 선택">
+    <div class="matchSelectWrap" id="matchSelectWrap" aria-label="대전 방식 선택">
       <div class="localMatchSplitCard" aria-label="로컬 대전 선택">
         <button class="matchButton selected" id="pvpModeBtn" type="button" onclick="window.DegulOnlineRoom?.setOnlineMode(false); setMatchMode('pvp')">
           <strong>2P 대전</strong>
@@ -252,10 +251,6 @@
           <span>혼자 플레이</span>
         </button>
       </div>
-      <button class="matchButton onlineMatchModeButton" id="onlineModeBtn" type="button" onclick="window.DegulOnlineRoom?.setOnlineMode(true); window.setLobbyPanel?.('online')">
-        <strong>온라인 대전</strong>
-        <span>빠른 대전</span>
-      </button>
     </div>
 
     <div class="aiDifficultyWrap aiDifficultyCarousel" id="aiDifficultyWrap" aria-label="AI 난이도 선택">
@@ -493,7 +488,7 @@
             <strong id="aiRankingMyRank">미등록</strong>
           </div>
           <div class="aiRankingMineBest">
-            <b id="aiRankingMyBestLabel">내 최고 기록</b>
+            <b id="aiRankingMyBestLabel">내 기록</b>
             <span id="aiRankingMyBest">미등록</span>
           </div>
         </div>
@@ -508,48 +503,6 @@
             <div class="aiRankingEmpty">불러오는 중</div>
           </div>
         </div>
-        <section class="aiRankingLocalSummary" aria-labelledby="aiRecordTitle">
-          <div class="aiRankingLocalHeader">
-            <strong id="aiRecordTitle">내 AI대전 기록</strong>
-            <span id="aiRecordDifficulty">Easy</span>
-          </div>
-          <div class="aiRecordGrid">
-            <div class="aiRecordItem" id="aiRecordBestTimeBox">
-              <b id="aiRecordBestTimeLabel">최고 클리어 타임</b>
-              <span id="aiRecordBestTime">미클리어</span>
-            </div>
-            <div class="aiRecordItem" id="aiRecordStreakBox">
-              <b id="aiRecordStreakLabel">최고 연승</b>
-              <span id="aiRecordStreak">0</span>
-            </div>
-            <div class="aiRecordItem" id="aiRecordWinTypeBox">
-              <b id="aiRecordWinTypeLabel">최근 승리 방식</b>
-              <span id="aiRecordWinType">-</span>
-            </div>
-            <div class="aiRecordItem" id="aiRecordWinModeBox">
-              <b id="aiRecordWinModeLabel">최근 승리 모드</b>
-              <span id="aiRecordWinMode">-</span>
-            </div>
-          </div>
-        </section>
-        <section class="aiMatchHistorySummary" aria-labelledby="aiMatchHistoryTitle">
-          <div class="aiRankingLocalHeader">
-            <strong id="aiMatchHistoryTitle">전체 AI 전적</strong>
-            <span id="aiMatchHistoryRecentLabel">최근 20경기</span>
-          </div>
-          <div class="aiMatchHistoryStats">
-            <div class="aiRecordItem">
-              <b id="aiHistoryTotalLabel">총 전적</b>
-              <span id="aiHistoryTotal">0전 0승 0패 0무</span>
-            </div>
-            <div class="aiRecordItem">
-              <b id="aiHistoryWinRateLabel">승률</b>
-              <span id="aiHistoryWinRate">0%</span>
-            </div>
-          </div>
-          <div class="aiMatchDifficultyRates" id="aiHistoryDifficultyRates" aria-label="난이도별 승률"></div>
-          <div class="aiMatchRecentList" id="aiHistoryRecentList" aria-label="최근 AI 전적"></div>
-        </section>
       </div>
     </div>
   </div>
@@ -888,7 +841,7 @@
     <button class="guestAuthCloseButton" id="guestAuthCloseButton" type="button" aria-label="닉네임 설정 닫기">×</button>
     <div class="guestAuthBadge">PLAYER PROFILE</div>
     <h2 id="guestAuthTitle">플레이어 닉네임 설정</h2>
-    <p class="guestAuthPurpose" id="guestAuthPurpose">AI 기록과 랭킹, 온라인 대전에 사용할 닉네임을 설정해주세요.</p>
+    <p class="guestAuthPurpose" id="guestAuthPurpose">AI 랭킹에 사용할 닉네임을 설정해주세요.</p>
     <div class="guestAuthCharacterEditor">
       <div class="profileBlockCharacter profileBlockCharacterLarge" id="guestAuthCharacterPreview" aria-hidden="true"><i></i><i></i></div>
       <label class="guestAuthColorPicker" for="guestProfileColorInput">
@@ -905,7 +858,7 @@
       <div class="profileBlockCharacter profileBlockCharacterMedium" id="guestAuthAvatar" aria-hidden="true"><i></i><i></i></div>
       <div class="guestAuthUserText">
         <strong id="guestAuthNickname"></strong>
-        <span id="guestAuthUserHint">AI 기록과 온라인 프로필에 사용됩니다.</span>
+        <span id="guestAuthUserHint">AI 랭킹 프로필에 사용됩니다.</span>
       </div>
     </div>
     <button class="guestAuthColorSaveButton" id="guestAuthColorSaveButton" type="button" hidden>색상 저장</button>
@@ -1129,16 +1082,14 @@
 <script src="assets_v1.0.0/js/game/06-score-results-pause-audio-theme.min.js?v=101-stability-audit"></script>
 <script src="assets_v1.0.0/js/game/07-utils.min.js?v=100-performance-pass"></script>
 <script src="assets_v1.0.0/js/game/08-bootstrap.min.js?v=100-performance-pass"></script>
-<script src="assets_v1.0.0/js/degul-ai-history.js?v=100"></script>
 
 <script src="assets_v1.0.0/js/degul-inline-03.min.js?v=100"></script>
 
 
-<script src="assets_v1.0.0/js/degul-inline-04.min.js?v=100"></script>
-<script src="assets_v1.0.0/js/degul-auth.min.js?v=8-device-layout-uid"></script>
-<script src="assets_v1.0.0/js/degul-ai-ranking.min.js?v=3-local-test"></script>
+<script src="assets_v1.0.0/js/degul-inline-04.js?v=101-hide-online-panel"></script>
+<script src="assets_v1.0.0/js/degul-auth.js?v=9-ai-ranking-profile"></script>
+<script src="assets_v1.0.0/js/degul-ai-ranking.js?v=5-chart-only"></script>
 <script src="assets_v1.0.0/js/degul-test-guard.js?v=100"></script>
-<script src="assets_v1.0.0/js/degul-online-room.js?v=141-input-tick-protocol"></script>
 
 
 <div class="degulTutorialLayer" id="degulTutorialLayer" aria-hidden="true">
@@ -1146,14 +1097,14 @@
   <div class="degulTutorialTip" id="degulTutorialTip" role="dialog" aria-live="polite">
     <div class="degulTutorialProgress" id="degulTutorialProgress">1 / 3</div>
     <strong id="degulTutorialTitle">대전 방식을 선택하세요.</strong>
-    <span id="degulTutorialText">2P 대전은 같은 화면에서 친구와 겨루고, AI 대전은 혼자 연습하며, 온라인 대전은 실시간 상대와 플레이합니다.</span>
+    <span id="degulTutorialText">2P 대전은 같은 화면에서 친구와 겨루고, AI 대전은 혼자 연습하며 난이도별 랭킹에 도전합니다.</span>
     <em id="degulTutorialHint">마우스 클릭 또는 Space 키로 다음 설명을 볼 수 있습니다.</em>
   </div>
   <button class="degulTutorialSkip" id="degulTutorialSkip" type="button" onclick="endDegulTutorial()">건너뛰기</button>
 </div>
 
 
-<script src="assets_v1.0.0/js/degul-inline-05.min.js?v=101-online-tutorial"></script>
+<script src="assets_v1.0.0/js/degul-inline-05.js?v=102-no-online-tutorial"></script>
 
 
 
