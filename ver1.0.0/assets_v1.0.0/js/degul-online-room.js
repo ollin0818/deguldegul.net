@@ -2,7 +2,7 @@
   "use strict";
 
   const API_BASE = window.location.protocol === "file:" ? "https://deguldegul.net/api/online" : "/api/online";
-  const SHARED_ENGINE_URL = "assets_v1.0.0/js/degul-shared-game-engine.js?v=2";
+  const SHARED_ENGINE_URL = "assets_v1.0.0/js/degul-shared-game-engine.js?v=3";
   const SESSION_KEY = "degulDegulOnlineRoomSessionV1";
   const QUICK_TICKET_KEY = "degulDegulQuickMatchTicketV1";
   const DEFAULT_SKIN = "sky";
@@ -24,6 +24,7 @@
   let realtimeLandRevision = 0;
   let realtimeLastAckSeq = 0;
   let realtimeLastAppliedTick = -1;
+  const realtimeAcceptedInputSeqBySlot = { 1: 0, 2: 0 };
   let realtimeResyncRequestedAt = 0;
   let realtimeLastChecksumTick = -1;
   let pendingRealtimeSnapshotPacket = null;
@@ -1119,6 +1120,8 @@
       realtimeLastSentDirection = "";
       realtimeLandRevision = 0;
       realtimeLastAckSeq = 0;
+      realtimeAcceptedInputSeqBySlot[1] = 0;
+      realtimeAcceptedInputSeqBySlot[2] = 0;
       realtimeLastAppliedTick = -1;
       realtimeClientGame = null;
       realtimePendingServerSnapshot = null;
@@ -1378,6 +1381,10 @@
       realtimeNetStats.acks += 1;
       return;
     }
+    if (message.type === "input_accepted") {
+      applyAcceptedRealtimeInput(message);
+      return;
+    }
     if (message.type === "hello") {
       if (message.room) {
         renderRoom(message.room);
@@ -1440,8 +1447,28 @@
       type: "input",
       seq: realtimeInputSeq,
       direction,
+      clientTick: Number(realtimeClientGame?.tick || 0),
       clientNow: performance.now()
     });
+  }
+
+  function applyAcceptedRealtimeInput(message) {
+    const slot = Number(message?.slot || 0);
+    const seq = Number(message?.seq || 0);
+    if (slot !== 1 && slot !== 2) return;
+    if (seq <= Number(realtimeAcceptedInputSeqBySlot[slot] || 0)) return;
+    realtimeAcceptedInputSeqBySlot[slot] = seq;
+    if (!realtimeSharedEngine || !realtimeClientGame) return;
+    try {
+      realtimeSharedEngine.setDirection(
+        realtimeClientGame,
+        slot,
+        message.direction,
+        seq,
+        Date.now(),
+        { targetTick: Number(message.targetTick || 0) }
+      );
+    } catch {}
   }
 
   function sendRealtimePacket(payload) {

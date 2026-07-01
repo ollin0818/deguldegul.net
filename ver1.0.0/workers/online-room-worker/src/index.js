@@ -369,6 +369,17 @@ export class OnlineRoom {
     const ack = DegulServerGame.setDirection(game, slot, data.direction, data.seq, Date.now());
     await this.saveGame(game);
     this.send(ws, { type: "ack", seq: Number(data.seq) || 0, tick: game.tick, ...ack, serverNow: Date.now() });
+    if (ack.accepted) {
+      this.broadcast({
+        type: "input_accepted",
+        slot,
+        seq: Number(data.seq) || 0,
+        direction: data.direction,
+        targetTick: ack.targetTick,
+        serverTick: game.tick,
+        serverNow: Date.now()
+      });
+    }
   }
 
   async webSocketClose(ws) {

@@ -162,7 +162,7 @@ export const DegulServerGame = (() => {
     return { dx, dz };
   }
 
-  function setDirection(state, slot, direction, seq, now = Date.now()) {
+  function setDirection(state, slot, direction, seq, now = Date.now(), options = {}) {
     const player = state.players[slot];
     if (!player || !player.alive || state.phase !== "playing") {
       return { accepted: false, reason: "not_playing", lastSeq: player?.lastSeq || 0 };
@@ -173,7 +173,10 @@ export const DegulServerGame = (() => {
     }
     const name = normalizeDirName(direction);
     if (!name) return { accepted: false, reason: "invalid_direction", lastSeq: player.lastSeq };
-    const targetTick = Number(state.tick || 0) + INPUT_DELAY_TICKS;
+    const requestedTargetTick = Number(options.targetTick);
+    const targetTick = Number.isFinite(requestedTargetTick)
+      ? Math.max(Number(state.tick || 0), Math.floor(requestedTargetTick))
+      : Number(state.tick || 0) + INPUT_DELAY_TICKS;
     player.pendingInputs = [{ seq: nextSeq, direction: name, targetTick, receivedAt: now }];
     player.lastSeq = nextSeq;
     player.lastInputAt = now;
