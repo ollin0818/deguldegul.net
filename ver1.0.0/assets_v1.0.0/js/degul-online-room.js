@@ -1292,7 +1292,7 @@
     const drift = serverTick - clientTick;
     realtimeNetStats.tickDrift = drift;
     const serverPlayers = snapshot.players || {};
-    const snapNeeded = Math.abs(drift) > 4 || hasLargeActorDivergence(game, serverPlayers);
+    const snapNeeded = Math.abs(drift) > 8;
     if (snapNeeded) {
       realtimeNetStats.snapCount += 1;
       realtimeClientGame = null;
@@ -1319,15 +1319,21 @@
       if (!actor || !serverActor) continue;
       const isLocalSlot = slot === Number(session?.slot || 0);
       const serverSeq = Number(serverActor.lastSeq || 0);
+      const actorDistance = Math.abs(Number(actor.x || 0) - Number(serverActor.x || 0))
+        + Math.abs(Number(actor.z || 0) - Number(serverActor.z || 0));
       actor.alive = serverActor.alive !== false;
       actor.lastSeq = Math.max(Number(actor.lastSeq || 0), serverSeq);
       if (!isLocalSlot || serverSeq >= realtimeInputSeq) {
         if (serverActor.dir) actor.dir = { ...serverActor.dir };
         if (serverActor.nextDir) actor.nextDir = { ...serverActor.nextDir };
       }
+      if (!isLocalSlot || (serverSeq >= realtimeInputSeq && actorDistance > 5)) {
+        actor.x = Number(serverActor.x ?? actor.x);
+        actor.z = Number(serverActor.z ?? actor.z);
+      }
       if (!actor.alive) {
-        actor.x = Number(serverActor.x || actor.x);
-        actor.z = Number(serverActor.z || actor.z);
+        actor.x = Number(serverActor.x ?? actor.x);
+        actor.z = Number(serverActor.z ?? actor.z);
       }
       actor.trail = Array.isArray(serverActor.trail)
         ? serverActor.trail.map(point => ({ x: point.x, z: point.z }))
@@ -1337,18 +1343,6 @@
       }
     }
     realtimeNetStats.correctionCount += Math.abs(drift) >= 2 ? 1 : 0;
-  }
-
-  function hasLargeActorDivergence(game, serverPlayers) {
-    for (const slot of [1, 2]) {
-      const actor = game.players?.[slot];
-      const serverActor = serverPlayers?.[slot] || serverPlayers?.[String(slot)];
-      if (!actor || !serverActor) continue;
-      const dx = Math.abs(Number(actor.x || 0) - Number(serverActor.x || 0));
-      const dz = Math.abs(Number(actor.z || 0) - Number(serverActor.z || 0));
-      if (dx + dz > 4) return true;
-    }
-    return false;
   }
 
   function renderClientEngineActors(game, engine) {
@@ -1635,6 +1629,7 @@
         }
         realtimeLandRevision = Math.max(realtimeLandRevision, maxAppliedRevision);
       }
+      applyClaimEventsToLand(snapshot.events || [], changedCells);
       realtimeNetStats.deltaCells += changedCells.length;
       if (changedCells.length) {
         if (typeof refreshBoardCells === "function") queueOnlineBoardRefresh(changedCells);
@@ -1674,6 +1669,22 @@
   function getTrailSignature(points) {
     if (!Array.isArray(points) || !points.length) return "";
     return `${points.length}:${points[0].x},${points[0].z}:${points[points.length - 1].x},${points[points.length - 1].z}`;
+  }
+
+  function applyClaimEventsToLand(events, changedCells) {
+    if (!Array.isArray(events) || !Array.isArray(land)) return;
+    for (const event of events) {
+      if (event?.type !== "claim" || !Array.isArray(event.cells) || !event.cells.length) continue;
+      const owner = Number(event.slot) === 2 ? P2_LAND : P1_LAND;
+      for (const cell of event.cells) {
+        const x = Number(cell.x);
+        const z = Number(cell.z);
+        if (!Number.isInteger(x) || !Number.isInteger(z) || !Array.isArray(land[z])) continue;
+        if (land[z][x] === owner) continue;
+        land[z][x] = owner;
+        changedCells.push({ x, z });
+      }
+    }
   }
 
   function computeLocalLandChecksum() {
