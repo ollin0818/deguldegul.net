@@ -1194,11 +1194,12 @@
       realtimeClientTickCarryMs += elapsed;
       const interval = Math.max(55, Math.min(120, Number(realtimeClientTickMs || 90)));
       let steps = 0;
-      while (realtimeClientTickCarryMs >= interval && steps < 3) {
+      while (realtimeClientTickCarryMs >= interval && steps < 1) {
         realtimeClientTickCarryMs -= interval;
         runClientEngineTick(engine);
         steps += 1;
       }
+      if (realtimeClientTickCarryMs > interval) realtimeClientTickCarryMs = interval * 0.5;
       return true;
     };
     if (typeof addFrameTask === "function") {
@@ -1293,13 +1294,6 @@
     const drift = serverTick - clientTick;
     realtimeNetStats.tickDrift = drift;
     const serverPlayers = snapshot.players || {};
-    const snapNeeded = Math.abs(drift) > 8;
-    if (snapNeeded) {
-      realtimeNetStats.snapCount += 1;
-      realtimeClientGame = null;
-      reconcileClientGameFromSnapshot(engine, { ...snapshot, phase: snapshot.phase || "playing" });
-      return;
-    }
 
     game.phase = snapshot.phase || game.phase;
     game.mode = snapshot.mode === "item" ? "item" : "speed";
@@ -1320,25 +1314,24 @@
       if (!actor || !serverActor) continue;
       const isLocalSlot = slot === Number(session?.slot || 0);
       const serverSeq = Number(serverActor.lastSeq || 0);
-      const actorDistance = Math.abs(Number(actor.x || 0) - Number(serverActor.x || 0))
-        + Math.abs(Number(actor.z || 0) - Number(serverActor.z || 0));
       actor.alive = serverActor.alive !== false;
       actor.lastSeq = Math.max(Number(actor.lastSeq || 0), serverSeq);
-      if (!isLocalSlot || serverSeq >= realtimeInputSeq) {
+      if (!isLocalSlot) {
         if (serverActor.dir) actor.dir = { ...serverActor.dir };
         if (serverActor.nextDir) actor.nextDir = { ...serverActor.nextDir };
-      }
-      if (!isLocalSlot || (serverSeq >= realtimeInputSeq && actorDistance > 5)) {
         actor.x = Number(serverActor.x ?? actor.x);
         actor.z = Number(serverActor.z ?? actor.z);
+        actor.trail = Array.isArray(serverActor.trail)
+          ? serverActor.trail.map(point => ({ x: point.x, z: point.z }))
+          : actor.trail;
       }
       if (!actor.alive) {
         actor.x = Number(serverActor.x ?? actor.x);
         actor.z = Number(serverActor.z ?? actor.z);
+        actor.trail = Array.isArray(serverActor.trail)
+          ? serverActor.trail.map(point => ({ x: point.x, z: point.z }))
+          : actor.trail;
       }
-      actor.trail = Array.isArray(serverActor.trail)
-        ? serverActor.trail.map(point => ({ x: point.x, z: point.z }))
-        : actor.trail;
       if (actor.trail && !actor.trail.pointSet) {
         actor.trail.pointSet = new Set(actor.trail.map(point => point.z * 31 + point.x));
       }
@@ -2116,6 +2109,7 @@
       if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
       return;
     }
+    if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
     if (actor.onlineMotionToken) {
       queueOnlineMotionSteps(actor, data, x, z, applyTrailOnDone);
       realtimeNetStats.motionQueued += 1;
