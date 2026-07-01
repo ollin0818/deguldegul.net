@@ -37,6 +37,8 @@
   let realtimeClientTickMs = 90;
   let realtimeClientTickCarryMs = 0;
   let realtimeClientLastAdvanceAt = 0;
+  let realtimeBoardRefreshTask = null;
+  const realtimePendingBoardCells = new Map();
   let realtimeStarted = false;
   let realtimeResultKey = "";
   let realtimeEventKey = "";
@@ -1216,7 +1218,10 @@
   function stopClientTickLoop() {
     if (realtimeClientTickTimer) window.clearTimeout(realtimeClientTickTimer);
     if (realtimeClientTickTask && typeof removeFrameTask === "function") removeFrameTask(realtimeClientTickTask);
+    if (realtimeBoardRefreshTask && typeof removeFrameTask === "function") removeFrameTask(realtimeBoardRefreshTask);
     realtimeClientTickTask = null;
+    realtimeBoardRefreshTask = null;
+    realtimePendingBoardCells.clear();
     realtimeClientTickTimer = 0;
     realtimeClientTickCarryMs = 0;
     realtimeClientGame = null;
@@ -1348,6 +1353,7 @@
 
   function renderClientEngineActors(game, engine) {
     if (!game?.players) return;
+    clearRemoteInterpolationBuffers();
     const tickMs = engine?.getTickMs ? engine.getTickMs(game) : 90;
     const p1State = game.players[1] ? { ...game.players[1], tick: game.tick, tickMs, clientTimeline: true } : null;
     const p2State = game.players[2] ? { ...game.players[2], tick: game.tick, tickMs, clientTimeline: true } : null;
@@ -1621,7 +1627,7 @@
       }
       realtimeNetStats.deltaCells += changedCells.length;
       if (changedCells.length) {
-        if (typeof refreshBoardCells === "function") refreshBoardCells(changedCells);
+        if (typeof refreshBoardCells === "function") queueOnlineBoardRefresh(changedCells);
         else refreshBoardColors();
       }
       if (Number.isFinite(Number(snapshot.landRevision))) realtimeLandRevision = Math.max(realtimeLandRevision, Number(snapshot.landRevision));
@@ -1672,6 +1678,41 @@
     return hash >>> 0;
   }
 
+  function queueOnlineBoardRefresh(cellsToRefresh) {
+    if (!Array.isArray(cellsToRefresh) || !cellsToRefresh.length) return;
+    for (const cell of cellsToRefresh) {
+      if (!cell) continue;
+      const x = Number(cell.x);
+      const z = Number(cell.z);
+      if (!Number.isInteger(x) || !Number.isInteger(z)) continue;
+      realtimePendingBoardCells.set(`${x},${z}`, { x, z });
+    }
+    if (realtimeBoardRefreshTask) return;
+    const flush = () => {
+      if (!realtimePendingBoardCells.size) {
+        realtimeBoardRefreshTask = null;
+        return false;
+      }
+      const batch = [];
+      const maxPerFrame = 72;
+      for (const [key, cell] of realtimePendingBoardCells) {
+        realtimePendingBoardCells.delete(key);
+        batch.push(cell);
+        if (batch.length >= maxPerFrame) break;
+      }
+      try {
+        if (batch.length && typeof refreshBoardCells === "function") refreshBoardCells(batch);
+      } catch {}
+      return realtimePendingBoardCells.size > 0;
+    };
+    realtimeBoardRefreshTask = typeof addFrameTask === "function" ? addFrameTask(flush) : null;
+    if (!realtimeBoardRefreshTask) {
+      const batch = Array.from(realtimePendingBoardCells.values());
+      realtimePendingBoardCells.clear();
+      if (typeof refreshBoardCells === "function") refreshBoardCells(batch);
+    }
+  }
+
   function requestRealtimeResync(reason) {
     const now = performance.now();
     if (now - realtimeResyncRequestedAt < 3500) return;
@@ -1705,6 +1746,7 @@
       motionQueue: getOnlineMotionQueueLength(),
       maxMotionQueue: realtimeNetStats.maxMotionQueue,
       activeFrameTasks: typeof frameTasks !== "undefined" && frameTasks?.size ? frameTasks.size : 0,
+      boardQueue: realtimePendingBoardCells.size,
       resyncs: realtimeNetStats.resyncCount,
       resyncReason: realtimeNetStats.lastResyncReason
     };
@@ -1720,7 +1762,7 @@
       `Online PING ${Math.round(metrics.ping || 0)}ms  Tick ${metrics.tick}  Srv ${Number(metrics.serverTickMs || 0).toFixed(1)}ms`,
       `Online In ${(metrics.bytesIn / 1024).toFixed(1)}KB  Out ${(metrics.bytesOut / 1024).toFixed(1)}KB  Snap ${metrics.snapshotsApplied}/${metrics.snapshotsIn}`,
       `Online Delta ${metrics.deltaCells}  Full ${metrics.fullSnapshots}  Ack ${metrics.acks}  Stale ${metrics.stalePackets}`,
-      `Online Drift ${metrics.tickDrift}  Corr ${metrics.corrections}  Snap ${metrics.snaps}  MotionQ ${metrics.motionQueue}/${metrics.maxMotionQueue}  Tasks ${metrics.activeFrameTasks}`,
+      `Online Drift ${metrics.tickDrift}  Corr ${metrics.corrections}  Snap ${metrics.snaps}  MotionQ ${metrics.motionQueue}/${metrics.maxMotionQueue}  BoardQ ${metrics.boardQueue}  Tasks ${metrics.activeFrameTasks}`,
       `Online Resync ${metrics.resyncs} ${metrics.resyncReason || ""}`.trimEnd()
     ].join("\n");
     hud.textContent = `${baseText}${baseText ? "\n" : ""}${onlineText}`;
@@ -1921,6 +1963,19 @@
       else ensureRemoteInterpolationLoop.frame = 0;
     };
     ensureRemoteInterpolationLoop.frame = window.requestAnimationFrame(step);
+  }
+
+  function clearRemoteInterpolationBuffers() {
+    for (const actor of [p1, p2]) {
+      if (!actor) continue;
+      actor.onlineInterpolationBuffer = [];
+      actor.onlineVisualX = undefined;
+      actor.onlineVisualZ = undefined;
+    }
+    if (ensureRemoteInterpolationLoop.frame) {
+      window.cancelAnimationFrame(ensureRemoteInterpolationLoop.frame);
+      ensureRemoteInterpolationLoop.frame = 0;
+    }
   }
 
   function applyQueuedActorSnapshot(actor) {
@@ -2154,15 +2209,7 @@
       return;
     }
     if (!isLocalOnlineActor(actor) && data.clientTimeline !== true) {
-      if (!Number.isFinite(Number(actor.onlineVisualX))) {
-        actor.onlineVisualX = Number(actor.x);
-        actor.onlineVisualZ = Number(actor.z);
-      }
-      actor.x = x;
-      actor.z = z;
-      actor.onlineTargetX = x;
-      actor.onlineTargetZ = z;
-      queueRemoteActorInterpolation(actor, data, x, z);
+      moveActorFromSnapshot(actor, data, x, z);
       return;
     }
     const alreadyAtSnapshot = Number(actor.x) === x && Number(actor.z) === z && !actor.moving;
