@@ -3,6 +3,7 @@
   const CONSENT_KEY = "degulDegulPrivacyConsent";
   const TEST_FLAG_KEY = "degulDegulTestMode";
   const params = new URLSearchParams(window.location.search || "");
+  const TEST_RANKING_API_BASE = "https://degul-ai-ranking-proxy.astro-step.workers.dev";
   const apiBase = String(
     window.DEGUL_API_BASE
       || document.querySelector('meta[name="degul-api-base"]')?.content
@@ -200,7 +201,6 @@
 
   function ensureLocalTestUser() {
     if (!isLocalTestMode()) return null;
-    storeToken("");
     currentUser = {
       ...LOCAL_TEST_USER,
       profileColor: currentUser?.profileColor || selectedProfileColor || LOCAL_TEST_USER.profileColor
@@ -217,6 +217,10 @@
   async function api(path, options = {}) {
     const { remoteInTest, ...fetchOptions } = options;
     const localUser = ensureLocalTestUser();
+    const isPagesPreview = /\.pages\.dev$/i.test(window.location.hostname || "");
+    if (remoteInTest === true && isPagesPreview && path.startsWith("/api/ai/rankings")) {
+      return remoteTestApi(path, fetchOptions);
+    }
     if (localUser && remoteInTest !== true) {
       if (path.startsWith("/api/auth/")) {
         return { user: localUser, sessionToken: "" };
@@ -238,6 +242,27 @@
     if (sessionToken) headers.set("Authorization", `Bearer ${sessionToken}`);
 
     const response = await fetch(`${apiBase}${path}`, {
+      ...fetchOptions,
+      headers,
+      cache: "no-store"
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const error = new Error(data?.error?.message || `HTTP ${response.status}`);
+      error.code = data?.error?.code || "request_failed";
+      error.status = response.status;
+      throw error;
+    }
+
+    return data;
+  }
+
+  async function remoteTestApi(path, fetchOptions) {
+    const headers = new Headers(fetchOptions.headers || {});
+    headers.set("Accept", "application/json");
+    if (fetchOptions.body) headers.set("Content-Type", "application/json");
+    const response = await fetch(`${TEST_RANKING_API_BASE}${path}`, {
       ...fetchOptions,
       headers,
       cache: "no-store"
