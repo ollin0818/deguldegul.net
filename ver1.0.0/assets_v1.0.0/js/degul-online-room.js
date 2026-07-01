@@ -1341,7 +1341,6 @@
 
   function renderClientEngineActors(game, engine) {
     if (!game?.players) return;
-    clearRemoteInterpolationBuffers();
     const tickMs = engine?.getTickMs ? engine.getTickMs(game) : 90;
     const p1State = game.players[1] ? { ...game.players[1], tick: game.tick, tickMs, clientTimeline: true } : null;
     const p2State = game.players[2] ? { ...game.players[2], tick: game.tick, tickMs, clientTimeline: true } : null;
@@ -1586,6 +1585,13 @@
   function applyAuthoritativeState(snapshot, options = {}) {
     try {
       const changedCells = [];
+      const rainbowCellsByOwner = new Map();
+      const noteChangedCell = (x, z, owner) => {
+        changedCells.push({ x, z });
+        if (!Number.isFinite(owner)) return;
+        if (!rainbowCellsByOwner.has(owner)) rainbowCellsByOwner.set(owner, []);
+        rainbowCellsByOwner.get(owner).push({ x, z });
+      };
       if (Array.isArray(snapshot.land) && Array.isArray(land)) {
         realtimeNetStats.fullSnapshots += 1;
         for (let z = 0; z < snapshot.land.length; z++) {
@@ -1596,7 +1602,7 @@
             const nextOwner = snapshotRow[x];
             if (land[z][x] === nextOwner) continue;
             land[z][x] = nextOwner;
-            changedCells.push({ x, z });
+            noteChangedCell(x, z, Number(nextOwner));
           }
         }
         realtimeLandRevision = Number(snapshot.landRevision || realtimeLandRevision || 0);
@@ -1618,12 +1624,13 @@
             continue;
           }
           land[z][x] = owner;
-          changedCells.push({ x, z });
+          noteChangedCell(x, z, owner);
           if (revision) maxAppliedRevision = Math.max(maxAppliedRevision, revision);
         }
         realtimeLandRevision = Math.max(realtimeLandRevision, maxAppliedRevision);
       }
-      applyClaimEventsToLand(snapshot.events || [], changedCells);
+      applyClaimEventsToLand(snapshot.events || [], changedCells, rainbowCellsByOwner);
+      applyOnlineRainbowIndices(rainbowCellsByOwner);
       realtimeNetStats.deltaCells += changedCells.length;
       if (changedCells.length) {
         if (typeof refreshBoardCells === "function") queueOnlineBoardRefresh(changedCells, { batch: snapshot.full === true });
@@ -1672,18 +1679,35 @@
     return points.map(point => `${point.x},${point.z}`).join("|");
   }
 
-  function applyClaimEventsToLand(events, changedCells) {
+  function applyClaimEventsToLand(events, changedCells, rainbowCellsByOwner = null) {
     if (!Array.isArray(events) || !Array.isArray(land)) return;
     for (const event of events) {
       if (event?.type !== "claim" || !Array.isArray(event.cells) || !event.cells.length) continue;
       const owner = Number(event.slot) === 2 ? P2_LAND : P1_LAND;
+      let ownerCells = null;
       for (const cell of event.cells) {
         const x = Number(cell.x);
         const z = Number(cell.z);
         if (!Number.isInteger(x) || !Number.isInteger(z) || !Array.isArray(land[z])) continue;
-        if (land[z][x] !== owner) land[z][x] = owner;
+        if (land[z][x] === owner) continue;
+        land[z][x] = owner;
         changedCells.push({ x, z });
+        if (rainbowCellsByOwner) {
+          if (!ownerCells) {
+            ownerCells = rainbowCellsByOwner.get(owner) || [];
+            rainbowCellsByOwner.set(owner, ownerCells);
+          }
+          ownerCells.push({ x, z });
+        }
       }
+    }
+  }
+
+  function applyOnlineRainbowIndices(cellsByOwner) {
+    if (!cellsByOwner || typeof assignRainbowIndices !== "function") return;
+    for (const [owner, cells] of cellsByOwner) {
+      if (!cells?.length) continue;
+      try { assignRainbowIndices(owner, cells); } catch {}
     }
   }
 
@@ -1701,7 +1725,8 @@
 
   function queueOnlineBoardRefresh(cellsToRefresh, options = {}) {
     if (!Array.isArray(cellsToRefresh) || !cellsToRefresh.length) return;
-    const shouldBatch = options.batch === true || cellsToRefresh.length > 220;
+    const batchThreshold = getOnlineBoardBatchThreshold();
+    const shouldBatch = options.batch === true || cellsToRefresh.length > batchThreshold;
     if (!shouldBatch && typeof refreshBoardCells === "function") {
       try { refreshBoardCells(cellsToRefresh); } catch {}
       return;
@@ -1760,6 +1785,15 @@
       if (typeof performanceLevel !== "undefined" && performanceLevel === "medium") return 36;
     } catch {}
     return 56;
+  }
+
+  function getOnlineBoardBatchThreshold() {
+    try {
+      if (typeof isTabletPerformanceMode === "function" && isTabletPerformanceMode()) return 72;
+      if (typeof performanceLevel !== "undefined" && performanceLevel === "low") return 80;
+      if (typeof performanceLevel !== "undefined" && performanceLevel === "medium") return 150;
+    } catch {}
+    return 220;
   }
 
   function requestRealtimeResync(reason) {
@@ -2187,7 +2221,7 @@
     const startPos = mesh.position.clone();
     const endPos = new THREE.Vector3(toWorld(x), getActorBaseY(actor), toWorld(z));
     const startAt = performance.now();
-    const duration = Math.max(45, Math.min(90, Number(data.tickMs || 82) * 0.9));
+    const duration = getOnlineActorMoveDuration(actor, data);
     const dir = data.dir || actor.dir || {};
     const targetRotY = Math.atan2(Number(dir.dx || 0), Number(dir.dz || 0) || 0.0001);
     const startRotY = mesh.rotation.y;
@@ -2232,12 +2266,14 @@
         return false;
       }
       const t = Math.min(1, (now - startAt) / duration);
-      const eased = t * t * (3 - 2 * t);
+      const eased = easeOnlineActorMove(t);
       if (isGhostSkin || isKnightSkin) {
         mesh.position.lerpVectors(startPos, endPos, eased);
-        mesh.position.y = endPos.y + Math.sin(eased * Math.PI) * (isKnightSkin ? 0.1 : 0.15);
-        mesh.rotation.z = startRotZ + Math.sin(eased * Math.PI * 2) * (isKnightSkin ? 0.03 : 0.07);
+        mesh.position.y = endPos.y + Math.sin(eased * Math.PI) * (isKnightSkin ? 0.12 : 0.18);
+        mesh.userData.baseY = endPos.y;
+        mesh.rotation.z = startRotZ + Math.sin(eased * Math.PI * 2) * (isKnightSkin ? 0.035 : 0.08);
         mesh.rotation.y = startRotY + (targetRotY - startRotY) * eased;
+        if (isKnightSkin) mesh.rotation.x = Math.sin(eased * Math.PI) * 0.045;
       } else if (pivot && axis) {
         pivot.rotation.set(0, 0, 0);
         pivot.rotateOnAxis(axis, eased * Math.PI / 2);
@@ -2253,6 +2289,7 @@
         } catch {}
       }
       mesh.position.copy(endPos);
+      mesh.userData.baseY = endPos.y;
       if (canPivotRoll) {
         mesh.rotation.x = Math.round(mesh.rotation.x / (Math.PI / 2)) * (Math.PI / 2);
         mesh.rotation.y = Math.round(mesh.rotation.y / (Math.PI / 2)) * (Math.PI / 2);
@@ -2275,6 +2312,17 @@
       }
       return false;
     });
+  }
+
+  function getOnlineActorMoveDuration(actor, data) {
+    const tickMs = Number(data?.tickMs || actor?.tickMs || realtimeClientTickMs || 82);
+    if (Number.isFinite(tickMs)) return Math.max(52, Math.min(145, Math.round(tickMs)));
+    return 82;
+  }
+
+  function easeOnlineActorMove(t) {
+    if (typeof easeOutCubic === "function") return easeOutCubic(t);
+    return 1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 3);
   }
 
   function syncActorFromSnapshot(actor, data) {
