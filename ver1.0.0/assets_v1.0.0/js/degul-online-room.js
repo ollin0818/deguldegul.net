@@ -39,7 +39,6 @@
   let realtimeClientLastAdvanceAt = 0;
   let realtimeBoardRefreshTask = null;
   const realtimePendingBoardCells = new Map();
-  let realtimeLastPredictedLandRevision = 0;
   let realtimeLastScoreUiAt = 0;
   let realtimeStarted = false;
   let realtimeResultKey = "";
@@ -1229,7 +1228,6 @@
     realtimeClientGame = null;
     realtimePendingServerSnapshot = null;
     realtimeClientLastAdvanceAt = 0;
-    realtimeLastPredictedLandRevision = 0;
     cancelOnlineActorMotion(p1);
     cancelOnlineActorMotion(p2);
   }
@@ -1249,28 +1247,7 @@
       realtimeClientGame.result = null;
     }
     realtimeClientLastAdvanceAt = now;
-    applyPredictedClientLand(realtimeClientGame);
     renderClientEngineActors(realtimeClientGame, engine);
-  }
-
-  function applyPredictedClientLand(game) {
-    if (!game || !Array.isArray(game.land) || !Array.isArray(land)) return;
-    const nextRevision = Number(game.landRevision || 0);
-    if (nextRevision <= realtimeLastPredictedLandRevision) return;
-    realtimeLastPredictedLandRevision = nextRevision;
-    const changedCells = [];
-    for (let z = 0; z < game.land.length; z += 1) {
-      const row = game.land[z];
-      if (!Array.isArray(row)) continue;
-      if (!Array.isArray(land[z])) land[z] = [];
-      for (let x = 0; x < row.length; x += 1) {
-        const owner = row[x];
-        if (land[z][x] === owner) continue;
-        land[z][x] = owner;
-        changedCells.push({ x, z });
-      }
-    }
-    if (changedCells.length) queueOnlineBoardRefresh(changedCells, { priority: true });
   }
 
   function reconcileClientGameFromSnapshot(engine, snapshot) {
@@ -1306,7 +1283,6 @@
     };
     realtimeClientGame = engine.hydrateState(state);
     realtimeClientGame.serverConfirmedResult = state.serverConfirmedResult;
-    realtimeLastPredictedLandRevision = Number(realtimeClientGame.landRevision || 0);
   }
 
   function patchClientGameFromSnapshot(engine, snapshot) {
@@ -1330,7 +1306,6 @@
     game.ghostMode = !!snapshot.ghostMode;
     game.land = Array.isArray(land) ? land.map(row => Array.isArray(row) ? row.slice() : []) : game.land;
     game.landRevision = Number(snapshot.landRevision || game.landRevision || 0);
-    realtimeLastPredictedLandRevision = Math.max(realtimeLastPredictedLandRevision, Number(game.landRevision || 0));
     game.items = Array.isArray(snapshot.items) ? snapshot.items.map(item => ({ ...item })) : [];
     game.result = snapshot.result || null;
     game.serverConfirmedResult = snapshot.phase === "ended" && !!snapshot.result;
@@ -1658,7 +1633,7 @@
       applyClaimEventsToLand(snapshot.events || [], changedCells);
       realtimeNetStats.deltaCells += changedCells.length;
       if (changedCells.length) {
-        if (typeof refreshBoardCells === "function") queueOnlineBoardRefresh(changedCells, { priority: snapshot.full === true });
+        if (typeof refreshBoardCells === "function") queueOnlineBoardRefresh(changedCells, { batch: snapshot.full === true });
         else refreshBoardColors();
       }
       if (Number.isFinite(Number(snapshot.landRevision))) realtimeLandRevision = Math.max(realtimeLandRevision, Number(snapshot.landRevision));
@@ -1734,11 +1709,16 @@
 
   function queueOnlineBoardRefresh(cellsToRefresh, options = {}) {
     if (!Array.isArray(cellsToRefresh) || !cellsToRefresh.length) return;
-    const priorityCount = options.priority ? Math.min(cellsToRefresh.length, getOnlineBoardImmediateBudget()) : 0;
-    if (priorityCount > 0 && typeof refreshBoardCells === "function") {
-      try { refreshBoardCells(cellsToRefresh.slice(0, priorityCount)); } catch {}
+    const shouldBatch = options.batch === true || cellsToRefresh.length > 220;
+    if (!shouldBatch && typeof refreshBoardCells === "function") {
+      try { refreshBoardCells(cellsToRefresh); } catch {}
+      return;
     }
-    for (const cell of cellsToRefresh.slice(priorityCount)) {
+    const immediateCount = Math.min(cellsToRefresh.length, getOnlineBoardImmediateBudget());
+    if (immediateCount > 0 && typeof refreshBoardCells === "function") {
+      try { refreshBoardCells(cellsToRefresh.slice(0, immediateCount)); } catch {}
+    }
+    for (const cell of cellsToRefresh.slice(immediateCount)) {
       if (!cell) continue;
       const x = Number(cell.x);
       const z = Number(cell.z);
@@ -1775,10 +1755,10 @@
 
   function getOnlineBoardImmediateBudget() {
     try {
-      if (typeof isTabletPerformanceMode === "function" && isTabletPerformanceMode()) return 8;
-      if (typeof performanceLevel !== "undefined" && performanceLevel === "low") return 8;
+      if (typeof isTabletPerformanceMode === "function" && isTabletPerformanceMode()) return 24;
+      if (typeof performanceLevel !== "undefined" && performanceLevel === "low") return 24;
     } catch {}
-    return 18;
+    return 48;
   }
 
   function getOnlineBoardFrameBudget() {
@@ -1921,7 +1901,7 @@
       if (event.type === "claim" && Array.isArray(event.cells) && event.cells.length) {
         const actor = Number(event.slot) === 2 ? p2 : p1;
         try {
-          if (actor && typeof createLandClaimGlow === "function" && shouldPlayOnlineClaimGlow(event.cells)) createLandClaimGlow(actor, event.cells);
+          if (actor && typeof createLandClaimGlow === "function") createLandClaimGlow(actor, sampleOnlineClaimGlowCells(event.cells));
           if (actor && typeof DegulSfx !== "undefined" && DegulSfx?.playCapture) DegulSfx.playCapture(actor);
         } catch {}
       }
@@ -1933,15 +1913,23 @@
     }
   }
 
-  function shouldPlayOnlineClaimGlow(cells) {
-    const count = Array.isArray(cells) ? cells.length : 0;
-    if (!count) return false;
+  function sampleOnlineClaimGlowCells(cells) {
+    if (!Array.isArray(cells) || !cells.length) return [];
+    const limit = getOnlineClaimGlowLimit();
+    if (cells.length <= limit) return cells;
+    const step = Math.max(1, Math.ceil(cells.length / limit));
+    const sampled = [];
+    for (let index = 0; index < cells.length && sampled.length < limit; index += step) sampled.push(cells[index]);
+    return sampled;
+  }
+
+  function getOnlineClaimGlowLimit() {
     try {
-      if (typeof isTabletPerformanceMode === "function" && isTabletPerformanceMode()) return count <= 18;
-      if (typeof performanceLevel !== "undefined" && performanceLevel === "low") return count <= 18;
-      if (typeof performanceLevel !== "undefined" && performanceLevel === "medium") return count <= 36;
+      if (typeof isTabletPerformanceMode === "function" && isTabletPerformanceMode()) return 12;
+      if (typeof performanceLevel !== "undefined" && performanceLevel === "low") return 14;
+      if (typeof performanceLevel !== "undefined" && performanceLevel === "medium") return 28;
     } catch {}
-    return count <= 80;
+    return 48;
   }
 
   function snapActorToSnapshot(actor, x, z) {
