@@ -1676,7 +1676,7 @@
 
   function getTrailSignature(points) {
     if (!Array.isArray(points) || !points.length) return "";
-    return `${points.length}:${points[0].x},${points[0].z}:${points[points.length - 1].x},${points[points.length - 1].z}`;
+    return points.map(point => `${point.x},${point.z}`).join("|");
   }
 
   function applyClaimEventsToLand(events, changedCells) {
@@ -1688,8 +1688,7 @@
         const x = Number(cell.x);
         const z = Number(cell.z);
         if (!Number.isInteger(x) || !Number.isInteger(z) || !Array.isArray(land[z])) continue;
-        if (land[z][x] === owner) continue;
-        land[z][x] = owner;
+        if (land[z][x] !== owner) land[z][x] = owner;
         changedCells.push({ x, z });
       }
     }
@@ -2064,12 +2063,18 @@
   function applyOnlineTrailFromSnapshot(actor, data) {
     if (!actor || !data) return;
     const nextTrailKey = getTrailSignature(data.trail);
-    if (actor.onlineTrailKey === nextTrailKey) return;
-    actor.onlineTrailKey = nextTrailKey;
     const nextTrail = Array.isArray(data.trail) ? data.trail : [];
     const currentTrail = Array.isArray(actor.trail) ? actor.trail : [];
+    const visualCount = Array.isArray(actor.trailMeshes) ? actor.trailMeshes.length : 0;
+    const visualMissing = !ghostModeEnabled && nextTrail.length > 0 && visualCount < nextTrail.length;
+    if (actor.onlineTrailKey === nextTrailKey && !visualMissing) return;
+    actor.onlineTrailKey = nextTrailKey;
     if (!nextTrail.length) {
       if (currentTrail.length && typeof clearTrail === "function") clearTrail(actor);
+      return;
+    }
+    if (visualMissing) {
+      rebuildOnlineTrailVisual(actor, nextTrail);
       return;
     }
     let canAppend = currentTrail.length <= nextTrail.length;
@@ -2085,6 +2090,14 @@
       }
       return;
     }
+    if (typeof clearTrail === "function") clearTrail(actor);
+    if (typeof addTrail === "function") {
+      for (const point of nextTrail) addTrail(actor, point.x, point.z);
+    }
+  }
+
+  function rebuildOnlineTrailVisual(actor, nextTrail) {
+    if (!actor || !Array.isArray(nextTrail)) return;
     if (typeof clearTrail === "function") clearTrail(actor);
     if (typeof addTrail === "function") {
       for (const point of nextTrail) addTrail(actor, point.x, point.z);
