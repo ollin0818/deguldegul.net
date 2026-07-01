@@ -254,7 +254,12 @@ function shiftSkinChoice(playerNum, direction) {
   const total = SKIN_COLOR_CHOICES.length;
   if (!total) return;
   skinCarouselIndex[playerNum] = Math.max(0, Math.min(total - 1, (skinCarouselIndex[playerNum] || 0) + direction));
-  updateCompactPaletteUI(playerNum);
+  const colorData = SKIN_COLOR_CHOICES[skinCarouselIndex[playerNum]];
+  if (colorData && isSkinUnlocked(colorData.skin)) {
+    selectPlayerColor(playerNum, colorData);
+  } else {
+    updateCompactPaletteUI(playerNum);
+  }
 }
 
 function cycleSolidColor(playerNum, direction) {
@@ -338,6 +343,21 @@ function selectPlayerColor(playerNum, colorData) {
   }
 
   updateReadyUI();
+  syncLobbySelectionToScene();
+}
+
+function syncLobbySelectionToScene() {
+  if (isCountingDown || gameStarted || !actorsGroup) return;
+
+  while (actorsGroup.children.length > 0) {
+    const obj = actorsGroup.children[0];
+    actorsGroup.remove(obj);
+    disposeObjectTree(obj);
+  }
+
+  createPlayers();
+  if (typeof refreshBoardColors === "function") refreshBoardColors();
+  updateScoreUI();
 }
 
 function clearLobbyReadyStartTimer() {
