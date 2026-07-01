@@ -33,6 +33,9 @@
   let realtimeClientGame = null;
   let realtimePendingServerSnapshot = null;
   let realtimeClientTickTimer = 0;
+  let realtimeClientTickTask = null;
+  let realtimeClientTickMs = 90;
+  let realtimeClientTickCarryMs = 0;
   let realtimeClientLastAdvanceAt = 0;
   let realtimeStarted = false;
   let realtimeResultKey = "";
@@ -56,7 +59,12 @@
     fullSnapshots: 0,
     acks: 0,
     serverTickMs: 0,
-    lastPacketAt: 0
+    lastPacketAt: 0,
+    correctionCount: 0,
+    snapCount: 0,
+    motionQueued: 0,
+    maxMotionQueue: 0,
+    tickDrift: 0
   };
   const ONLINE_TEXT = {
     ko: {
@@ -1161,25 +1169,59 @@
   }
 
   function startClientTickLoop(tickMs = 90) {
-    if (realtimeClientTickTimer) return;
-    const interval = Math.max(55, Math.min(120, Number(tickMs || 90)));
-    const run = async () => {
-      realtimeClientTickTimer = 0;
-      if (!onlineMode || !session || !realtimeStarted) return;
-      const engine = realtimeSharedEngine || await ensureSharedEngine();
-      if (!engine) return;
-      runClientEngineTick(engine);
-      realtimeClientTickTimer = window.setTimeout(run, interval);
+    realtimeClientTickMs = Math.max(55, Math.min(120, Number(tickMs || realtimeClientTickMs || 90)));
+    if (realtimeClientTickTask) return;
+    realtimeClientTickCarryMs = 0;
+    let lastFrameAt = performance.now();
+    const step = (now) => {
+      if (!onlineMode || !session || !realtimeStarted) {
+        realtimeClientTickTask = null;
+        return false;
+      }
+      const engine = realtimeSharedEngine;
+      if (!engine) {
+        ensureSharedEngine();
+        lastFrameAt = now;
+        return true;
+      }
+      const elapsed = Math.max(0, Math.min(250, now - lastFrameAt));
+      lastFrameAt = now;
+      realtimeClientTickCarryMs += elapsed;
+      const interval = Math.max(55, Math.min(120, Number(realtimeClientTickMs || 90)));
+      let steps = 0;
+      while (realtimeClientTickCarryMs >= interval && steps < 3) {
+        realtimeClientTickCarryMs -= interval;
+        runClientEngineTick(engine);
+        steps += 1;
+      }
+      return true;
     };
-    realtimeClientTickTimer = window.setTimeout(run, ONLINE_CLIENT_RENDER_DELAY_MS);
+    if (typeof addFrameTask === "function") {
+      realtimeClientTickTask = addFrameTask(step);
+    } else {
+      const run = async () => {
+        realtimeClientTickTimer = 0;
+        if (!onlineMode || !session || !realtimeStarted) return;
+        const engine = realtimeSharedEngine || await ensureSharedEngine();
+        if (!engine) return;
+        runClientEngineTick(engine);
+        realtimeClientTickTimer = window.setTimeout(run, realtimeClientTickMs);
+      };
+      realtimeClientTickTimer = window.setTimeout(run, ONLINE_CLIENT_RENDER_DELAY_MS);
+    }
   }
 
   function stopClientTickLoop() {
     if (realtimeClientTickTimer) window.clearTimeout(realtimeClientTickTimer);
+    if (realtimeClientTickTask && typeof removeFrameTask === "function") removeFrameTask(realtimeClientTickTask);
+    realtimeClientTickTask = null;
     realtimeClientTickTimer = 0;
+    realtimeClientTickCarryMs = 0;
     realtimeClientGame = null;
     realtimePendingServerSnapshot = null;
     realtimeClientLastAdvanceAt = 0;
+    cancelOnlineActorMotion(p1);
+    cancelOnlineActorMotion(p2);
   }
 
   function runClientEngineTick(engine) {
@@ -1202,6 +1244,10 @@
 
   function reconcileClientGameFromSnapshot(engine, snapshot) {
     if (!engine || !snapshot) return;
+    if (realtimeClientGame && realtimeClientGame.phase === "playing" && snapshot.phase === "playing") {
+      patchClientGameFromSnapshot(engine, snapshot);
+      return;
+    }
     const state = {
       version: 1,
       phase: snapshot.phase,
@@ -1229,6 +1275,73 @@
     };
     realtimeClientGame = engine.hydrateState(state);
     realtimeClientGame.serverConfirmedResult = state.serverConfirmedResult;
+  }
+
+  function patchClientGameFromSnapshot(engine, snapshot) {
+    const game = realtimeClientGame;
+    if (!game) return;
+    const serverTick = Number(snapshot.tick || 0);
+    const clientTick = Number(game.tick || 0);
+    const drift = serverTick - clientTick;
+    realtimeNetStats.tickDrift = drift;
+    const serverPlayers = snapshot.players || {};
+    const snapNeeded = Math.abs(drift) > 4 || hasLargeActorDivergence(game, serverPlayers);
+    if (snapNeeded) {
+      realtimeNetStats.snapCount += 1;
+      realtimeClientGame = null;
+      reconcileClientGameFromSnapshot(engine, { ...snapshot, phase: snapshot.phase || "playing" });
+      return;
+    }
+
+    game.phase = snapshot.phase || game.phase;
+    game.mode = snapshot.mode === "item" ? "item" : "speed";
+    game.ghostMode = !!snapshot.ghostMode;
+    game.land = Array.isArray(land) ? land.map(row => Array.isArray(row) ? row.slice() : []) : game.land;
+    game.landRevision = Number(snapshot.landRevision || game.landRevision || 0);
+    game.items = Array.isArray(snapshot.items) ? snapshot.items.map(item => ({ ...item })) : [];
+    game.result = snapshot.result || null;
+    game.serverConfirmedResult = snapshot.phase === "ended" && !!snapshot.result;
+    if (Math.abs(drift) <= 1) {
+      game.tick = Math.max(clientTick, serverTick);
+      game.updatedAt = Math.max(Number(game.updatedAt || 0), Number(snapshot.updatedAt || 0));
+    }
+
+    for (const slot of [1, 2]) {
+      const actor = game.players?.[slot];
+      const serverActor = serverPlayers[slot] || serverPlayers[String(slot)];
+      if (!actor || !serverActor) continue;
+      const isLocalSlot = slot === Number(session?.slot || 0);
+      const serverSeq = Number(serverActor.lastSeq || 0);
+      actor.alive = serverActor.alive !== false;
+      actor.lastSeq = Math.max(Number(actor.lastSeq || 0), serverSeq);
+      if (!isLocalSlot || serverSeq >= realtimeInputSeq) {
+        if (serverActor.dir) actor.dir = { ...serverActor.dir };
+        if (serverActor.nextDir) actor.nextDir = { ...serverActor.nextDir };
+      }
+      if (!actor.alive) {
+        actor.x = Number(serverActor.x || actor.x);
+        actor.z = Number(serverActor.z || actor.z);
+      }
+      actor.trail = Array.isArray(serverActor.trail)
+        ? serverActor.trail.map(point => ({ x: point.x, z: point.z }))
+        : actor.trail;
+      if (actor.trail && !actor.trail.pointSet) {
+        actor.trail.pointSet = new Set(actor.trail.map(point => point.z * 31 + point.x));
+      }
+    }
+    realtimeNetStats.correctionCount += Math.abs(drift) >= 2 ? 1 : 0;
+  }
+
+  function hasLargeActorDivergence(game, serverPlayers) {
+    for (const slot of [1, 2]) {
+      const actor = game.players?.[slot];
+      const serverActor = serverPlayers?.[slot] || serverPlayers?.[String(slot)];
+      if (!actor || !serverActor) continue;
+      const dx = Math.abs(Number(actor.x || 0) - Number(serverActor.x || 0));
+      const dz = Math.abs(Number(actor.z || 0) - Number(serverActor.z || 0));
+      if (dx + dz > 4) return true;
+    }
+    return false;
   }
 
   function renderClientEngineActors(game, engine) {
@@ -1579,7 +1692,14 @@
       deltaCells: realtimeNetStats.deltaCells,
       fullSnapshots: realtimeNetStats.fullSnapshots,
       acks: realtimeNetStats.acks,
-      landRevision: realtimeLandRevision
+      landRevision: realtimeLandRevision,
+      clientTick: Number(realtimeClientGame?.tick || 0),
+      tickDrift: Number(realtimeNetStats.tickDrift || 0),
+      corrections: realtimeNetStats.correctionCount,
+      snaps: realtimeNetStats.snapCount,
+      motionQueue: getOnlineMotionQueueLength(),
+      maxMotionQueue: realtimeNetStats.maxMotionQueue,
+      activeFrameTasks: typeof frameTasks !== "undefined" && frameTasks?.size ? frameTasks.size : 0
     };
     window.DegulOnlineMetrics = metrics;
     appendOnlineMetricsToHud(metrics);
@@ -1592,7 +1712,8 @@
     const onlineText = [
       `Online PING ${Math.round(metrics.ping || 0)}ms  Tick ${metrics.tick}  Srv ${Number(metrics.serverTickMs || 0).toFixed(1)}ms`,
       `Online In ${(metrics.bytesIn / 1024).toFixed(1)}KB  Out ${(metrics.bytesOut / 1024).toFixed(1)}KB  Snap ${metrics.snapshotsApplied}/${metrics.snapshotsIn}`,
-      `Online Delta ${metrics.deltaCells}  Full ${metrics.fullSnapshots}  Ack ${metrics.acks}  Stale ${metrics.stalePackets}`
+      `Online Delta ${metrics.deltaCells}  Full ${metrics.fullSnapshots}  Ack ${metrics.acks}  Stale ${metrics.stalePackets}`,
+      `Online Drift ${metrics.tickDrift}  Corr ${metrics.corrections}  Snap ${metrics.snaps}  MotionQ ${metrics.motionQueue}/${metrics.maxMotionQueue}  Tasks ${metrics.activeFrameTasks}`
     ].join("\n");
     hud.textContent = `${baseText}${baseText ? "\n" : ""}${onlineText}`;
   }
@@ -1707,6 +1828,7 @@
     actor.onlineMotionToken = null;
     actor.onlineInterpolationBuffer = [];
     actor.onlineQueuedSnapshot = null;
+    actor.onlineQueuedMotion = null;
     actor.moving = false;
     actor.rollToken = null;
     try {
@@ -1719,6 +1841,10 @@
     try {
       if (typeof DegulSfx !== "undefined" && DegulSfx?.endRoll) DegulSfx.endRoll(actor);
     } catch {}
+  }
+
+  function getOnlineMotionQueueLength() {
+    return [p1, p2].reduce((count, actor) => count + (actor?.onlineQueuedMotion ? 1 : 0), 0);
   }
 
   function isLocalOnlineActor(actor) {
@@ -1837,6 +1963,12 @@
       if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
       return;
     }
+    if (actor.onlineMotionToken) {
+      actor.onlineQueuedMotion = { data, x, z, applyTrailOnDone };
+      realtimeNetStats.motionQueued += 1;
+      realtimeNetStats.maxMotionQueue = Math.max(realtimeNetStats.maxMotionQueue, getOnlineMotionQueueLength());
+      return;
+    }
     const manhattan = Math.abs(dx) + Math.abs(dz);
     if (manhattan > 2) {
       snapActorToSnapshot(actor, x, z);
@@ -1947,7 +2079,12 @@
       actor.onlineTargetX = x;
       actor.onlineTargetZ = z;
       if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
+      const queued = actor.onlineQueuedMotion;
+      actor.onlineQueuedMotion = null;
       try { if (typeof DegulSfx !== "undefined" && DegulSfx?.endRoll) DegulSfx.endRoll(actor); } catch {}
+      if (queued && (queued.x !== x || queued.z !== z)) {
+        moveActorFromSnapshot(actor, queued.data, queued.x, queued.z, queued.applyTrailOnDone);
+      }
       return false;
     });
   }
