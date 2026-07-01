@@ -2123,6 +2123,16 @@
     }
   }
 
+  function applyOnlineTrailBeforeMotion(actor, data, targetX, targetZ) {
+    if (!actor || !data || !Array.isArray(data.trail) || !data.trail.length) return;
+    const visibleTrail = data.trail.slice();
+    const last = visibleTrail[visibleTrail.length - 1];
+    if (last && Number(last.x) === Number(targetX) && Number(last.z) === Number(targetZ)) {
+      visibleTrail.pop();
+    }
+    applyOnlineTrailFromSnapshot(actor, { ...data, trail: visibleTrail });
+  }
+
   function rebuildOnlineTrailVisual(actor, nextTrail) {
     if (!actor || !Array.isArray(nextTrail)) return;
     if (typeof clearTrail === "function") clearTrail(actor);
@@ -2143,7 +2153,7 @@
       if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
       return;
     }
-    if (applyTrailOnDone) applyOnlineTrailFromSnapshot(actor, data);
+    if (applyTrailOnDone) applyOnlineTrailBeforeMotion(actor, data, x, z);
     if (actor.onlineMotionToken) {
       queueOnlineMotionSteps(actor, data, x, z, applyTrailOnDone);
       realtimeNetStats.motionQueued += 1;
