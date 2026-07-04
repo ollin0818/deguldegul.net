@@ -190,8 +190,7 @@
       colorInput: document.getElementById("guestProfileColorInput"),
       colorLabel: document.getElementById("guestAuthColorLabel"),
       colorSave: document.getElementById("guestAuthColorSaveButton"),
-      googleButton: document.getElementById("guestGoogleButton"),
-      googleButtonText: document.getElementById("guestGoogleButtonText")
+      googleButtonMount: document.getElementById("guestGoogleButtonMount")
     };
   }
 
@@ -353,10 +352,8 @@
     el.submit.textContent = copy.submit;
     el.colorLabel.textContent = copy.colorLabel;
     el.colorSave.textContent = copy.saveColor;
-    if (el.googleButtonText) el.googleButtonText.textContent = copy.googleButton;
     el.submit.disabled = busy || mode === "loading";
     el.colorSave.disabled = busy || mode === "loading";
-    if (el.googleButton) el.googleButton.disabled = busy || mode === "loading";
     el.input.disabled = busy || mode === "loading";
     el.form.hidden = mode !== "nickname";
     el.user.hidden = mode !== "ready";
@@ -473,8 +470,9 @@
 
   async function configureGoogleSignIn() {
     const el = elements();
-    if (!el.googleButton) return;
-    el.googleButton.hidden = true;
+    if (!el.googleButtonMount) return;
+    el.googleButtonMount.hidden = true;
+    el.googleButtonMount.replaceChildren();
     try {
       const data = await api("/api/auth/google/config", { method: "GET" });
       googleClientId = data?.enabled ? String(data.clientId || "") : "";
@@ -495,7 +493,16 @@
       });
       googleInitialized = true;
     }
-    el.googleButton.hidden = false;
+    google.accounts.id.renderButton(el.googleButtonMount, {
+      type: "standard",
+      theme: "outline",
+      size: "large",
+      text: "continue_with",
+      shape: "rectangular",
+      logo_alignment: "left",
+      width: Math.min(400, Math.max(260, el.googleButtonMount.clientWidth || 360))
+    });
+    el.googleButtonMount.hidden = false;
   }
 
   async function handleGoogleCredential(response) {
@@ -529,19 +536,6 @@
         renderModal(currentUser?.nickname ? "ready" : "nickname");
       }
     }
-  }
-
-  function startGoogleSignIn() {
-    if (!googleClientId || busy) return;
-    if (!hasConsent()) {
-      if (typeof window.openPrivacyPopup === "function") window.openPrivacyPopup(false);
-      return;
-    }
-    if (!window.google?.accounts?.id) {
-      setMessage(text().unavailable, true);
-      return;
-    }
-    window.google.accounts.id.prompt();
   }
 
   function runPendingAction() {
@@ -771,7 +765,6 @@
     el.close.addEventListener("click", () => closeModal(true));
     el.colorInput?.addEventListener("input", event => updateCharacterColors(event.target.value));
     el.colorSave?.addEventListener("click", saveProfileColor);
-    el.googleButton?.addEventListener("click", startGoogleSignIn);
     document.getElementById("privacyAgreeBtn")?.addEventListener("click", handlePrivacyAgreement, true);
     document.addEventListener("keydown", event => {
       if (event.key === "Escape" && el.overlay.classList.contains("show")) closeModal(true);

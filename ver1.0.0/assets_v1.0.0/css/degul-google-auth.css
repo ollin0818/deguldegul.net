@@ -1,46 +1,16 @@
-.guestGoogleButton {
-  width: 100% !important;
-  min-height: 46px !important;
-  margin-top: 10px !important;
-  padding: 0 14px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 10px !important;
-  border: 1px solid rgba(15, 23, 42, .16) !important;
-  border-radius: 14px !important;
-  background: #fff !important;
-  color: #111827 !important;
-  font-size: 13px !important;
-  font-weight: 900 !important;
-  box-shadow: none !important;
+.guestGoogleButtonMount {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  display: grid;
+  place-items: center;
 }
 
-.guestGoogleButton[hidden] {
+.guestGoogleButtonMount[hidden] {
   display: none !important;
 }
 
-.guestGoogleButton:disabled {
-  cursor: wait !important;
-  opacity: .6 !important;
-}
-
-.guestGoogleIcon {
-  display: inline-grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1px solid rgba(15, 23, 42, .16);
-  color: #1a73e8;
-  background: #fff;
-  font-size: 14px;
-  font-weight: 950;
-  font-family: Arial, sans-serif;
-}
-
-body.dark-mode .guestGoogleButton {
-  border-color: rgba(255, 255, 255, .22) !important;
-  background: #f5f7fb !important;
-  color: #111827 !important;
+.guestGoogleButtonMount > div,
+.guestGoogleButtonMount iframe {
+  max-width: 100% !important;
 }
