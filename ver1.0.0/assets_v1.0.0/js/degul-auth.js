@@ -22,6 +22,7 @@
   let localAuthAnnounced = false;
   let googleClientId = "";
   let googleInitialized = false;
+  let googleButtonRendered = false;
 
   const LOCAL_TEST_USER = {
     id: "local-operator",
@@ -322,9 +323,9 @@
     const nickname = currentUser?.nickname || "";
     const profileColor = currentUser?.profileColor || selectedProfileColor;
     if (!el.profile) return;
-    el.profile.hidden = !nickname;
+    el.profile.hidden = false;
     el.profile.setAttribute("aria-label", text().profileAria);
-    el.profile.title = nickname;
+    el.profile.title = nickname || text().title;
     if (el.profileAvatar) el.profileAvatar.style.setProperty("--profile-color", profileColor);
   }
 
@@ -387,6 +388,7 @@
     overlay.classList.add("show");
     overlay.setAttribute("aria-hidden", "false");
     renderModal(currentUser?.nickname ? "ready" : (sessionPromise ? "loading" : "nickname"));
+    window.requestAnimationFrame(renderGoogleButton);
     if (!currentUser?.nickname) {
       window.setTimeout(() => elements().input?.focus(), 80);
     }
@@ -473,6 +475,7 @@
     if (!el.googleButtonMount) return;
     el.googleButtonMount.hidden = true;
     el.googleButtonMount.replaceChildren();
+    googleButtonRendered = false;
     try {
       const data = await api("/api/auth/google/config", { method: "GET" });
       googleClientId = data?.enabled ? String(data.clientId || "") : "";
@@ -493,6 +496,16 @@
       });
       googleInitialized = true;
     }
+    renderGoogleButton();
+  }
+
+  function renderGoogleButton() {
+    const el = elements();
+    if (!googleClientId || !googleInitialized || !window.google?.accounts?.id || !el.googleButtonMount) return;
+    if (!el.overlay?.classList.contains("show")) return;
+    if (googleButtonRendered && el.googleButtonMount.childElementCount > 0) return;
+    el.googleButtonMount.hidden = false;
+    el.googleButtonMount.replaceChildren();
     google.accounts.id.renderButton(el.googleButtonMount, {
       type: "standard",
       theme: "outline",
@@ -502,7 +515,7 @@
       logo_alignment: "left",
       width: Math.min(400, Math.max(260, el.googleButtonMount.clientWidth || 360))
     });
-    el.googleButtonMount.hidden = false;
+    googleButtonRendered = true;
   }
 
   async function handleGoogleCredential(response) {
