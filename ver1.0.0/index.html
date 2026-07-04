@@ -88,8 +88,6 @@
 <button id="soundToggle" type="button" onclick="toggleLobbyBgm()">🔊 BGM 켜기</button>
 <button id="themeToggle" type="button" onclick="toggleDarkMode()">🌙 다크모드</button>
 
-<div id="gameAdBanner" aria-label="Google AdSense 광고 배너">Google AdSense</div>
-
 <div id="scoreUI" class="scoreGaugeUI">
   <div class="scoreTopRow">
     <div class="scoreCard p1">
@@ -207,14 +205,6 @@
   <span class="bgRollingBlock yellow" style="--y:91.3%; --size:44px; --duration:11.5s; --delay:-16.71s; --alpha:0.32; --scale:0.82;"><i class="cubeBody"></i></span>
   <span class="bgRollingBlock mint" style="--y:92.7%; --size:52px; --duration:13.5s; --delay:-21.09s; --alpha:0.42; --scale:1;"><i class="cubeBody"></i></span>
 </div>
-  <div class="tabletLobbyAd tabletLobbyAdTop" aria-label="태블릿 상단 Google AdSense 광고 배너"><span>Google AdSense</span></div>
-  <div class="tabletLobbyAd tabletLobbyAdBottom" aria-label="태블릿 하단 Google AdSense 광고 배너"><span>Google AdSense</span></div>
-    <div class="pcLobbyAd pcLobbyAdSide pcLobbyAdLeft" aria-label="좌측 광고 배너 자리"><span>Google AdSense</span></div>
-  <div class="pcLobbyAd pcLobbyAdSide pcLobbyAdRight" aria-label="우측 광고 배너 자리"><span>Google AdSense</span></div>
-  <div class="pcLobbyAd pcLobbyAdBottom" id="pcLobbyBottomAd" aria-label="하단 광고 배너 자리">
-    <span>Google AdSense</span>
-    <button class="pcLobbyAdClose" type="button" onclick="hidePcLobbyBottomAd()" aria-label="하단 광고 숨기기">×</button>
-  </div>
 <div class="lobbyCard">
     <button class="lobbyHelpButton" type="button" onclick="openHelpPopup()" aria-label="게임 설명 열기" title="게임 설명">?</button>
     <button class="lobbySiteInfoButton" id="siteInfoToggle" type="button" onclick="openSiteInfoPopup('home')" aria-label="사이트 정보 메뉴 열기" title="사이트 정보">📄</button>
@@ -509,9 +499,12 @@
 
   <div class="lobbyFooterLinks" aria-label="사이트 정책 바로가기">
     <span>© 2026 DegulDegul</span>
-    <button type="button" onclick="openSiteInfoPopup('privacy')">Privacy Policy</button>
-    <button type="button" onclick="openSiteInfoPopup('terms')">Terms</button>
-    <button type="button" onclick="openSiteInfoPopup('contact')">Contact</button>
+    <a href="about.html">About</a>
+    <a href="how-to-play.html">How to Play</a>
+    <a href="modes.html">Modes</a>
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="terms.html">Terms</a>
+    <a href="contact.html">Contact</a>
   </div>
 </div>
 
