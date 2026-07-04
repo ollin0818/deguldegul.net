@@ -51,6 +51,15 @@ button.guestAuthGoogleFallbackButton[hidden] {
   background: rgba(148, 163, 184, .45);
 }
 
+.guestGoogleNote {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.45;
+  text-align: center;
+}
+
 .guestGoogleButtonMount {
   width: 100%;
   min-height: 44px;
@@ -78,4 +87,8 @@ body.dark-mode #lobby .lobbyCard button.guestAuthGoogleFallbackButton {
   border-color: rgba(255, 255, 255, .22) !important;
   background: #101827 !important;
   color: #f8fafc !important;
+}
+
+body.dark-mode .guestGoogleNote {
+  color: #a4aab8;
 }

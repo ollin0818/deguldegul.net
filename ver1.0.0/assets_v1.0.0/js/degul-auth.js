@@ -76,6 +76,7 @@
       submit: "닉네임 등록",
       guestButton: "게스트로 시작",
       googleFallbackButton: "Google로 시작",
+      googleNote: "기록을 다른 날에도 이어가려면 Google 계정으로 연결해 두세요.",
       colorLabel: "프로필 블록 색상",
       saveColor: "색상 저장",
       colorSaved: "프로필 색상을 저장했습니다.",
@@ -104,6 +105,7 @@
       submit: "Save nickname",
       guestButton: "Continue as guest",
       googleFallbackButton: "Continue with Google",
+      googleNote: "Connect Google to keep your records available for future visits.",
       colorLabel: "Profile block color",
       saveColor: "Save color",
       colorSaved: "Profile color saved.",
@@ -132,6 +134,7 @@
       submit: "ニックネーム登録",
       guestButton: "ゲストで始める",
       googleFallbackButton: "Googleで始める",
+      googleNote: "記録を次回以降も引き継ぐには、Googleアカウントを連携してください。",
       colorLabel: "プロフィールブロックの色",
       saveColor: "色を保存",
       colorSaved: "プロフィールカラーを保存しました。",
@@ -160,6 +163,7 @@
       submit: "保存昵称",
       guestButton: "以访客身份继续",
       googleFallbackButton: "使用 Google 继续",
+      googleNote: "连接 Google 账号后，下次也能继续使用你的记录。",
       colorLabel: "资料方块颜色",
       saveColor: "保存颜色",
       colorSaved: "资料颜色已保存。",
@@ -192,6 +196,7 @@
       choice: document.getElementById("guestAuthChoice"),
       guestButton: document.getElementById("guestAuthGuestButton"),
       googleFallbackButton: document.getElementById("guestAuthGoogleFallbackButton"),
+      googleNote: document.getElementById("guestGoogleNote"),
       form: document.getElementById("guestAuthForm"),
       input: document.getElementById("guestNicknameInput"),
       submit: document.getElementById("guestNicknameSubmit"),
@@ -369,6 +374,7 @@
     el.submit.textContent = copy.submit;
     if (el.guestButton) el.guestButton.textContent = copy.guestButton;
     if (el.googleFallbackButton) el.googleFallbackButton.textContent = copy.googleFallbackButton;
+    if (el.googleNote) el.googleNote.textContent = copy.googleNote;
     el.colorLabel.textContent = copy.colorLabel;
     el.colorSave.textContent = copy.saveColor;
     el.submit.disabled = busy || mode === "loading";
