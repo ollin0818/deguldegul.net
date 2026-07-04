@@ -34,7 +34,7 @@
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-volume-slider.min.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-qhd-uniform.min.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-auth.min.css?v=4">
-<link rel="stylesheet" href="assets_v1.0.0/css/degul-google-auth.css?v=2-official-button">
+<link rel="stylesheet" href="assets_v1.0.0/css/degul-google-auth.css?v=3-auth-choice">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-tablet-performance.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-ai-history.css?v=102-ranking-chart-only">
 </head>
@@ -845,11 +845,15 @@
       </label>
     </div>
     <div class="guestAuthState" id="guestAuthState">서버 연결 중</div>
+    <div class="guestAuthChoice" id="guestAuthChoice">
+      <button class="guestAuthGuestButton" id="guestAuthGuestButton" type="button">게스트로 시작</button>
+      <div class="guestAuthDivider"><span>또는</span></div>
+      <div class="guestGoogleButtonMount" id="guestGoogleButtonMount" hidden></div>
+    </div>
     <form class="guestAuthForm" id="guestAuthForm">
       <input class="guestAuthInput" id="guestNicknameInput" type="text" minlength="2" maxlength="12" autocomplete="nickname" enterkeyhint="done" aria-label="닉네임" placeholder="닉네임 2~12자">
       <button class="guestAuthSubmit" id="guestNicknameSubmit" type="submit">닉네임 등록</button>
     </form>
-    <div class="guestGoogleButtonMount" id="guestGoogleButtonMount" hidden></div>
     <div class="guestAuthUser" id="guestAuthUser" hidden>
       <div class="profileBlockCharacter profileBlockCharacterMedium" id="guestAuthAvatar" aria-hidden="true"><i></i><i></i></div>
       <div class="guestAuthUserText">
@@ -1083,7 +1087,7 @@
 
 
 <script src="assets_v1.0.0/js/degul-inline-04.js?v=101-hide-online-panel"></script>
-<script src="assets_v1.0.0/js/degul-auth.js?v=14-official-google-button"></script>
+<script src="assets_v1.0.0/js/degul-auth.js?v=15-auth-choice"></script>
 <script src="assets_v1.0.0/js/degul-ai-ranking.js?v=7-operator-remote-ranking"></script>
 <script src="assets_v1.0.0/js/degul-test-guard.js?v=101-test-host-only"></script>
 

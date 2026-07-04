@@ -70,8 +70,10 @@
       connecting: "로그인 정보를 준비하고 있습니다.",
       nicknameNeeded: "닉네임 등록 필요",
       ready: "프로필 등록 완료",
+      chooseMethod: "로그인 방법 선택",
       placeholder: "닉네임 2~12자",
       submit: "닉네임 등록",
+      guestButton: "게스트로 시작",
       colorLabel: "프로필 블록 색상",
       saveColor: "색상 저장",
       colorSaved: "프로필 색상을 저장했습니다.",
@@ -95,8 +97,10 @@
       connecting: "Preparing your sign-in.",
       nicknameNeeded: "Nickname required",
       ready: "Profile ready",
+      chooseMethod: "Choose sign-in method",
       placeholder: "Nickname, 2–12 characters",
       submit: "Save nickname",
+      guestButton: "Continue as guest",
       colorLabel: "Profile block color",
       saveColor: "Save color",
       colorSaved: "Profile color saved.",
@@ -120,8 +124,10 @@
       connecting: "ログイン情報を準備しています。",
       nicknameNeeded: "ニックネーム登録が必要",
       ready: "プロフィール登録完了",
+      chooseMethod: "ログイン方法を選択",
       placeholder: "ニックネーム 2～12文字",
       submit: "ニックネーム登録",
+      guestButton: "ゲストで始める",
       colorLabel: "プロフィールブロックの色",
       saveColor: "色を保存",
       colorSaved: "プロフィールカラーを保存しました。",
@@ -145,8 +151,10 @@
       connecting: "正在准备登录信息。",
       nicknameNeeded: "需要设置昵称",
       ready: "资料设置完成",
+      chooseMethod: "选择登录方式",
       placeholder: "昵称，2至12个字符",
       submit: "保存昵称",
+      guestButton: "以访客身份继续",
       colorLabel: "资料方块颜色",
       saveColor: "保存颜色",
       colorSaved: "资料颜色已保存。",
@@ -176,6 +184,8 @@
       title: document.getElementById("guestAuthTitle"),
       purpose: document.getElementById("guestAuthPurpose"),
       state: document.getElementById("guestAuthState"),
+      choice: document.getElementById("guestAuthChoice"),
+      guestButton: document.getElementById("guestAuthGuestButton"),
       form: document.getElementById("guestAuthForm"),
       input: document.getElementById("guestNicknameInput"),
       submit: document.getElementById("guestNicknameSubmit"),
@@ -351,18 +361,24 @@
     el.close.setAttribute("aria-label", copy.closeAria);
     el.input.placeholder = copy.placeholder;
     el.submit.textContent = copy.submit;
+    if (el.guestButton) el.guestButton.textContent = copy.guestButton;
     el.colorLabel.textContent = copy.colorLabel;
     el.colorSave.textContent = copy.saveColor;
     el.submit.disabled = busy || mode === "loading";
     el.colorSave.disabled = busy || mode === "loading";
     el.input.disabled = busy || mode === "loading";
+    if (el.guestButton) el.guestButton.disabled = busy || mode === "loading";
+    el.choice.hidden = mode !== "choice";
     el.form.hidden = mode !== "nickname";
     el.user.hidden = mode !== "ready";
     el.colorSave.hidden = mode !== "ready";
     el.state.classList.toggle("ready", mode === "ready");
     updateCharacterColors(selectedProfileColor || currentUser?.profileColor);
 
-    if (mode === "loading") {
+    if (mode === "choice") {
+      el.state.textContent = copy.chooseMethod;
+      setMessage("", false);
+    } else if (mode === "loading") {
       el.state.textContent = copy.connecting;
       setMessage("", false);
     } else if (mode === "nickname") {
@@ -387,7 +403,7 @@
     if (!overlay) return;
     overlay.classList.add("show");
     overlay.setAttribute("aria-hidden", "false");
-    renderModal(currentUser?.nickname ? "ready" : (sessionPromise ? "loading" : "nickname"));
+    renderModal(currentUser?.nickname ? "ready" : (currentUser ? "nickname" : "choice"));
     window.requestAnimationFrame(renderGoogleButton);
     if (!currentUser?.nickname) {
       window.setTimeout(() => elements().input?.focus(), 80);
@@ -546,8 +562,29 @@
     } finally {
       busy = false;
       if (elements().overlay?.classList.contains("show")) {
-        renderModal(currentUser?.nickname ? "ready" : "nickname");
+        renderModal(currentUser?.nickname ? "ready" : (currentUser ? "nickname" : "choice"));
       }
+    }
+  }
+
+  async function startGuestSignIn() {
+    if (busy) return;
+    if (!hasConsent()) {
+      if (typeof window.openPrivacyPopup === "function") window.openPrivacyPopup(false);
+      return;
+    }
+    busy = true;
+    renderModal("loading");
+    try {
+      await ensureSession();
+      renderModal(currentUser?.nickname ? "ready" : "nickname");
+      if (!currentUser?.nickname) window.setTimeout(() => elements().input?.focus(), 80);
+    } catch (error) {
+      console.warn("[DegulAuth] guest sign-in unavailable", error);
+      renderModal("choice");
+      setMessage(error.message || text().unavailable, true);
+    } finally {
+      busy = false;
     }
   }
 
@@ -583,27 +620,7 @@
     }
 
     showModal(modalReason);
-    renderModal("loading");
-
-    try {
-      await ensureSession();
-      if (currentUser?.nickname) {
-        closeModal(false);
-        runPendingAction();
-        return true;
-      }
-      renderModal("nickname");
-      return false;
-    } catch (error) {
-      console.warn("[DegulAuth] login unavailable", error);
-      if (pendingAllowLocalFallback) {
-        closeModal(false);
-        runPendingAction();
-        return true;
-      }
-      renderModal("error");
-      return false;
-    }
+    return false;
   }
 
   async function submitNickname(event) {
@@ -748,7 +765,6 @@
   function handlePrivacyAgreement() {
     window.setTimeout(() => {
       if (!hasConsent()) return;
-      ensureSession().catch(error => console.warn("[DegulAuth] silent login unavailable", error));
       if (pendingAction) requireNickname(modalReason, pendingAction, {
         allowLocalFallback: pendingAllowLocalFallback
       });
@@ -778,6 +794,7 @@
     el.close.addEventListener("click", () => closeModal(true));
     el.colorInput?.addEventListener("input", event => updateCharacterColors(event.target.value));
     el.colorSave?.addEventListener("click", saveProfileColor);
+    el.guestButton?.addEventListener("click", startGuestSignIn);
     document.getElementById("privacyAgreeBtn")?.addEventListener("click", handlePrivacyAgreement, true);
     document.addEventListener("keydown", event => {
       if (event.key === "Escape" && el.overlay.classList.contains("show")) closeModal(true);
@@ -790,7 +807,7 @@
     installFeatureGuards();
     configureGoogleSignIn();
     if (ensureLocalTestUser()) return;
-    if (hasConsent()) {
+    if (hasConsent() && readStoredToken()) {
       ensureSession().catch(error => console.warn("[DegulAuth] silent login unavailable", error));
     }
   }
