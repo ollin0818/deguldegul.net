@@ -75,7 +75,6 @@
       placeholder: "닉네임 2~12자",
       submit: "닉네임 등록",
       guestButton: "게스트로 시작",
-      googleFallbackButton: "Google로 시작",
       googleNote: "게스트로 바로 시작할 수 있어요. 기록을 오래 이어가고 싶다면 Google 계정으로 연결해 주세요.",
       colorLabel: "프로필 블록 색상",
       saveColor: "색상 저장",
@@ -105,7 +104,6 @@
       placeholder: "Nickname, 2–12 characters",
       submit: "Save nickname",
       guestButton: "Continue as guest",
-      googleFallbackButton: "Continue with Google",
       googleNote: "Connect Google to keep your records available for future visits.",
       colorLabel: "Profile block color",
       saveColor: "Save color",
@@ -135,7 +133,6 @@
       placeholder: "ニックネーム 2～12文字",
       submit: "ニックネーム登録",
       guestButton: "ゲストで始める",
-      googleFallbackButton: "Googleで始める",
       googleNote: "記録を次回以降も引き継ぐには、Googleアカウントを連携してください。",
       colorLabel: "プロフィールブロックの色",
       saveColor: "色を保存",
@@ -165,7 +162,6 @@
       placeholder: "昵称，2至12个字符",
       submit: "保存昵称",
       guestButton: "以访客身份继续",
-      googleFallbackButton: "使用 Google 继续",
       googleNote: "连接 Google 账号后，下次也能继续使用你的记录。",
       colorLabel: "资料方块颜色",
       saveColor: "保存颜色",
@@ -199,7 +195,6 @@
       state: document.getElementById("guestAuthState"),
       choice: document.getElementById("guestAuthChoice"),
       guestButton: document.getElementById("guestAuthGuestButton"),
-      googleFallbackButton: document.getElementById("guestAuthGoogleFallbackButton"),
       googleNote: document.getElementById("guestGoogleNote"),
       form: document.getElementById("guestAuthForm"),
       input: document.getElementById("guestNicknameInput"),
@@ -377,7 +372,6 @@
     el.input.placeholder = copy.placeholder;
     el.submit.textContent = copy.submit;
     if (el.guestButton) el.guestButton.textContent = copy.guestButton;
-    if (el.googleFallbackButton) el.googleFallbackButton.textContent = copy.googleFallbackButton;
     if (el.googleNote) el.googleNote.textContent = copy.googleNote;
     el.colorLabel.textContent = copy.colorLabel;
     el.colorSave.textContent = copy.saveColor;
@@ -385,7 +379,6 @@
     el.colorSave.disabled = busy || mode === "loading";
     el.input.disabled = busy || mode === "loading";
     if (el.guestButton) el.guestButton.disabled = busy || mode === "loading";
-    if (el.googleFallbackButton) el.googleFallbackButton.disabled = busy || mode === "loading";
     el.choice.hidden = mode !== "choice";
     el.form.hidden = mode !== "nickname";
     el.user.hidden = mode !== "ready";
@@ -550,23 +543,6 @@
       width: Math.min(400, Math.max(260, el.googleButtonMount.clientWidth || 360))
     });
     googleButtonRendered = true;
-  }
-
-  function startGoogleSignInChoice() {
-    authMethod = "google";
-    if (!hasConsent()) {
-      if (typeof window.openPrivacyPopup === "function") window.openPrivacyPopup(false);
-      return;
-    }
-    renderGoogleButton();
-    if (googleButtonRendered) {
-      setMessage(text().googleReady, false);
-      return;
-    }
-    setMessage(text().connecting, false);
-    configureGoogleSignIn().then(() => {
-      if (!googleButtonRendered) setMessage(text().unavailable, true);
-    });
   }
 
   async function handleGoogleCredential(response) {
@@ -833,7 +809,6 @@
     el.colorInput?.addEventListener("input", event => updateCharacterColors(event.target.value));
     el.colorSave?.addEventListener("click", saveProfileColor);
     el.guestButton?.addEventListener("click", startGuestSignIn);
-    el.googleFallbackButton?.addEventListener("click", startGoogleSignInChoice);
     document.getElementById("privacyAgreeBtn")?.addEventListener("click", handlePrivacyAgreement, true);
     document.addEventListener("keydown", event => {
       if (event.key === "Escape" && el.overlay.classList.contains("show")) closeModal(true);
