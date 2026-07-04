@@ -3125,28 +3125,20 @@ function renderLobbyTitle() {
   const title = document.querySelector(".titleRollText");
   if (!title) return;
 
-  const label = currentLang === "en" ? "ROLL ROLL" : (currentLang === "ja" ? "ゴロゴロ" : (currentLang === "zh" ? "咕噜咕噜" : "데굴데굴 - ROLL ROLL"));
-  const visibleLabel = currentLang === "ko" ? "데굴데굴" : label;
+  const label = currentLang === "en" ? "ROLL ROLL" : (currentLang === "ja" ? "ゴロゴロ" : (currentLang === "zh" ? "咕噜咕噜" : "데굴데굴"));
   title.setAttribute("aria-label", label);
   title.classList.toggle("englishTitle", currentLang === "en");
   title.classList.toggle("japaneseTitle", currentLang === "ja");
   title.classList.toggle("chineseTitle", currentLang === "zh");
   title.innerHTML = "";
 
-  Array.from(visibleLabel).forEach((ch, index) => {
+  Array.from(label).forEach((ch, index) => {
     const span = document.createElement("span");
     span.className = ch === " " ? "titleRollChar titleSpace" : "titleRollChar";
     span.style.setProperty("--char-index", index);
     span.textContent = ch === " " ? "\u00A0" : ch;
     title.appendChild(span);
   });
-
-  if (currentLang === "ko") {
-    const suffix = document.createElement("span");
-    suffix.className = "titleRollSeoSuffix";
-    suffix.textContent = " - ROLL ROLL";
-    title.appendChild(suffix);
-  }
 }
 
 
