@@ -58,6 +58,31 @@ button.guestAuthGuestButton,
   display: none !important;
 }
 
+button.guestAuthLogoutButton,
+#lobby .lobbyCard button.guestAuthLogoutButton {
+  width: 100% !important;
+  height: 42px !important;
+  margin-top: 8px;
+  padding: 0 16px !important;
+  border: 1px solid rgba(220, 38, 38, 0.18) !important;
+  border-radius: 14px !important;
+  background: rgba(220, 38, 38, 0.08) !important;
+  color: #b91c1c !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  box-shadow: none !important;
+}
+
+button.guestAuthLogoutButton[hidden] {
+  display: none !important;
+}
+
+button.guestAuthLogoutButton:disabled,
+#lobby .lobbyCard button.guestAuthLogoutButton:disabled {
+  cursor: wait !important;
+  opacity: 0.55 !important;
+}
+
 .guestGoogleButtonMount > div,
 .guestGoogleButtonMount iframe {
   max-width: 100% !important;
@@ -67,6 +92,13 @@ body.dark-mode button.guestAuthGuestButton,
 body.dark-mode #lobby .lobbyCard button.guestAuthGuestButton {
   background: #f5f7fb !important;
   color: #111827 !important;
+}
+
+body.dark-mode button.guestAuthLogoutButton,
+body.dark-mode #lobby .lobbyCard button.guestAuthLogoutButton {
+  border-color: rgba(248, 113, 113, 0.28) !important;
+  background: rgba(248, 113, 113, 0.12) !important;
+  color: #fca5a5 !important;
 }
 
 body.dark-mode .guestGoogleNote {

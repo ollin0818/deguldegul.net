@@ -79,6 +79,8 @@
       colorLabel: "프로필 블록 색상",
       saveColor: "색상 저장",
       colorSaved: "프로필 색상을 저장했습니다.",
+      logout: "로그아웃",
+      logoutDone: "로그아웃했습니다.",
       hint: "닉네임은 2~12자이며 다른 사용자와 중복할 수 없습니다.",
       loggedIn: "AI 랭킹 프로필에 사용됩니다.",
       unavailable: "로그인 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.",
@@ -108,6 +110,8 @@
       colorLabel: "Profile block color",
       saveColor: "Save color",
       colorSaved: "Profile color saved.",
+      logout: "Sign out",
+      logoutDone: "Signed out.",
       hint: "Nicknames must be 2–12 characters and unique.",
       loggedIn: "Used for your AI ranking profile.",
       unavailable: "The login server is unavailable. Please try again shortly.",
@@ -137,6 +141,8 @@
       colorLabel: "プロフィールブロックの色",
       saveColor: "色を保存",
       colorSaved: "プロフィールカラーを保存しました。",
+      logout: "ログアウト",
+      logoutDone: "ログアウトしました。",
       hint: "2～12文字で、他のユーザーと同じ名前は使えません。",
       loggedIn: "AIランキングプロフィールに使用されます。",
       unavailable: "ログインサーバーに接続できません。しばらくしてから再試行してください。",
@@ -166,6 +172,8 @@
       colorLabel: "资料方块颜色",
       saveColor: "保存颜色",
       colorSaved: "资料颜色已保存。",
+      logout: "退出登录",
+      logoutDone: "已退出登录。",
       hint: "昵称须为2至12个字符，且不能与他人重复。",
       loggedIn: "用于AI排行榜资料。",
       unavailable: "无法连接登录服务器，请稍后重试。",
@@ -211,6 +219,7 @@
       colorInput: document.getElementById("guestProfileColorInput"),
       colorLabel: document.getElementById("guestAuthColorLabel"),
       colorSave: document.getElementById("guestAuthColorSaveButton"),
+      logoutButton: document.getElementById("guestAuthLogoutButton"),
       googleButtonMount: document.getElementById("guestGoogleButtonMount")
     };
   }
@@ -375,14 +384,17 @@
     if (el.googleNote) el.googleNote.textContent = copy.googleNote;
     el.colorLabel.textContent = copy.colorLabel;
     el.colorSave.textContent = copy.saveColor;
+    if (el.logoutButton) el.logoutButton.textContent = copy.logout;
     el.submit.disabled = busy || mode === "loading";
     el.colorSave.disabled = busy || mode === "loading";
+    if (el.logoutButton) el.logoutButton.disabled = busy || mode === "loading";
     el.input.disabled = busy || mode === "loading";
     if (el.guestButton) el.guestButton.disabled = busy || mode === "loading";
     el.choice.hidden = mode !== "choice";
     el.form.hidden = mode !== "nickname";
     el.user.hidden = mode !== "ready";
     el.colorSave.hidden = mode !== "ready";
+    if (el.logoutButton) el.logoutButton.hidden = mode !== "ready" || !currentUser?.googleLinked;
     el.state.classList.toggle("ready", mode === "ready");
     updateCharacterColors(selectedProfileColor || currentUser?.profileColor);
 
@@ -458,6 +470,7 @@
         try {
           const data = await api("/api/auth/session", { method: "GET" });
           currentUser = data.user;
+          authMethod = currentUser?.googleLinked ? "google" : "guest";
           selectedProfileColor = currentUser?.profileColor || selectedProfileColor;
           updateProfileButton();
           if (currentUser?.nickname) announceReady();
@@ -471,6 +484,7 @@
       const data = await api("/api/auth/guest", { method: "POST" });
       if (data.sessionToken) storeToken(data.sessionToken);
       currentUser = data.user;
+      authMethod = "guest";
       selectedProfileColor = currentUser?.profileColor || selectedProfileColor;
       updateProfileButton();
       return currentUser;
@@ -576,6 +590,37 @@
       if (elements().overlay?.classList.contains("show")) {
         renderModal(currentUser?.nickname ? "ready" : (currentUser && authMethod ? "nickname" : "choice"));
       }
+    }
+  }
+
+  async function logout() {
+    if (busy) return;
+    busy = true;
+    const wasOpen = elements().overlay?.classList.contains("show");
+    try {
+      try {
+        window.google?.accounts?.id?.disableAutoSelect?.();
+      } catch {}
+      storeToken("");
+      currentUser = null;
+      sessionPromise = null;
+      authMethod = "";
+      pendingAction = null;
+      pendingAllowLocalFallback = false;
+      googleButtonRendered = false;
+      selectedProfileColor = "#64beff";
+      updateCharacterColors(selectedProfileColor);
+      updateProfileButton();
+      if (typeof window.updateGameModeUI === "function") window.updateGameModeUI();
+      if (wasOpen) {
+        renderModal("choice");
+        setMessage(text().logoutDone, false);
+        window.requestAnimationFrame(renderGoogleButton);
+      }
+    } finally {
+      busy = false;
+      if (wasOpen) renderModal("choice");
+      setMessage(text().logoutDone, false);
     }
   }
 
@@ -808,6 +853,7 @@
     el.close.addEventListener("click", () => closeModal(true));
     el.colorInput?.addEventListener("input", event => updateCharacterColors(event.target.value));
     el.colorSave?.addEventListener("click", saveProfileColor);
+    el.logoutButton?.addEventListener("click", logout);
     el.guestButton?.addEventListener("click", startGuestSignIn);
     document.getElementById("privacyAgreeBtn")?.addEventListener("click", handlePrivacyAgreement, true);
     document.addEventListener("keydown", event => {
@@ -837,7 +883,8 @@
     refresh: ensureSession,
     request: api,
     requireNickname,
-    openProfile: openProfileEditor
+    openProfile: openProfileEditor,
+    logout
   };
 
   if (document.readyState === "loading") {
