@@ -3125,20 +3125,28 @@ function renderLobbyTitle() {
   const title = document.querySelector(".titleRollText");
   if (!title) return;
 
-  const label = currentLang === "en" ? "ROLL ROLL" : (currentLang === "ja" ? "ゴロゴロ" : (currentLang === "zh" ? "咕噜咕噜" : "데굴데굴"));
+  const label = currentLang === "en" ? "ROLL ROLL" : (currentLang === "ja" ? "ゴロゴロ" : (currentLang === "zh" ? "咕噜咕噜" : "데굴데굴 - ROLL ROLL"));
+  const visibleLabel = currentLang === "ko" ? "데굴데굴" : label;
   title.setAttribute("aria-label", label);
   title.classList.toggle("englishTitle", currentLang === "en");
   title.classList.toggle("japaneseTitle", currentLang === "ja");
   title.classList.toggle("chineseTitle", currentLang === "zh");
   title.innerHTML = "";
 
-  Array.from(label).forEach((ch, index) => {
+  Array.from(visibleLabel).forEach((ch, index) => {
     const span = document.createElement("span");
     span.className = ch === " " ? "titleRollChar titleSpace" : "titleRollChar";
     span.style.setProperty("--char-index", index);
     span.textContent = ch === " " ? "\u00A0" : ch;
     title.appendChild(span);
   });
+
+  if (currentLang === "ko") {
+    const suffix = document.createElement("span");
+    suffix.className = "titleRollSeoSuffix";
+    suffix.textContent = " - ROLL ROLL";
+    title.appendChild(suffix);
+  }
 }
 
 
@@ -3189,7 +3197,7 @@ function updateSiteInfoLanguage() {
 
   setText('[data-site-panel="home"] h2', ko ? "홈" : "Home");
   setText('[data-site-panel="home"] .siteInfoLead', ko
-    ? "데굴데굴은 같은 화면에서 두 명이 영역을 차지하며 겨루는 2인용 액션 전략 게임입니다. 로비에서 모드와 색상을 선택하고 바로 플레이할 수 있습니다."
+    ? "데굴데굴은 블록을 굴려 영역을 차지하는 무료 웹게임입니다. 같은 화면의 2P 로컬 대전과 혼자 즐기는 AI 대전으로 영역 점령 게임을 바로 플레이할 수 있습니다."
     : "ROLL ROLL is a two-player action strategy game where players compete to claim territory on the same screen. Choose a mode and colors in the lobby, then start playing right away.");
   setCards("home", ko
     ? [["게임하기","현재 화면의 로비에서 2P 대전 또는 AI 대전을 선택하고 준비하면 게임이 시작됩니다."],["지원 모드","스피드 모드, 아이템 모드, 고스트 모드, AI 대전을 제공합니다."],["목표","라인을 그어 영역을 점령하고 상대보다 더 넓은 땅을 차지하세요."],["정책 안내","광고, 쿠키, 브라우저 저장소 안내는 개인정보처리방침에서 확인할 수 있습니다."]]
@@ -3741,7 +3749,7 @@ function updateExtendedLanguageText() {
 
 function applyLanguage() {
   document.documentElement.lang = currentLang;
-  document.title = currentLang === "ja" ? "ゴロゴロ" : (currentLang === "zh" ? "咕噜咕噜" : (currentLang === "en" ? "ROLL ROLL" : "데굴데굴"));
+  document.title = currentLang === "ja" ? "ゴロゴロ" : (currentLang === "zh" ? "咕噜咕噜" : (currentLang === "en" ? "ROLL ROLL" : "데굴데굴 - ROLL ROLL | 무료 웹 영역 점령 게임"));
   renderLobbyTitle();
   STATIC_TRANSLATIONS.forEach(([selector, values, mode]) => {
     const el = document.querySelector(selector);
