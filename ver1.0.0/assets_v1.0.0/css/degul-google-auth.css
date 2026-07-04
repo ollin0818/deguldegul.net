@@ -8,7 +8,9 @@
 }
 
 button.guestAuthGuestButton,
-#lobby .lobbyCard button.guestAuthGuestButton {
+#lobby .lobbyCard button.guestAuthGuestButton,
+button.guestAuthGoogleFallbackButton,
+#lobby .lobbyCard button.guestAuthGoogleFallbackButton {
   width: 100% !important;
   min-height: 46px !important;
   padding: 0 16px !important;
@@ -19,6 +21,17 @@ button.guestAuthGuestButton,
   font-size: 13px !important;
   font-weight: 900 !important;
   box-shadow: none !important;
+}
+
+button.guestAuthGoogleFallbackButton,
+#lobby .lobbyCard button.guestAuthGoogleFallbackButton {
+  border: 1px solid rgba(15, 23, 42, .16) !important;
+  background: #fff !important;
+  color: #111827 !important;
+}
+
+button.guestAuthGoogleFallbackButton[hidden] {
+  display: none !important;
 }
 
 .guestAuthDivider {
@@ -58,4 +71,11 @@ body.dark-mode button.guestAuthGuestButton,
 body.dark-mode #lobby .lobbyCard button.guestAuthGuestButton {
   background: #f5f7fb !important;
   color: #111827 !important;
+}
+
+body.dark-mode button.guestAuthGoogleFallbackButton,
+body.dark-mode #lobby .lobbyCard button.guestAuthGoogleFallbackButton {
+  border-color: rgba(255, 255, 255, .22) !important;
+  background: #101827 !important;
+  color: #f8fafc !important;
 }
