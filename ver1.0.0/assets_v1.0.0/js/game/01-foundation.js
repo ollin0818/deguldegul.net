@@ -3125,11 +3125,9 @@ function renderLobbyTitle() {
   const title = document.querySelector(".titleRollText");
   if (!title) return;
 
-  const label = currentLang === "en" ? "ROLL ROLL" : (currentLang === "ja" ? "ゴロゴロ" : (currentLang === "zh" ? "咕噜咕噜" : "데굴데굴"));
+  const label = "데굴데굴";
   title.setAttribute("aria-label", label);
-  title.classList.toggle("englishTitle", currentLang === "en");
-  title.classList.toggle("japaneseTitle", currentLang === "ja");
-  title.classList.toggle("chineseTitle", currentLang === "zh");
+  title.classList.remove("englishTitle", "japaneseTitle", "chineseTitle");
   title.innerHTML = "";
 
   Array.from(label).forEach((ch, index) => {
