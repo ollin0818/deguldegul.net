@@ -9,6 +9,7 @@
 <meta name="google-adsense-account" content="ca-pub-8698121108038952" />
 <link rel="canonical" href="https://deguldegul.net/" />
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8698121108038952" crossorigin="anonymous"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://deguldegul.net/" />
@@ -33,6 +34,7 @@
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-volume-slider.min.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-qhd-uniform.min.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-auth.min.css?v=4">
+<link rel="stylesheet" href="assets_v1.0.0/css/degul-google-auth.css?v=1">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-tablet-performance.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-ai-history.css?v=102-ranking-chart-only">
 </head>
@@ -847,6 +849,10 @@
       <input class="guestAuthInput" id="guestNicknameInput" type="text" minlength="2" maxlength="12" autocomplete="nickname" enterkeyhint="done" aria-label="닉네임" placeholder="닉네임 2~12자">
       <button class="guestAuthSubmit" id="guestNicknameSubmit" type="submit">닉네임 등록</button>
     </form>
+    <button class="guestGoogleButton" id="guestGoogleButton" type="button" hidden>
+      <span class="guestGoogleIcon" aria-hidden="true">G</span>
+      <span id="guestGoogleButtonText">Google 계정으로 계속</span>
+    </button>
     <div class="guestAuthUser" id="guestAuthUser" hidden>
       <div class="profileBlockCharacter profileBlockCharacterMedium" id="guestAuthAvatar" aria-hidden="true"><i></i><i></i></div>
       <div class="guestAuthUserText">

@@ -20,6 +20,8 @@
   let pendingAllowLocalFallback = false;
   let selectedProfileColor = "#64beff";
   let localAuthAnnounced = false;
+  let googleClientId = "";
+  let googleInitialized = false;
 
   const LOCAL_TEST_USER = {
     id: "local-operator",
@@ -76,6 +78,8 @@
       loggedIn: "AI 랭킹 프로필에 사용됩니다.",
       unavailable: "로그인 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.",
       invalidLength: "닉네임은 2자 이상 12자 이하로 입력해주세요.",
+      googleButton: "Google 계정으로 계속",
+      googleLinked: "Google 계정이 연결되었습니다.",
       profileAria: "AI 프로필 열기",
       closeAria: "닉네임 설정 닫기"
     },
@@ -99,6 +103,8 @@
       loggedIn: "Used for your AI ranking profile.",
       unavailable: "The login server is unavailable. Please try again shortly.",
       invalidLength: "Enter a nickname between 2 and 12 characters.",
+      googleButton: "Continue with Google",
+      googleLinked: "Google account connected.",
       profileAria: "Open AI profile",
       closeAria: "Close nickname setup"
     },
@@ -122,6 +128,8 @@
       loggedIn: "AIランキングプロフィールに使用されます。",
       unavailable: "ログインサーバーに接続できません。しばらくしてから再試行してください。",
       invalidLength: "ニックネームは2～12文字で入力してください。",
+      googleButton: "Googleアカウントで続行",
+      googleLinked: "Googleアカウントを連携しました。",
       profileAria: "AIプロフィールを開く",
       closeAria: "ニックネーム設定を閉じる"
     },
@@ -145,6 +153,8 @@
       loggedIn: "用于AI排行榜资料。",
       unavailable: "无法连接登录服务器，请稍后重试。",
       invalidLength: "请输入2至12个字符的昵称。",
+      googleButton: "使用 Google 账号继续",
+      googleLinked: "已连接 Google 账号。",
       profileAria: "打开AI资料",
       closeAria: "关闭昵称设置"
     }
@@ -179,7 +189,9 @@
       characterPreview: document.getElementById("guestAuthCharacterPreview"),
       colorInput: document.getElementById("guestProfileColorInput"),
       colorLabel: document.getElementById("guestAuthColorLabel"),
-      colorSave: document.getElementById("guestAuthColorSaveButton")
+      colorSave: document.getElementById("guestAuthColorSaveButton"),
+      googleButton: document.getElementById("guestGoogleButton"),
+      googleButtonText: document.getElementById("guestGoogleButtonText")
     };
   }
 
@@ -341,8 +353,10 @@
     el.submit.textContent = copy.submit;
     el.colorLabel.textContent = copy.colorLabel;
     el.colorSave.textContent = copy.saveColor;
+    if (el.googleButtonText) el.googleButtonText.textContent = copy.googleButton;
     el.submit.disabled = busy || mode === "loading";
     el.colorSave.disabled = busy || mode === "loading";
+    if (el.googleButton) el.googleButton.disabled = busy || mode === "loading";
     el.input.disabled = busy || mode === "loading";
     el.form.hidden = mode !== "nickname";
     el.user.hidden = mode !== "ready";
@@ -359,7 +373,7 @@
     } else if (mode === "ready") {
       el.state.textContent = copy.ready;
       el.nickname.textContent = nickname;
-      el.userHint.textContent = copy.loggedIn;
+      el.userHint.textContent = currentUser?.googleLinked ? `${copy.loggedIn} · Google` : copy.loggedIn;
       setMessage("", false);
     } else {
       el.state.textContent = "";
@@ -441,6 +455,93 @@
     } finally {
       sessionPromise = null;
     }
+  }
+
+  function waitForGoogle() {
+    if (window.google?.accounts?.id) return Promise.resolve(window.google);
+    return new Promise(resolve => {
+      let tries = 0;
+      const timer = window.setInterval(() => {
+        tries += 1;
+        if (window.google?.accounts?.id || tries > 80) {
+          window.clearInterval(timer);
+          resolve(window.google || null);
+        }
+      }, 100);
+    });
+  }
+
+  async function configureGoogleSignIn() {
+    const el = elements();
+    if (!el.googleButton) return;
+    el.googleButton.hidden = true;
+    try {
+      const data = await api("/api/auth/google/config", { method: "GET" });
+      googleClientId = data?.enabled ? String(data.clientId || "") : "";
+    } catch (error) {
+      console.warn("[DegulAuth] google config unavailable", error);
+      googleClientId = "";
+    }
+    if (!googleClientId) return;
+    const google = await waitForGoogle();
+    if (!google?.accounts?.id) return;
+    if (!googleInitialized) {
+      google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleGoogleCredential,
+        use_fedcm_for_prompt: true,
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
+      googleInitialized = true;
+    }
+    el.googleButton.hidden = false;
+  }
+
+  async function handleGoogleCredential(response) {
+    if (!response?.credential || busy) return;
+    busy = true;
+    renderModal("loading");
+    try {
+      const data = await api("/api/auth/google", {
+        method: "POST",
+        body: JSON.stringify({ credential: response.credential })
+      });
+      if (data.sessionToken) storeToken(data.sessionToken);
+      currentUser = data.user;
+      selectedProfileColor = currentUser?.profileColor || selectedProfileColor;
+      updateProfileButton();
+      if (currentUser?.nickname) {
+        announceReady();
+        closeModal(false);
+        runPendingAction();
+      } else {
+        renderModal("nickname");
+        setMessage(text().googleLinked, false);
+        window.setTimeout(() => elements().input?.focus(), 80);
+      }
+    } catch (error) {
+      console.warn("[DegulAuth] google sign-in failed", error);
+      setMessage(error.message || text().unavailable, true);
+    } finally {
+      busy = false;
+      if (elements().overlay?.classList.contains("show")) {
+        renderModal(currentUser?.nickname ? "ready" : "nickname");
+      }
+    }
+  }
+
+  function startGoogleSignIn() {
+    if (!googleClientId || busy) return;
+    if (!hasConsent()) {
+      if (typeof window.openPrivacyPopup === "function") window.openPrivacyPopup(false);
+      return;
+    }
+    if (!window.google?.accounts?.id) {
+      setMessage(text().unavailable, true);
+      return;
+    }
+    window.google.accounts.id.prompt();
   }
 
   function runPendingAction() {
@@ -670,6 +771,7 @@
     el.close.addEventListener("click", () => closeModal(true));
     el.colorInput?.addEventListener("input", event => updateCharacterColors(event.target.value));
     el.colorSave?.addEventListener("click", saveProfileColor);
+    el.googleButton?.addEventListener("click", startGoogleSignIn);
     document.getElementById("privacyAgreeBtn")?.addEventListener("click", handlePrivacyAgreement, true);
     document.addEventListener("keydown", event => {
       if (event.key === "Escape" && el.overlay.classList.contains("show")) closeModal(true);
@@ -680,6 +782,7 @@
     });
 
     installFeatureGuards();
+    configureGoogleSignIn();
     if (ensureLocalTestUser()) return;
     if (hasConsent()) {
       ensureSession().catch(error => console.warn("[DegulAuth] silent login unavailable", error));

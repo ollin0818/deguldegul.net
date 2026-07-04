@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "deguldegul-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-04",
+  "compatibility_flags": ["nodejs_compat"],
+  "routes": [
+    {
+      "pattern": "deguldegul.net/api/*",
+      "zone_name": "deguldegul.net"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "ALLOWED_ORIGINS": "https://deguldegul.net,http://localhost:8787,http://127.0.0.1:8787",
+    "GOOGLE_CLIENT_ID": "265247715840-4gucb300eebr3iajjbq3ddfr3jevei59.apps.googleusercontent.com"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "deguldegul-auth",
+      "database_id": "b7b1cea3-738d-48c6-92f1-b7f7581ffdeb"
+    }
+  ]
+}
