@@ -86,6 +86,7 @@
       invalidLength: "닉네임은 2자 이상 12자 이하로 입력해주세요.",
       googleButton: "Google 계정으로 계속",
       googleLinked: "Google 계정이 연결되었습니다.",
+      googleReady: "아래 Google 버튼을 눌러 계속해 주세요.",
       profileAria: "AI 프로필 열기",
       closeAria: "닉네임 설정 닫기"
     },
@@ -115,6 +116,7 @@
       invalidLength: "Enter a nickname between 2 and 12 characters.",
       googleButton: "Continue with Google",
       googleLinked: "Google account connected.",
+      googleReady: "Use the Google button below to continue.",
       profileAria: "Open AI profile",
       closeAria: "Close nickname setup"
     },
@@ -144,6 +146,7 @@
       invalidLength: "ニックネームは2～12文字で入力してください。",
       googleButton: "Googleアカウントで続行",
       googleLinked: "Googleアカウントを連携しました。",
+      googleReady: "下のGoogleボタンで続行してください。",
       profileAria: "AIプロフィールを開く",
       closeAria: "ニックネーム設定を閉じる"
     },
@@ -173,6 +176,7 @@
       invalidLength: "请输入2至12个字符的昵称。",
       googleButton: "使用 Google 账号继续",
       googleLinked: "已连接 Google 账号。",
+      googleReady: "请使用下方的 Google 按钮继续。",
       profileAria: "打开AI资料",
       closeAria: "关闭昵称设置"
     }
@@ -536,7 +540,6 @@
     if (googleButtonRendered && el.googleButtonMount.childElementCount > 0) return;
     el.googleButtonMount.hidden = false;
     el.googleButtonMount.replaceChildren();
-    if (el.googleFallbackButton) el.googleFallbackButton.hidden = true;
     google.accounts.id.renderButton(el.googleButtonMount, {
       type: "standard",
       theme: "outline",
@@ -557,7 +560,7 @@
     }
     renderGoogleButton();
     if (googleButtonRendered) {
-      setMessage("", false);
+      setMessage(text().googleReady, false);
       return;
     }
     setMessage(text().connecting, false);
