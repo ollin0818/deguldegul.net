@@ -76,7 +76,7 @@
       submit: "닉네임 등록",
       guestButton: "게스트로 시작",
       googleFallbackButton: "Google로 시작",
-      googleNote: "기록을 다른 날에도 이어가려면 Google 계정으로 연결해 두세요.",
+      googleNote: "게스트로 바로 시작할 수 있어요. 기록을 오래 이어가고 싶다면 Google 계정으로 연결해 주세요.",
       colorLabel: "프로필 블록 색상",
       saveColor: "색상 저장",
       colorSaved: "프로필 색상을 저장했습니다.",
