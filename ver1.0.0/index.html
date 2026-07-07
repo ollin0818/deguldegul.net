@@ -496,6 +496,20 @@
             <span id="aiRankingMyBest">미등록</span>
           </div>
         </div>
+        <div class="aiLevelPanel" id="aiLevelPanel" aria-live="polite">
+          <div class="aiLevelHeader">
+            <span id="aiLevelTitle">AI 레벨</span>
+            <strong id="aiLevelValue">Lv.1</strong>
+          </div>
+          <div class="aiLevelProgress" aria-hidden="true">
+            <div class="aiLevelProgressFill" id="aiLevelProgressFill"></div>
+          </div>
+          <div class="aiLevelMeta">
+            <span id="aiLevelTotalXp">누적 XP 0</span>
+            <span id="aiLevelNextXp">다음 레벨까지 800 XP</span>
+          </div>
+          <div class="aiLevelRecentXp" id="aiLevelRecentXp">아직 AI 대전 XP가 없습니다.</div>
+        </div>
         <div class="aiRankingTable">
           <div class="aiRankingTableHead" aria-hidden="true">
             <span id="aiRankingHeadRank">순위</span>
@@ -870,7 +884,10 @@
     <div class="guestAuthUser" id="guestAuthUser" hidden>
       <div class="profileBlockCharacter profileBlockCharacterMedium" id="guestAuthAvatar" aria-hidden="true"><i></i><i></i></div>
       <div class="guestAuthUserText">
-        <strong id="guestAuthNickname"></strong>
+        <div class="guestAuthNicknameLine">
+          <span class="guestAuthLevelBadge" id="guestAuthLevelBadge">Lv.1</span>
+          <strong id="guestAuthNickname"></strong>
+        </div>
         <span id="guestAuthUserHint">AI 랭킹 프로필에 사용됩니다.</span>
       </div>
     </div>
@@ -1104,6 +1121,7 @@
 <script src="assets_v1.0.0/js/degul-auth.js?v=21-google-logout"></script>
 <script src="assets_v1.0.0/js/degul-ai-ranking.js?v=7-operator-remote-ranking"></script>
 <script src="assets_v1.0.0/js/degul-test-guard.js?v=101-test-host-only"></script>
+<script src="assets_v1.0.0/js/degul-level-system.js?v=1-ai-level"></script>
 
 
 <div class="degulTutorialLayer" id="degulTutorialLayer" aria-hidden="true">

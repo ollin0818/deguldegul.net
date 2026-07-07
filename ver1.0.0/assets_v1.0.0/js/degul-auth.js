@@ -418,6 +418,9 @@
     }
 
     updateProfileButton();
+    if (mode === "ready" && typeof window.DegulLevelSystem?.updatePanel === "function") {
+      window.DegulLevelSystem.updatePanel();
+    }
   }
 
   function showModal(reason) {
