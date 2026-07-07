@@ -324,7 +324,7 @@
         recent: "최근 획득",
         noRecent: "아직 AI 대전 XP가 없습니다.",
         result: (xp, level) => `+${formatNumber(xp)} XP · Lv.${level}`,
-        limited: "XP 제한",
+        limited: "0 XP",
         levelUp: (level) => `레벨 업! Lv.${level}`
       },
       en: {
@@ -335,7 +335,7 @@
         recent: "Last XP",
         noRecent: "No AI match XP yet.",
         result: (xp, level) => `+${formatNumber(xp)} XP · Lv.${level}`,
-        limited: "XP limited",
+        limited: "0 XP",
         levelUp: (level) => `Level up! Lv.${level}`
       }
     };
