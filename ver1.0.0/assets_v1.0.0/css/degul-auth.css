@@ -77,6 +77,11 @@
   box-shadow: 0 30px 90px rgba(15, 23, 42, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.68);
 }
 
+.guestAuthOverlay.my-info-mode .guestAuthDialog {
+  width: min(760px, calc(100vw - 44px));
+  padding: 24px;
+}
+
 #lobby .lobbyCard button.guestAuthCloseButton,
 button.guestAuthCloseButton {
   position: absolute;
@@ -233,20 +238,39 @@ button.guestAuthColorSaveButton[hidden] {
 
 .guestAuthAccountInfo {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: 10px;
 }
 
 .guestAuthInfoRow {
   display: grid;
-  grid-template-columns: 104px minmax(0, 1fr);
+  grid-template-columns: 82px minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
-  min-height: 38px;
-  padding: 8px 11px;
+  gap: 8px;
+  min-height: 34px;
+  padding: 7px 10px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 13px;
   background: rgba(248, 250, 252, 0.72);
+}
+
+.guestAuthOverlay.my-info-mode .guestAuthCharacterEditor {
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 14px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+}
+
+.guestAuthOverlay.my-info-mode .profileBlockCharacterLarge {
+  width: 70px;
+  height: 70px;
+  border-radius: 20px;
+}
+
+.guestAuthOverlay.my-info-mode .guestAuthUser {
+  min-height: 46px;
+  padding: 10px 12px;
 }
 
 .guestAuthInfoRow span {
@@ -370,6 +394,15 @@ body.dark-mode button.guestAuthCloseButton {
 
   .guestAuthDialog {
     padding: 25px 20px 21px;
+  }
+
+  .guestAuthOverlay.my-info-mode .guestAuthDialog {
+    width: min(520px, calc(100vw - 32px));
+    padding: 22px 18px 20px;
+  }
+
+  .guestAuthAccountInfo {
+    grid-template-columns: 1fr;
   }
 }
 

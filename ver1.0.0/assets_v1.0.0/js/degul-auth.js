@@ -447,7 +447,13 @@
 
   function formatAccountDate(value) {
     if (!value) return text().emptyValue;
-    const date = new Date(value);
+    const numeric = Number(value);
+    let date;
+    if (Number.isFinite(numeric)) {
+      date = new Date(numeric < 100000000000 ? numeric * 1000 : numeric);
+    } else {
+      date = new Date(value);
+    }
     if (Number.isNaN(date.getTime())) return text().emptyValue;
     return date.toLocaleDateString(language() === "ko" ? "ko-KR" : undefined, {
       year: "numeric",
@@ -488,6 +494,7 @@
     const copy = text();
     const nickname = currentUser?.nickname || "";
 
+    el.overlay.classList.toggle("my-info-mode", mode === "ready");
     el.title.textContent = mode === "ready" ? copy.myInfoTitle : copy.title;
     el.purpose.textContent = copy.purpose[modalReason] || copy.purpose.profile;
     el.close.setAttribute("aria-label", mode === "ready" ? copy.closeMyInfoAria : copy.closeAria);
