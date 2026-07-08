@@ -85,6 +85,7 @@
       loggedIn: "AI 랭킹 프로필에 사용됩니다.",
       unavailable: "로그인 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.",
       invalidLength: "닉네임은 2자 이상 12자 이하로 입력해주세요.",
+      nicknameTaken: "닉네임 중복입니다.",
       googleButton: "Google 계정으로 계속",
       googleLinked: "Google 계정이 연결되었습니다.",
       googleReady: "아래 Google 버튼을 눌러 계속해 주세요.",
@@ -116,6 +117,7 @@
       loggedIn: "Used for your AI ranking profile.",
       unavailable: "The login server is unavailable. Please try again shortly.",
       invalidLength: "Enter a nickname between 2 and 12 characters.",
+      nicknameTaken: "Nickname already exists.",
       googleButton: "Continue with Google",
       googleLinked: "Google account connected.",
       googleReady: "Use the Google button below to continue.",
@@ -147,6 +149,7 @@
       loggedIn: "AIランキングプロフィールに使用されます。",
       unavailable: "ログインサーバーに接続できません。しばらくしてから再試行してください。",
       invalidLength: "ニックネームは2～12文字で入力してください。",
+      nicknameTaken: "ニックネームが重複しています。",
       googleButton: "Googleアカウントで続行",
       googleLinked: "Googleアカウントを連携しました。",
       googleReady: "下のGoogleボタンで続行してください。",
@@ -178,6 +181,7 @@
       loggedIn: "用于AI排行榜资料。",
       unavailable: "无法连接登录服务器，请稍后重试。",
       invalidLength: "请输入2至12个字符的昵称。",
+      nicknameTaken: "昵称重复。",
       googleButton: "使用 Google 账号继续",
       googleLinked: "已连接 Google 账号。",
       googleReady: "请使用下方的 Google 按钮继续。",
@@ -726,7 +730,7 @@
         storeToken("");
         currentUser = null;
       }
-      setMessage(error.message || text().unavailable, true);
+      setMessage(error.code === "nickname_taken" ? text().nicknameTaken : (error.message || text().unavailable), true);
     } finally {
       busy = false;
       if (elements().overlay?.classList.contains("show")) renderModal(currentUser?.nickname ? "ready" : "nickname");
