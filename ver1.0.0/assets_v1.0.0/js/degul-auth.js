@@ -825,6 +825,9 @@
       setMessage(error.message || text().unavailable, true);
     } finally {
       busy = false;
+      if (elements().overlay?.classList.contains("show")) {
+        renderModal(currentUser?.nickname ? "ready" : (currentUser && authMethod ? "nickname" : "choice"));
+      }
     }
   }
 
