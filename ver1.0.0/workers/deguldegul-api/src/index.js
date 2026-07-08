@@ -202,7 +202,7 @@ async function setNickname(request, env) {
     ).bind(nickname, nicknameKey(nickname), color, current, current, session.user.uid).run();
   } catch (error) {
     if (String(error?.message || "").includes("UNIQUE")) {
-      return fail(request, env, 409, "nickname_taken", "닉네임 중복입니다.");
+      return fail(request, env, 409, "nickname_taken", "이미 사용 중인 닉네임입니다.");
     }
     throw error;
   }

@@ -85,7 +85,7 @@
       loggedIn: "AI 랭킹 프로필에 사용됩니다.",
       unavailable: "로그인 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.",
       invalidLength: "닉네임은 2자 이상 12자 이하로 입력해주세요.",
-      nicknameTaken: "닉네임 중복입니다.",
+      nicknameTaken: "이미 사용 중인 닉네임입니다.",
       googleButton: "Google 계정으로 계속",
       googleLinked: "Google 계정이 연결되었습니다.",
       googleReady: "아래 Google 버튼을 눌러 계속해 주세요.",
