@@ -431,6 +431,12 @@
     modalReason = reason || "profile";
     const overlay = elements().overlay;
     if (!overlay) return;
+    if (currentUser && !currentUser.nickname) {
+      currentUser = null;
+      authMethod = "";
+      sessionPromise = null;
+      storeToken("");
+    }
     overlay.classList.add("show");
     overlay.setAttribute("aria-hidden", "false");
     renderModal(currentUser?.nickname ? "ready" : "choice");
@@ -545,6 +551,9 @@
       googleInitialized = true;
     }
     renderGoogleButton();
+    if (elements().overlay?.classList.contains("show")) {
+      window.requestAnimationFrame(renderGoogleButton);
+    }
   }
 
   function renderGoogleButton() {
