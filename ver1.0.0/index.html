@@ -45,7 +45,7 @@
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-legacy-ver210.min.css?v=103-ranking-ui">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-volume-slider.min.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-qhd-uniform.min.css?v=100">
-<link rel="stylesheet" href="assets_v1.0.0/css/degul-auth.min.css?v=4">
+<link rel="stylesheet" href="assets_v1.0.0/css/degul-auth.min.css?v=5-my-info-profile">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-google-auth.css?v=6-google-logout">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-tablet-performance.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-ai-history.css?v=104-level-visual">
@@ -891,6 +891,36 @@
         <span id="guestAuthUserHint">AI 랭킹 프로필에 사용됩니다.</span>
       </div>
     </div>
+    <div class="guestAuthAccountInfo" id="guestAuthAccountInfo" hidden>
+      <div class="guestAuthInfoRow">
+        <span id="guestAuthMethodLabel">로그인 방식</span>
+        <strong id="guestAuthMethodValue">게스트 계정</strong>
+      </div>
+      <div class="guestAuthInfoRow" id="guestAuthEmailRow" hidden>
+        <span id="guestAuthEmailLabel">Google 이메일</span>
+        <strong id="guestAuthEmailValue"></strong>
+      </div>
+      <div class="guestAuthInfoRow" id="guestAuthGoogleNameRow" hidden>
+        <span id="guestAuthGoogleNameLabel">Google 이름</span>
+        <strong id="guestAuthGoogleNameValue"></strong>
+      </div>
+      <div class="guestAuthInfoRow">
+        <span id="guestAuthCreatedLabel">계정 생성일</span>
+        <strong id="guestAuthCreatedValue">-</strong>
+      </div>
+      <div class="guestAuthInfoRow">
+        <span id="guestAuthIdLabel">계정 ID</span>
+        <strong id="guestAuthIdValue">-</strong>
+      </div>
+      <div class="guestAuthInfoRow">
+        <span id="guestAuthRoleLabel">계정 권한</span>
+        <strong id="guestAuthRoleValue">플레이어</strong>
+      </div>
+      <div class="guestAuthInfoRow">
+        <span id="guestAuthColorValueLabel">프로필 색상</span>
+        <strong id="guestAuthColorValue">#64beff</strong>
+      </div>
+    </div>
     <button class="guestAuthColorSaveButton" id="guestAuthColorSaveButton" type="button" hidden>색상 저장</button>
     <button class="guestAuthLogoutButton" id="guestAuthLogoutButton" type="button" hidden>로그아웃</button>
     <div class="guestAuthMessage" id="guestAuthMessage" aria-live="polite"></div>
@@ -1118,7 +1148,7 @@
 
 
 <script src="assets_v1.0.0/js/degul-inline-04.js?v=101-hide-online-panel"></script>
-<script src="assets_v1.0.0/js/degul-auth.js?v=25-auth-choice-session-reset"></script>
+<script src="assets_v1.0.0/js/degul-auth.js?v=26-my-info-profile"></script>
 <script src="assets_v1.0.0/js/degul-ai-ranking.js?v=7-operator-remote-ranking"></script>
 <script src="assets_v1.0.0/js/degul-test-guard.js?v=101-test-host-only"></script>
 <script src="assets_v1.0.0/js/degul-level-system.js?v=3-zero-xp-label"></script>

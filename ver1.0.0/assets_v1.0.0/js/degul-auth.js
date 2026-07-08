@@ -62,15 +62,16 @@
   const texts = {
     ko: {
       title: "플레이어 닉네임 설정",
+      myInfoTitle: "내 정보",
       purpose: {
         ai: "AI 대전 기록과 랭킹에 사용할 닉네임을 설정해주세요.",
         ranking: "AI 랭킹에 참여하고 내 기록을 확인하려면 닉네임이 필요합니다.",
         online: "AI 랭킹에 사용할 닉네임을 설정해주세요.",
-        profile: "AI 기록과 랭킹에 사용하는 대표 프로필입니다."
+        profile: "내 계정과 게임 기록에 사용하는 정보를 확인할 수 있습니다."
       },
       connecting: "로그인 정보를 준비하고 있습니다.",
       nicknameNeeded: "닉네임 등록 필요",
-      ready: "프로필 등록 완료",
+      ready: "계정 정보",
       chooseMethod: "로그인 방법 선택",
       placeholder: "닉네임 2~12자",
       submit: "닉네임 등록",
@@ -89,16 +90,30 @@
       googleButton: "Google 계정으로 계속",
       googleLinked: "Google 계정이 연결되었습니다.",
       googleReady: "아래 Google 버튼을 눌러 계속해 주세요.",
+      accountMethod: "로그인 방식",
+      accountGuest: "게스트 계정",
+      accountGoogle: "Google 계정",
+      accountEmail: "Google 이메일",
+      accountGoogleName: "Google 이름",
+      accountCreated: "계정 생성일",
+      accountId: "계정 ID",
+      accountRole: "계정 권한",
+      accountRoleOperator: "운영자",
+      accountRolePlayer: "플레이어",
+      accountColor: "프로필 색상",
+      emptyValue: "-",
       profileAria: "AI 프로필 열기",
-      closeAria: "닉네임 설정 닫기"
+      closeAria: "닉네임 설정 닫기",
+      closeMyInfoAria: "내 정보 닫기"
     },
     en: {
       title: "Set player nickname",
+      myInfoTitle: "My info",
       purpose: {
         ai: "Set a nickname for AI match records and rankings.",
         ranking: "A nickname is required to join AI rankings and view your records.",
         online: "Set the nickname you will use for AI rankings.",
-        profile: "This profile is used for AI records and rankings."
+        profile: "Review the account details used for your profile and records."
       },
       connecting: "Preparing your sign-in.",
       nicknameNeeded: "Nickname required",
@@ -121,16 +136,30 @@
       googleButton: "Continue with Google",
       googleLinked: "Google account connected.",
       googleReady: "Use the Google button below to continue.",
+      accountMethod: "Sign-in method",
+      accountGuest: "Guest account",
+      accountGoogle: "Google account",
+      accountEmail: "Google email",
+      accountGoogleName: "Google name",
+      accountCreated: "Created",
+      accountId: "Account ID",
+      accountRole: "Account role",
+      accountRoleOperator: "Operator",
+      accountRolePlayer: "Player",
+      accountColor: "Profile color",
+      emptyValue: "-",
       profileAria: "Open AI profile",
-      closeAria: "Close nickname setup"
+      closeAria: "Close nickname setup",
+      closeMyInfoAria: "Close my info"
     },
     ja: {
       title: "プレイヤーニックネーム設定",
+      myInfoTitle: "マイ情報",
       purpose: {
         ai: "AI対戦の記録とランキングに使うニックネームを設定してください。",
         ranking: "AIランキングへの参加と記録確認にはニックネームが必要です。",
         online: "AIランキングで使うニックネームを設定してください。",
-        profile: "AI記録とランキングで使うプロフィールです。"
+        profile: "プロフィールと記録に使うアカウント情報を確認できます。"
       },
       connecting: "ログイン情報を準備しています。",
       nicknameNeeded: "ニックネーム登録が必要",
@@ -153,16 +182,30 @@
       googleButton: "Googleアカウントで続行",
       googleLinked: "Googleアカウントを連携しました。",
       googleReady: "下のGoogleボタンで続行してください。",
+      accountMethod: "ログイン方法",
+      accountGuest: "ゲストアカウント",
+      accountGoogle: "Googleアカウント",
+      accountEmail: "Googleメール",
+      accountGoogleName: "Google名",
+      accountCreated: "作成日",
+      accountId: "アカウントID",
+      accountRole: "権限",
+      accountRoleOperator: "運営者",
+      accountRolePlayer: "プレイヤー",
+      accountColor: "プロフィールカラー",
+      emptyValue: "-",
       profileAria: "AIプロフィールを開く",
-      closeAria: "ニックネーム設定を閉じる"
+      closeAria: "ニックネーム設定を閉じる",
+      closeMyInfoAria: "マイ情報を閉じる"
     },
     zh: {
       title: "设置玩家昵称",
+      myInfoTitle: "我的信息",
       purpose: {
         ai: "请设置用于AI对战记录和排行榜的昵称。",
         ranking: "参加AI排行榜和查看记录需要设置昵称。",
         online: "请设置用于AI排行榜的昵称。",
-        profile: "此资料用于AI记录和排行榜。"
+        profile: "查看用于个人资料和记录的账号信息。"
       },
       connecting: "正在准备登录信息。",
       nicknameNeeded: "需要设置昵称",
@@ -185,8 +228,21 @@
       googleButton: "使用 Google 账号继续",
       googleLinked: "已连接 Google 账号。",
       googleReady: "请使用下方的 Google 按钮继续。",
+      accountMethod: "登录方式",
+      accountGuest: "访客账号",
+      accountGoogle: "Google 账号",
+      accountEmail: "Google 邮箱",
+      accountGoogleName: "Google 名称",
+      accountCreated: "创建日期",
+      accountId: "账号 ID",
+      accountRole: "账号权限",
+      accountRoleOperator: "运营者",
+      accountRolePlayer: "玩家",
+      accountColor: "资料颜色",
+      emptyValue: "-",
       profileAria: "打开AI资料",
-      closeAria: "关闭昵称设置"
+      closeAria: "关闭昵称设置",
+      closeMyInfoAria: "关闭我的信息"
     }
   };
 
@@ -217,6 +273,23 @@
       avatar: document.getElementById("guestAuthAvatar"),
       nickname: document.getElementById("guestAuthNickname"),
       userHint: document.getElementById("guestAuthUserHint"),
+      accountInfo: document.getElementById("guestAuthAccountInfo"),
+      methodLabel: document.getElementById("guestAuthMethodLabel"),
+      methodValue: document.getElementById("guestAuthMethodValue"),
+      emailRow: document.getElementById("guestAuthEmailRow"),
+      emailLabel: document.getElementById("guestAuthEmailLabel"),
+      emailValue: document.getElementById("guestAuthEmailValue"),
+      googleNameRow: document.getElementById("guestAuthGoogleNameRow"),
+      googleNameLabel: document.getElementById("guestAuthGoogleNameLabel"),
+      googleNameValue: document.getElementById("guestAuthGoogleNameValue"),
+      createdLabel: document.getElementById("guestAuthCreatedLabel"),
+      createdValue: document.getElementById("guestAuthCreatedValue"),
+      idLabel: document.getElementById("guestAuthIdLabel"),
+      idValue: document.getElementById("guestAuthIdValue"),
+      roleLabel: document.getElementById("guestAuthRoleLabel"),
+      roleValue: document.getElementById("guestAuthRoleValue"),
+      colorValueLabel: document.getElementById("guestAuthColorValueLabel"),
+      colorValue: document.getElementById("guestAuthColorValue"),
       profile: document.getElementById("lobbyAuthProfileButton"),
       profileAvatar: document.getElementById("lobbyAuthProfileAvatar"),
       characterPreview: document.getElementById("guestAuthCharacterPreview"),
@@ -372,6 +445,42 @@
     }
   }
 
+  function formatAccountDate(value) {
+    if (!value) return text().emptyValue;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return text().emptyValue;
+    return date.toLocaleDateString(language() === "ko" ? "ko-KR" : undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    });
+  }
+
+  function renderAccountInfo(el, copy) {
+    const user = currentUser || {};
+    const profileColor = user.profileColor || selectedProfileColor || "#64beff";
+    const isGoogle = Boolean(user.googleLinked);
+    const email = user.googleEmail || "";
+    const googleName = user.googleName || "";
+
+    if (el.methodLabel) el.methodLabel.textContent = copy.accountMethod;
+    if (el.methodValue) el.methodValue.textContent = isGoogle ? copy.accountGoogle : copy.accountGuest;
+    if (el.emailLabel) el.emailLabel.textContent = copy.accountEmail;
+    if (el.emailValue) el.emailValue.textContent = email;
+    if (el.emailRow) el.emailRow.hidden = !isGoogle || !email;
+    if (el.googleNameLabel) el.googleNameLabel.textContent = copy.accountGoogleName;
+    if (el.googleNameValue) el.googleNameValue.textContent = googleName;
+    if (el.googleNameRow) el.googleNameRow.hidden = !isGoogle || !googleName;
+    if (el.createdLabel) el.createdLabel.textContent = copy.accountCreated;
+    if (el.createdValue) el.createdValue.textContent = formatAccountDate(user.createdAt);
+    if (el.idLabel) el.idLabel.textContent = copy.accountId;
+    if (el.idValue) el.idValue.textContent = user.id || copy.emptyValue;
+    if (el.roleLabel) el.roleLabel.textContent = copy.accountRole;
+    if (el.roleValue) el.roleValue.textContent = user.role === "operator" ? copy.accountRoleOperator : copy.accountRolePlayer;
+    if (el.colorValueLabel) el.colorValueLabel.textContent = copy.accountColor;
+    if (el.colorValue) el.colorValue.textContent = profileColor.toUpperCase();
+  }
+
   function renderModal(mode) {
     modalMode = mode;
     const el = elements();
@@ -379,9 +488,9 @@
     const copy = text();
     const nickname = currentUser?.nickname || "";
 
-    el.title.textContent = copy.title;
+    el.title.textContent = mode === "ready" ? copy.myInfoTitle : copy.title;
     el.purpose.textContent = copy.purpose[modalReason] || copy.purpose.profile;
-    el.close.setAttribute("aria-label", copy.closeAria);
+    el.close.setAttribute("aria-label", mode === "ready" ? copy.closeMyInfoAria : copy.closeAria);
     el.input.placeholder = copy.placeholder;
     el.submit.textContent = copy.submit;
     if (el.guestButton) el.guestButton.textContent = copy.guestButton;
@@ -397,6 +506,7 @@
     el.choice.hidden = mode !== "choice";
     el.form.hidden = mode !== "nickname";
     el.user.hidden = mode !== "ready";
+    if (el.accountInfo) el.accountInfo.hidden = mode !== "ready";
     el.colorSave.hidden = mode !== "ready";
     if (el.logoutButton) el.logoutButton.hidden = mode !== "ready" || !currentUser?.googleLinked;
     el.state.classList.toggle("ready", mode === "ready");
@@ -415,6 +525,7 @@
       el.state.textContent = copy.ready;
       el.nickname.textContent = nickname;
       el.userHint.textContent = currentUser?.googleLinked ? `${copy.loggedIn} · Google` : copy.loggedIn;
+      renderAccountInfo(el, copy);
       setMessage("", false);
     } else {
       el.state.textContent = "";
