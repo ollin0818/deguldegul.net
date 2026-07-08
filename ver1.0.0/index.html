@@ -45,7 +45,7 @@
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-legacy-ver210.min.css?v=103-ranking-ui">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-volume-slider.min.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-qhd-uniform.min.css?v=100">
-<link rel="stylesheet" href="assets_v1.0.0/css/degul-auth.min.css?v=6-my-info-horizontal">
+<link rel="stylesheet" href="assets_v1.0.0/css/degul-auth.min.css?v=7-my-info-level-card">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-google-auth.css?v=6-google-logout">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-tablet-performance.css?v=100">
 <link rel="stylesheet" href="assets_v1.0.0/css/degul-ai-history.css?v=104-level-visual">
@@ -864,11 +864,26 @@
     <h2 id="guestAuthTitle">플레이어 닉네임 설정</h2>
     <p class="guestAuthPurpose" id="guestAuthPurpose">AI 랭킹에 사용할 닉네임을 설정해주세요.</p>
     <div class="guestAuthCharacterEditor">
-      <div class="profileBlockCharacter profileBlockCharacterLarge" id="guestAuthCharacterPreview" aria-hidden="true"><i></i><i></i></div>
-      <label class="guestAuthColorPicker" for="guestProfileColorInput">
-        <span id="guestAuthColorLabel">프로필 블록 색상</span>
-        <input id="guestProfileColorInput" type="color" value="#64beff">
-      </label>
+      <div class="guestAuthColorEditor">
+        <div class="profileBlockCharacter profileBlockCharacterLarge" id="guestAuthCharacterPreview" aria-hidden="true"><i></i><i></i></div>
+        <label class="guestAuthColorPicker" for="guestProfileColorInput">
+          <span id="guestAuthColorLabel">프로필 블록 색상</span>
+          <input id="guestProfileColorInput" type="color" value="#64beff">
+        </label>
+      </div>
+      <div class="guestAuthLevelCard" id="guestAuthLevelCard" hidden>
+        <div class="guestAuthLevelTop">
+          <span id="guestAuthLevelTitle">AI 레벨</span>
+          <strong id="guestAuthLevelValue">Lv.1</strong>
+        </div>
+        <div class="guestAuthLevelProgress" aria-hidden="true">
+          <div class="guestAuthLevelProgressFill" id="guestAuthLevelProgressFill"></div>
+        </div>
+        <div class="guestAuthLevelMeta">
+          <span id="guestAuthLevelTotalXp">누적 XP 0</span>
+          <span id="guestAuthLevelNextXp">다음 레벨까지 800 XP</span>
+        </div>
+      </div>
     </div>
     <div class="guestAuthState" id="guestAuthState">서버 연결 중</div>
     <div class="guestAuthChoice" id="guestAuthChoice">
@@ -1148,7 +1163,7 @@
 
 
 <script src="assets_v1.0.0/js/degul-inline-04.js?v=101-hide-online-panel"></script>
-<script src="assets_v1.0.0/js/degul-auth.js?v=27-my-info-horizontal"></script>
+<script src="assets_v1.0.0/js/degul-auth.js?v=28-my-info-level-card"></script>
 <script src="assets_v1.0.0/js/degul-ai-ranking.js?v=7-operator-remote-ranking"></script>
 <script src="assets_v1.0.0/js/degul-test-guard.js?v=101-test-host-only"></script>
 <script src="assets_v1.0.0/js/degul-level-system.js?v=3-zero-xp-label"></script>

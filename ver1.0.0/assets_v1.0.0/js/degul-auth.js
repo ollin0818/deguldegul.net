@@ -101,6 +101,10 @@
       accountRoleOperator: "운영자",
       accountRolePlayer: "플레이어",
       accountColor: "프로필 색상",
+      levelTitle: "AI 레벨",
+      levelTotal: "누적 XP",
+      levelNext: "다음 레벨까지",
+      levelMax: "최대 레벨",
       emptyValue: "-",
       profileAria: "AI 프로필 열기",
       closeAria: "닉네임 설정 닫기",
@@ -147,6 +151,10 @@
       accountRoleOperator: "Operator",
       accountRolePlayer: "Player",
       accountColor: "Profile color",
+      levelTitle: "AI Level",
+      levelTotal: "Total XP",
+      levelNext: "To next level",
+      levelMax: "Max level",
       emptyValue: "-",
       profileAria: "Open AI profile",
       closeAria: "Close nickname setup",
@@ -193,6 +201,10 @@
       accountRoleOperator: "運営者",
       accountRolePlayer: "プレイヤー",
       accountColor: "プロフィールカラー",
+      levelTitle: "AIレベル",
+      levelTotal: "累計XP",
+      levelNext: "次のレベルまで",
+      levelMax: "最大レベル",
       emptyValue: "-",
       profileAria: "AIプロフィールを開く",
       closeAria: "ニックネーム設定を閉じる",
@@ -239,6 +251,10 @@
       accountRoleOperator: "运营者",
       accountRolePlayer: "玩家",
       accountColor: "资料颜色",
+      levelTitle: "AI等级",
+      levelTotal: "累计 XP",
+      levelNext: "距离下一级",
+      levelMax: "最高等级",
       emptyValue: "-",
       profileAria: "打开AI资料",
       closeAria: "关闭昵称设置",
@@ -296,6 +312,12 @@
       colorInput: document.getElementById("guestProfileColorInput"),
       colorLabel: document.getElementById("guestAuthColorLabel"),
       colorSave: document.getElementById("guestAuthColorSaveButton"),
+      levelCard: document.getElementById("guestAuthLevelCard"),
+      levelTitle: document.getElementById("guestAuthLevelTitle"),
+      levelValue: document.getElementById("guestAuthLevelValue"),
+      levelFill: document.getElementById("guestAuthLevelProgressFill"),
+      levelTotalXp: document.getElementById("guestAuthLevelTotalXp"),
+      levelNextXp: document.getElementById("guestAuthLevelNextXp"),
       logoutButton: document.getElementById("guestAuthLogoutButton"),
       googleButtonMount: document.getElementById("guestGoogleButtonMount")
     };
@@ -462,6 +484,30 @@
     });
   }
 
+  function formatAccountNumber(value) {
+    return Math.max(0, Math.round(Number(value) || 0)).toLocaleString(language() === "ko" ? "ko-KR" : undefined);
+  }
+
+  function renderLevelCard(el, copy) {
+    if (!el.levelCard) return;
+    const levelSystem = window.DegulLevelSystem;
+    const profile = typeof levelSystem?.loadProfile === "function" ? levelSystem.loadProfile() : { totalXp: 0 };
+    const info = typeof levelSystem?.getLevelInfo === "function"
+      ? levelSystem.getLevelInfo(profile.totalXp)
+      : { level: 1, totalXp: 0, xpToNext: 800, progress: 0 };
+
+    el.levelCard.hidden = false;
+    if (el.levelTitle) el.levelTitle.textContent = copy.levelTitle;
+    if (el.levelValue) el.levelValue.textContent = `Lv.${info.level}`;
+    if (el.levelFill) el.levelFill.style.width = `${Math.round(Math.max(0, Math.min(1, info.progress || 0)) * 100)}%`;
+    if (el.levelTotalXp) el.levelTotalXp.textContent = `${copy.levelTotal} ${formatAccountNumber(info.totalXp)}`;
+    if (el.levelNextXp) {
+      el.levelNextXp.textContent = info.xpToNext > 0
+        ? `${copy.levelNext} ${formatAccountNumber(info.xpToNext)} XP`
+        : copy.levelMax;
+    }
+  }
+
   function renderAccountInfo(el, copy) {
     const user = currentUser || {};
     const profileColor = user.profileColor || selectedProfileColor || "#64beff";
@@ -485,6 +531,7 @@
     if (el.roleValue) el.roleValue.textContent = user.role === "operator" ? copy.accountRoleOperator : copy.accountRolePlayer;
     if (el.colorValueLabel) el.colorValueLabel.textContent = copy.accountColor;
     if (el.colorValue) el.colorValue.textContent = profileColor.toUpperCase();
+    renderLevelCard(el, copy);
   }
 
   function renderModal(mode) {
@@ -514,6 +561,7 @@
     el.form.hidden = mode !== "nickname";
     el.user.hidden = mode !== "ready";
     if (el.accountInfo) el.accountInfo.hidden = mode !== "ready";
+    if (el.levelCard) el.levelCard.hidden = mode !== "ready";
     el.colorSave.hidden = mode !== "ready";
     if (el.logoutButton) el.logoutButton.hidden = mode !== "ready" || !currentUser?.googleLinked;
     el.state.classList.toggle("ready", mode === "ready");
