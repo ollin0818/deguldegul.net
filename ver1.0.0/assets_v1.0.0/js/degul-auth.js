@@ -433,10 +433,10 @@
     if (!overlay) return;
     overlay.classList.add("show");
     overlay.setAttribute("aria-hidden", "false");
-    renderModal(currentUser?.nickname ? "ready" : (currentUser && authMethod ? "nickname" : "choice"));
+    renderModal(currentUser?.nickname ? "ready" : "choice");
     window.requestAnimationFrame(renderGoogleButton);
     if (!currentUser?.nickname) {
-      window.setTimeout(() => elements().input?.focus(), 80);
+      window.setTimeout(() => elements().guestButton?.focus(), 80);
     }
   }
 
