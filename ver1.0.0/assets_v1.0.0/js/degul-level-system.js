@@ -61,6 +61,19 @@
     } catch {}
   }
 
+  function currentAccountId() {
+    try {
+      return String(window.DegulAuth?.getUser?.()?.id || "").trim();
+    } catch {
+      return "";
+    }
+  }
+
+  function profileKey(accountId = currentAccountId()) {
+    const scope = accountId ? encodeURIComponent(accountId) : "signed-out";
+    return `${PROFILE_KEY}:${scope}`;
+  }
+
   function makeSessionId() {
     try {
       if (crypto?.randomUUID) return crypto.randomUUID();
@@ -68,9 +81,9 @@
     return `level-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   }
 
-  function loadProfile() {
+  function loadProfile(accountId) {
     try {
-      const parsed = JSON.parse(safeGet(PROFILE_KEY, ""));
+      const parsed = JSON.parse(safeGet(profileKey(accountId), ""));
       const matches = Array.isArray(parsed?.recentMatches) ? parsed.recentMatches : [];
       return {
         version: 1,
@@ -99,7 +112,7 @@
     };
   }
 
-  function saveProfile(profile) {
+  function saveProfile(profile, accountId) {
     const normalized = {
       version: 1,
       totalXp: Math.max(0, Math.min(1600000, Math.round(Number(profile.totalXp) || 0))),
@@ -108,7 +121,7 @@
         : [],
       updatedAt: new Date().toISOString()
     };
-    safeSet(PROFILE_KEY, JSON.stringify(normalized));
+    safeSet(profileKey(accountId), JSON.stringify(normalized));
     return normalized;
   }
 
@@ -170,8 +183,11 @@
     if (isTestMode() || readGlobal(() => matchMode, "") !== "ai") return null;
     const difficulty = String(readGlobal(() => aiDifficulty, "normal"));
     if (!Object.prototype.hasOwnProperty.call(DIFFICULTY_MULTIPLIERS, difficulty)) return null;
+    const accountId = currentAccountId();
+    if (!accountId) return null;
     activeSession = {
       id: makeSessionId(),
+      accountId,
       difficulty,
       startedAtMs: performance.now(),
       moves: 0,
@@ -247,7 +263,7 @@
       rawXp = 500 * multiplier * survivalMultiplier * activityMultiplier;
     }
 
-    const profile = loadProfile();
+    const profile = loadProfile(activeSession.accountId);
     const recentPenalty = getRecentPenalty(profile, flags, result);
     if (recentPenalty === 0) flags.push("repeatLimited");
     else if (recentPenalty < 1) flags.push("repeatReduced");
@@ -271,15 +287,16 @@
       clearSession();
       return null;
     }
+    const accountId = activeSession.accountId;
     const award = calculateAward(winner);
     activeSession = null;
     if (!award) return null;
 
-    const beforeProfile = loadProfile();
+    const beforeProfile = loadProfile(accountId);
     const before = getLevelInfo(beforeProfile.totalXp);
     const nextTotal = Math.min(1600000, beforeProfile.totalXp + award.xp);
     const after = getLevelInfo(nextTotal);
-    saveProfile({ ...beforeProfile, totalXp: nextTotal, recentMatches: [award, ...beforeProfile.recentMatches] });
+    saveProfile({ ...beforeProfile, totalXp: nextTotal, recentMatches: [award, ...beforeProfile.recentMatches] }, accountId);
     lastAward = { ...award, before, after, totalXp: nextTotal };
     updateLevelPanel();
     window.dispatchEvent(new CustomEvent("degul:ai-level-updated", { detail: lastAward }));
@@ -288,7 +305,8 @@
 
   function recordQuitIfNeeded() {
     if (!activeSession) return;
-    const profile = loadProfile();
+    const accountId = activeSession.accountId;
+    const profile = loadProfile(accountId);
     saveProfile({
       ...profile,
       recentMatches: [{
@@ -303,7 +321,7 @@
         flags: ["quit"],
         playedAt: new Date().toISOString()
       }, ...profile.recentMatches]
-    });
+    }, accountId);
     activeSession = null;
     lastAward = null;
     updateLevelPanel();
@@ -470,6 +488,8 @@
     }, "__degulLevelLangWrapped");
 
     updateLevelPanel();
+    window.addEventListener("degul:auth-ready", updateLevelPanel);
+    window.addEventListener("degul:auth-logout", updateLevelPanel);
   }
 
   window.DegulLevelSystem = {

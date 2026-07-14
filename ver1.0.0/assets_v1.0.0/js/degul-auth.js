@@ -794,6 +794,7 @@
       selectedProfileColor = "#64beff";
       updateCharacterColors(selectedProfileColor);
       updateProfileButton();
+      window.dispatchEvent(new CustomEvent("degul:auth-logout"));
       if (typeof window.updateGameModeUI === "function") window.updateGameModeUI();
       if (wasOpen) {
         renderModal("choice");
