@@ -254,6 +254,9 @@
         flags.push("quickWin");
       }
       rawXp = 1000 * multiplier * winMultiplier;
+    } else if (result === "loss" && ["extreme", "hell", "chaos"].includes(activeSession.difficulty)) {
+      rawXp = 0;
+      flags.push("highDifficultyLoss");
     } else {
       const survivalMultiplier = getSurvivalMultiplier(playTimeMs);
       const activityMultiplier = getActivityMultiplier(stats);
@@ -343,6 +346,7 @@
         noRecent: "아직 AI 대전 XP가 없습니다.",
         result: (xp, level) => `+${formatNumber(xp)} XP · Lv.${level}`,
         limited: "0 XP",
+        highDifficultyLoss: "익스트림 이상 패배 · 0 XP",
         levelUp: (level) => `레벨 업! Lv.${level}`
       },
       en: {
@@ -354,6 +358,7 @@
         noRecent: "No AI match XP yet.",
         result: (xp, level) => `+${formatNumber(xp)} XP · Lv.${level}`,
         limited: "0 XP",
+        highDifficultyLoss: "Extreme+ defeat · 0 XP",
         levelUp: (level) => `Level up! Lv.${level}`
       }
     };
@@ -394,7 +399,9 @@
     if (!reasonBox || reasonBox.querySelector(".aiLevelResultXp")) return;
     const line = document.createElement("div");
     line.className = "aiLevelResultXp";
-    line.textContent = lastAward.after.level > lastAward.before.level
+    line.textContent = lastAward.flags.includes("highDifficultyLoss")
+      ? text("highDifficultyLoss")
+      : lastAward.after.level > lastAward.before.level
       ? text("levelUp")(lastAward.after.level)
       : (lastAward.xp > 0 ? text("result")(lastAward.xp, lastAward.after.level) : text("limited"));
     reasonBox.appendChild(line);
