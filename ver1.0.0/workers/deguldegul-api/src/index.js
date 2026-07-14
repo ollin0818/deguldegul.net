@@ -307,13 +307,14 @@ async function authGoogle(request, env) {
 
   const current = nowSeconds();
   const session = await getBearerSession(request, env);
+  const linkGuest = body.linkGuest === true;
   let user = await env.DB.prepare("SELECT * FROM users WHERE google_sub = ? AND status = 'active'").bind(google.sub).first();
 
-  if (session?.user && user && user.uid !== session.user.uid) {
+  if (linkGuest && session?.user && user && user.uid !== session.user.uid) {
     return fail(request, env, 409, "google_already_linked", "이미 다른 프로필에 연결된 Google 계정입니다.");
   }
 
-  if (session?.user && !user) {
+  if (linkGuest && session?.user && !user) {
     await env.DB.prepare(
       `UPDATE users
        SET google_sub = ?, google_email = ?, google_name = ?, google_picture = ?, updated_at = ?, last_seen_at = ?

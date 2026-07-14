@@ -375,7 +375,7 @@
   }
 
   async function api(path, options = {}) {
-    const { remoteInTest, ...fetchOptions } = options;
+    const { remoteInTest, omitAuth, ...fetchOptions } = options;
     const localUser = ensureLocalTestUser();
     const isPagesPreview = /\.pages\.dev$/i.test(window.location.hostname || "");
     if (remoteInTest === true && isPagesPreview && path.startsWith("/api/ai/rankings")) {
@@ -399,7 +399,7 @@
     const headers = new Headers(fetchOptions.headers || {});
     headers.set("Accept", "application/json");
     if (fetchOptions.body) headers.set("Content-Type", "application/json");
-    if (sessionToken) headers.set("Authorization", `Bearer ${sessionToken}`);
+    if (sessionToken && omitAuth !== true) headers.set("Authorization", `Bearer ${sessionToken}`);
 
     const response = await fetch(`${apiBase}${path}`, {
       ...fetchOptions,
@@ -748,6 +748,7 @@
     try {
       const data = await api("/api/auth/google", {
         method: "POST",
+        omitAuth: true,
         body: JSON.stringify({ credential: response.credential })
       });
       if (data.sessionToken) storeToken(data.sessionToken);
