@@ -563,7 +563,7 @@
     if (el.accountInfo) el.accountInfo.hidden = mode !== "ready";
     if (el.levelCard) el.levelCard.hidden = mode !== "ready";
     el.colorSave.hidden = mode !== "ready";
-    if (el.logoutButton) el.logoutButton.hidden = mode !== "ready" || !currentUser?.googleLinked;
+    if (el.logoutButton) el.logoutButton.hidden = mode !== "ready";
     el.state.classList.toggle("ready", mode === "ready");
     updateCharacterColors(selectedProfileColor || currentUser?.profileColor);
 
