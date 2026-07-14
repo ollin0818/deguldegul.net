@@ -6,9 +6,9 @@
   const MAX_RECENT_MATCHES = 30;
   const DIFFICULTY_MULTIPLIERS = {
     easy: 0.8,
-    normal: 1.0,
-    hard: 1.2,
-    superhard: 1.4,
+    normal: 0.8,
+    hard: 0.8,
+    superhard: 0.8,
     extreme: 1.6,
     hell: 1.8,
     chaos: 2.0
