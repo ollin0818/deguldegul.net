@@ -69,6 +69,41 @@ a {
   margin: 0 0 14px;
 }
 
+.hero .eyebrow {
+  margin-bottom: 8px;
+  color: #1d5fd1;
+  font-size: .82rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.heroActions,
+.articleLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.buttonLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 8px;
+  background: #1d5fd1;
+  color: #fff;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.buttonLink.secondary {
+  border: 1px solid #ccd6e5;
+  background: #fff;
+  color: #263348;
+}
+
 .contentGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -86,6 +121,78 @@ a {
 .infoBox strong {
   display: block;
   margin-bottom: 6px;
+}
+
+.guideCard {
+  display: block;
+  border: 1px solid #dce3ee;
+  border-radius: 10px;
+  padding: 20px;
+  background: #fff;
+  color: #172033;
+  text-decoration: none;
+  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+
+.guideCard:hover {
+  border-color: #8fb0e7;
+  box-shadow: 0 12px 28px rgba(29, 95, 209, .09);
+  transform: translateY(-2px);
+}
+
+.guideCard span {
+  display: block;
+  margin-top: 7px;
+  color: #59677c;
+  line-height: 1.55;
+}
+
+.articleMeta {
+  color: #667085;
+  font-size: .9rem;
+}
+
+.articleBody h2 {
+  margin-top: 30px;
+}
+
+.articleBody h3 {
+  margin: 22px 0 8px;
+}
+
+.articleBody li + li {
+  margin-top: 8px;
+}
+
+.tipBox {
+  margin: 20px 0;
+  border-left: 4px solid #1d5fd1;
+  border-radius: 0 8px 8px 0;
+  padding: 15px 18px;
+  background: #eef5ff;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  margin: 18px 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+th,
+td {
+  border: 1px solid #dce3ee;
+  padding: 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: #f1f5fa;
 }
 
 .siteFooter {
